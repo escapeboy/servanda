@@ -55,8 +55,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: npx tsc --build --force
+      - name: Typecheck (topological, via workspace deps)
+        run: pnpm -r run build
       - name: Gates
         run: bash gates/run-all.sh
 
