@@ -1,0 +1,121 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/00-overview.md (Conventions) — RFC 8785 JCS",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "Canonicalization cases. `input` is raw JSON text; parse it, canonicalize, and compare the result to `canonical` byte for byte. `sha256` is over the UTF-8 bytes of `canonical`.",
+  "cases": [
+    {
+      "name": "key-ordering-flat",
+      "description": "Members are reordered lexicographically; input order is discarded.",
+      "input": "{\"b\":1,\"a\":2,\"C\":3,\"_\":4}",
+      "canonical": "{\"C\":3,\"_\":4,\"a\":2,\"b\":1}",
+      "sha256": "79264b09e7f840c2e1d37b8fe970fd7020b765fe2214cf69465a676582f3ae18"
+    },
+    {
+      "name": "key-ordering-nested",
+      "description": "Sorting applies at every nesting depth, including inside arrays.",
+      "input": "{\"z\":{\"y\":1,\"x\":2},\"a\":[{\"q\":1,\"p\":2},{\"n\":3,\"m\":4}]}",
+      "canonical": "{\"a\":[{\"p\":2,\"q\":1},{\"m\":4,\"n\":3}],\"z\":{\"x\":2,\"y\":1}}",
+      "sha256": "75fa0cf8a055a488b4c47ae8244ce55af09e44db20e6d1989e597e5d5baf88c7"
+    },
+    {
+      "name": "key-ordering-unicode-bmp",
+      "description": "RFC 8785 §3.2.3 example: sort by UTF-16 code units — \"$\" (U+0024) < \"¢\" (U+00A2) < \"€\" (U+20AC).",
+      "input": "{\"\\u20ac\":\"euro\",\"\\u00a2\":\"cent\",\"$\":\"dollar\"}",
+      "canonical": "{\"$\":\"dollar\",\"¢\":\"cent\",\"€\":\"euro\"}",
+      "sha256": "5366c2474ab55dd9e7d489be2ce8e3e59668370dcc87084edbf692fa3012bc3f"
+    },
+    {
+      "name": "key-ordering-non-bmp",
+      "description": "THE discriminating case: \"😀\" is U+1F600 but serializes as surrogates D83D DE00, so UTF-16 ordering places it BEFORE U+FFFF. A code-point sort would place it after — an implementation that sorts by code point fails here and nowhere else.",
+      "input": "{\"\\ud83d\\ude00\":\"non-bmp\",\"\\uffff\":\"bmp-max\",\"A\":\"ascii\"}",
+      "canonical": "{\"A\":\"ascii\",\"😀\":\"non-bmp\",\"￿\":\"bmp-max\"}",
+      "sha256": "6633900df92cc9d0a75c975cfaa2a1b989c7c6608fdc208d5232edc13d1718ce"
+    },
+    {
+      "name": "key-ordering-prefix",
+      "description": "A key that is a prefix of another sorts first; empty key sorts before all.",
+      "input": "{\"ab\":1,\"a\":2,\"\":3,\"abc\":4}",
+      "canonical": "{\"\":3,\"a\":2,\"ab\":1,\"abc\":4}",
+      "sha256": "a8bbf697b43c4f79e27db1c332635107b35b19ca02b29499d446079561a2c9ae"
+    },
+    {
+      "name": "string-escapes-control",
+      "description": "Minimal escaping per RFC 8259 §7: the two-character forms where they exist, \\u00xx otherwise. Note DEL (U+007F) is NOT escaped.",
+      "input": "{\"s\":\"quote:\\\" backslash:\\\\ bs:\\b ff:\\f lf:\\n cr:\\r tab:\\t nul:\\u0000 unit:\\u001f del:\\u007f\"}",
+      "canonical": "{\"s\":\"quote:\\\" backslash:\\\\ bs:\\b ff:\\f lf:\\n cr:\\r tab:\\t nul:\\u0000 unit:\\u001f del:\"}",
+      "sha256": "de8c48ca1af4e6cdf5eadab4222ea3d27c726060323eab97ebca58b7d41789c8"
+    },
+    {
+      "name": "string-escapes-solidus",
+      "description": "Forward slash MUST NOT be escaped, and \\u0041 MUST collapse to the literal character.",
+      "input": "{\"s\":\"a/b\",\"t\":\"\\u0041\\u0042\"}",
+      "canonical": "{\"s\":\"a/b\",\"t\":\"AB\"}",
+      "sha256": "c72a188859ce8e1cc6a5a67a3e295d5548110ac67f711de633c1e604469a72fc"
+    },
+    {
+      "name": "unicode-no-normalization",
+      "description": "JCS does not apply Unicode normalization: precomposed é (U+00E9) and decomposed e+U+0301 remain two distinct strings and two distinct keys.",
+      "input": "{\"nfc\":\"\\u00e9\",\"nfd\":\"e\\u0301\"}",
+      "canonical": "{\"nfc\":\"é\",\"nfd\":\"é\"}",
+      "sha256": "79eae438d105e852f86ea598ffdda91643386fad0b4f336b941528d30fbf1558"
+    },
+    {
+      "name": "numbers-integers",
+      "description": "Integer forms, including negative zero which canonicalizes to \"0\".",
+      "input": "{\"zero\":0,\"negzero\":-0,\"one\":1,\"neg\":-1,\"maxsafe\":9007199254740991}",
+      "canonical": "{\"maxsafe\":9007199254740991,\"neg\":-1,\"negzero\":0,\"one\":1,\"zero\":0}",
+      "sha256": "b97116764bd0a34f65884e0a249b3d4c34a6edf7fee84691b651ca9aae290e17"
+    },
+    {
+      "name": "numbers-trailing-zeros",
+      "description": "Trailing fraction zeros and explicit positive exponents are normalized away.",
+      "input": "{\"a\":1.0,\"b\":1.50,\"c\":100.0,\"d\":1e2,\"e\":1E+2}",
+      "canonical": "{\"a\":1,\"b\":1.5,\"c\":100,\"d\":100,\"e\":100}",
+      "sha256": "389df4896b5591499b21f11f136fa711f83b076e2a073c711f104b1cf0241362"
+    },
+    {
+      "name": "numbers-exponent-boundaries",
+      "description": "ECMAScript Number::toString switches to exponential notation at 1e21; 1e20 stays positional. This boundary is the most commonly mis-implemented part of RFC 8785 §3.2.2.3.",
+      "input": "{\"e20\":1e20,\"e21\":1e21,\"e30\":1e30,\"neg7\":1e-7,\"neg6\":1e-6}",
+      "canonical": "{\"e20\":100000000000000000000,\"e21\":1e+21,\"e30\":1e+30,\"neg6\":0.000001,\"neg7\":1e-7}",
+      "sha256": "6898c34c4bb08ea457f194190d88c5bd720e37c38b90924ac680df1f9e7f9e2c"
+    },
+    {
+      "name": "numbers-extremes",
+      "description": "Smallest denormal (5e-324) and largest finite double — both must round-trip exactly.",
+      "input": "{\"min_denormal\":5e-324,\"max_double\":1.7976931348623157e308}",
+      "canonical": "{\"max_double\":1.7976931348623157e+308,\"min_denormal\":5e-324}",
+      "sha256": "c7ccc58ca47a30378e43da4eb36ab35b1c9ea1757fc24c7ec92c33ea5c549036"
+    },
+    {
+      "name": "numbers-fractions",
+      "description": "Fractions that are not exactly representable keep their shortest round-trip form.",
+      "input": "{\"tenth\":0.1,\"third\":0.3333333333333333,\"sum\":0.30000000000000004}",
+      "canonical": "{\"sum\":0.30000000000000004,\"tenth\":0.1,\"third\":0.3333333333333333}",
+      "sha256": "8d1af184434a41ef14946ad4c28d8d316ba881d6bd3782268cdc7b8df968bfd9"
+    },
+    {
+      "name": "literals-and-empty-containers",
+      "description": "Literals, empty object and empty array.",
+      "input": "{\"t\":true,\"f\":false,\"n\":null,\"eo\":{},\"ea\":[]}",
+      "canonical": "{\"ea\":[],\"eo\":{},\"f\":false,\"n\":null,\"t\":true}",
+      "sha256": "c56b4c2d715eccbf123d71e3c146232439c10538c17ddfc12768271ee9084fc0"
+    },
+    {
+      "name": "array-order-preserved",
+      "description": "Array element order is data and MUST NOT be sorted, unlike object members.",
+      "input": "{\"a\":[3,1,2,\"b\",\"a\",{\"z\":1,\"y\":2}]}",
+      "canonical": "{\"a\":[3,1,2,\"b\",\"a\",{\"y\":2,\"z\":1}]}",
+      "sha256": "30dd852cd319360de73f1552fdfeee6c176774fd5dafbbe60d48ed237e9eb749"
+    },
+    {
+      "name": "toplevel-array",
+      "description": "A top-level array is a valid canonicalization input.",
+      "input": "[{\"b\":1,\"a\":2},[],null,true,1.0]",
+      "canonical": "[{\"a\":2,\"b\":1},[],null,true,1]",
+      "sha256": "c28d33ddfb632c53b6d44cb0d63d2defb713ebb6a1bc731be57fd12248d3aaa1"
+    }
+  ]
+}

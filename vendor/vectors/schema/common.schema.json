@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/common.schema.json",
+  "title": "Shared definitions for Servanda test vectors",
+  "$defs": {
+    "hex64": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Lowercase hex SHA-256 digest or 32-byte key (spec/00-overview.md Conventions)."
+    },
+    "hex128": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{128}$",
+      "description": "Lowercase hex Ed25519 signature."
+    },
+    "hex64OrNull": {
+      "oneOf": [{ "$ref": "#/$defs/hex64" }, { "type": "null" }]
+    },
+    "rfc3339": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "rfc3339OrNull": {
+      "oneOf": [{ "$ref": "#/$defs/rfc3339" }, { "type": "null" }]
+    },
+    "protocolVersion": {
+      "const": "servanda/0.1"
+    },
+    "banner": {
+      "type": "object",
+      "required": ["suite_version", "protocol_version", "spec_reference", "generated_by"],
+      "properties": {
+        "suite_version": { "type": "string" },
+        "protocol_version": { "$ref": "#/$defs/protocolVersion" },
+        "spec_reference": { "type": "string", "minLength": 1 },
+        "generated_by": { "type": "string" }
+      }
+    },
+    "assertionState": {
+      "enum": [
+        "proposed",
+        "confirmed",
+        "open",
+        "closed",
+        "released",
+        "superseded",
+        "expired",
+        "disputed"
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "edge_id",
+        "commitment_hash",
+        "owner",
+        "owed_to",
+        "proposed_at",
+        "due",
+        "closure_policy",
+        "acceptance_window",
+        "blocked_by",
+        "supersedes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "$ref": "#/$defs/protocolVersion" },
+        "type": { "const": "edge" },
+        "edge_id": { "$ref": "#/$defs/hex64" },
+        "commitment_hash": { "$ref": "#/$defs/hex64" },
+        "owner": { "$ref": "#/$defs/hex64" },
+        "owed_to": { "$ref": "#/$defs/hex64" },
+        "proposed_at": { "$ref": "#/$defs/rfc3339" },
+        "due": { "$ref": "#/$defs/rfc3339OrNull" },
+        "closure_policy": { "enum": ["on-evidence", "on-acceptance"] },
+        "acceptance_window": {
+          "oneOf": [{ "type": "string", "pattern": "^P" }, { "type": "null" }]
+        },
+        "blocked_by": { "type": "array", "items": { "$ref": "#/$defs/hex64" } },
+        "supersedes": { "oneOf": [{ "$ref": "#/$defs/hex64" }, { "type": "null" }] }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "edge_id",
+        "state",
+        "asserted_at",
+        "by",
+        "evidence_hash",
+        "sig"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "$ref": "#/$defs/protocolVersion" },
+        "type": { "const": "assertion" },
+        "edge_id": { "$ref": "#/$defs/hex64" },
+        "state": { "$ref": "#/$defs/assertionState" },
+        "asserted_at": { "$ref": "#/$defs/rfc3339" },
+        "by": { "$ref": "#/$defs/hex64" },
+        "evidence_hash": { "$ref": "#/$defs/hex64OrNull" },
+        "sig": { "$ref": "#/$defs/hex128" }
+      }
+    }
+  }
+}

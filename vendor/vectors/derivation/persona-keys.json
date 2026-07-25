@@ -1,0 +1,63 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/01-identity.md §1.1–§1.2",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "BIP-39 mnemonic → 64-byte seed → SLIP-0010 hardened ed25519 derivation at m/7391'/{i}'. persona_id = hex(public_key).",
+  "warning": "TEST VECTORS ONLY. These mnemonics are published BIP-39 test values (all-zero and all-0x7f entropy). Every private key here is public knowledge — never use them for anything real.",
+  "purpose_constant": 7391,
+  "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+  "passphrase": "",
+  "seed": "408b285c123836004f4b8842c89324c1f01382450c0d439af345ba7fc49acf705489c6fc77dbd4e3dc1dd8cc6bc9f043db8ada1e243c4a0eafb290d399480840",
+  "personas": [
+    {
+      "persona_index": 0,
+      "path": "m/7391'/0'",
+      "chain_code": "173f7237d9eabe9b921ae02073a51253b792f0cb2033fd4843551fff5c158c47",
+      "private_key": "1c8c5d4ffb1f55381ceb0ce57cc4b4e7bf5fc3c5ecf4781b2b693001ea921bcc",
+      "public_key": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+      "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+    },
+    {
+      "persona_index": 1,
+      "path": "m/7391'/1'",
+      "chain_code": "4c121ebc09627500a012eae3a797cf725fc2e641265fef401b1d72aac8265247",
+      "private_key": "c0708165dfa55c277cca84617ebe748d66163f2d02da93525b9a4a29bd348c81",
+      "public_key": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+      "persona_id": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f"
+    },
+    {
+      "persona_index": 2,
+      "path": "m/7391'/2'",
+      "chain_code": "04dfc29b101a30ef9d8056fd575cdcc23f16a645a7530b1f1e36190792b3a274",
+      "private_key": "b3bda85c1093d543d811b3fd10160ea60ebecd431af3d307f8074b6425789360",
+      "public_key": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+      "persona_id": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+    },
+    {
+      "persona_index": 7,
+      "path": "m/7391'/7'",
+      "chain_code": "60b517a70e510d5ea04418789778211715f0d2fc44c75471ee497b9ad388ab0e",
+      "private_key": "10feb49ceccbad511320cc86dea18a6dd537841a2a79df5c1c08dc7b715e0327",
+      "public_key": "87cb4a339f372b0a4ac4c83d81fb07c7fd330e841129f1b0a3d47bb2b8067daa",
+      "persona_id": "87cb4a339f372b0a4ac4c83d81fb07c7fd330e841129f1b0a3d47bb2b8067daa"
+    },
+    {
+      "persona_index": 100,
+      "path": "m/7391'/100'",
+      "chain_code": "1edad0c483c2f7671f1b0691eec9e5d012c47ab4bb6404603380b3330e01db81",
+      "private_key": "991960e7eea9567dd023ffb15062ba975017083ec5b47bab134a3e93e361c13a",
+      "public_key": "12aac55c1b44e112b21b1a0df89fac9ab5b601034198df02d1e272532b31da18",
+      "persona_id": "12aac55c1b44e112b21b1a0df89fac9ab5b601034198df02d1e272532b31da18"
+    }
+  ],
+  "org_root": {
+    "description": "Separate root used as the attesting organization in the signature vectors.",
+    "mnemonic": "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
+    "seed": "761914478ebf6fe16185749372e91549361af22b386de46322cf8b1ba7e92e80c4af05196f742be1e63aab603899842ddadf4e7248d8e43870a4b6ff9bf16324",
+    "path": "m/7391'/0'",
+    "private_key": "5095fc5839159ffcb6d39d21221c73ede517db4d801f1cfc8b0dee624019db93",
+    "public_key": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+    "persona_id": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/signatures.schema.json",
+  "title": "Ed25519 signature vectors",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": ["description", "signing_rule", "cases"],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "signing_rule": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "signer",
+          "unsigned_object",
+          "canonical",
+          "sha256_preimage",
+          "signature",
+          "signed_object"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": { "type": "string", "minLength": 1 },
+          "signer": {
+            "type": "object",
+            "required": ["persona_id", "derivation_path"],
+            "additionalProperties": false,
+            "properties": {
+              "persona_id": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              },
+              "derivation_path": { "type": "string", "pattern": "^m(/\\d+')+$" }
+            }
+          },
+          "unsigned_object": {
+            "type": "object",
+            "required": ["v", "type"],
+            "not": { "required": ["sig"] },
+            "properties": {
+              "v": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+              }
+            }
+          },
+          "canonical": { "type": "string" },
+          "sha256_preimage": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          },
+          "signature": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+          },
+          "signed_object": {
+            "type": "object",
+            "required": ["v", "type", "sig"],
+            "properties": {
+              "sig": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "servanda",
+  "version": "0.1.0-pre",
+  "private": true,
+  "description": "Servanda — reference implementation of the Servanda protocol",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/**' run build",
+    "test": "vitest run",
+    "typecheck": "tsc --build --force",
+    "gate:g0": "bash gates/g0-vectors.sh",
+    "gates": "bash gates/run-all.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

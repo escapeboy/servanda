@@ -1,0 +1,169 @@
+import { xchacha20poly1305 } from '@noble/ciphers/chacha';
+import { argon2id } from '@noble/hashes/argon2';
+import { randomBytes } from '@noble/hashes/utils';
+import { fromHex, toHex, utf8 } from './hash.js';
+
+/**
+ * §1.7 / §9.3 / M-16 — vault content-key hierarchy.
+ *
+ * A random 256-bit content key encrypts vault content. That key is wrapped independently
+ * by each device key and by a passphrase-derived key. M-16: "A device key MUST NOT be sole
+ * custodian of vault content keys" — enforced in `sealContentKey`, which refuses to produce
+ * a keyset without a passphrase wrap.
+ */
+
+/** §9.3: Argon2id m=64MiB, t=3, p=1 minimum. */
+export const ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 } as const;
+
+export const CONTENT_KEY_BYTES = 32;
+export const XCHACHA_NONCE_BYTES = 24;
+export const SALT_BYTES = 16;
+
+export type WrapKind = 'passphrase' | 'device';
+
+export interface WrappedKey {
+  kind: WrapKind;
+  /** Device label or passphrase-slot label; local bookkeeping only. */
+  label: string;
+  nonce: string;
+  ciphertext: string;
+  /** Present for passphrase wraps: the Argon2id salt and parameters used. */
+  kdf?: { algo: 'argon2id'; salt: string; m: number; t: number; p: number };
+}
+
+export interface ContentKeySet {
+  v: 'servanda/0.1';
+  type: 'content_keyset';
+  wraps: WrappedKey[];
+}
+
+export function generateContentKey(): Uint8Array {
+  return randomBytes(CONTENT_KEY_BYTES);
+}
+
+export function deriveKeyFromPassphrase(passphrase: string, salt: Uint8Array): Uint8Array {
+  return argon2id(utf8(passphrase), salt, {
+    m: ARGON2ID_PARAMS.m,
+    t: ARGON2ID_PARAMS.t,
+    p: ARGON2ID_PARAMS.p,
+    dkLen: ARGON2ID_PARAMS.dkLen,
+  });
+}
+
+function wrapWith(key: Uint8Array, contentKey: Uint8Array): { nonce: string; ciphertext: string } {
+  const nonce = randomBytes(XCHACHA_NONCE_BYTES);
+  return {
+    nonce: toHex(nonce),
+    ciphertext: toHex(xchacha20poly1305(key, nonce).encrypt(contentKey)),
+  };
+}
+
+export function wrapForPassphrase(
+  contentKey: Uint8Array,
+  passphrase: string,
+  label = 'passphrase',
+): WrappedKey {
+  const salt = randomBytes(SALT_BYTES);
+  const kek = deriveKeyFromPassphrase(passphrase, salt);
+  const { nonce, ciphertext } = wrapWith(kek, contentKey);
+  return {
+    kind: 'passphrase',
+    label,
+    nonce,
+    ciphertext,
+    kdf: {
+      algo: 'argon2id',
+      salt: toHex(salt),
+      m: ARGON2ID_PARAMS.m,
+      t: ARGON2ID_PARAMS.t,
+      p: ARGON2ID_PARAMS.p,
+    },
+  };
+}
+
+export function wrapForDevice(
+  contentKey: Uint8Array,
+  deviceKeyHex: string,
+  label: string,
+): WrappedKey {
+  const { nonce, ciphertext } = wrapWith(fromHex(deviceKeyHex), contentKey);
+  return { kind: 'device', label, nonce, ciphertext };
+}
+
+export class M16Violation extends Error {
+  override name = 'M16Violation';
+}
+
+/**
+ * Build a keyset. M-16 is enforced structurally: at least one passphrase wrap must exist,
+ * so no set of device keys alone can be the sole custodian of the content key.
+ */
+export function sealContentKey(
+  contentKey: Uint8Array,
+  wraps: WrappedKey[],
+): ContentKeySet {
+  assertM16(wraps);
+  return { v: 'servanda/0.1', type: 'content_keyset', wraps };
+}
+
+/** M-16 check, exported so vault code and the M-suite can assert on the same predicate. */
+export function assertM16(wraps: WrappedKey[]): void {
+  if (!wraps.some((w) => w.kind === 'passphrase')) {
+    throw new M16Violation(
+      'M-16: a device key MUST NOT be sole custodian of the vault content key; ' +
+        'at least one passphrase wrap is required',
+    );
+  }
+}
+
+function unwrapWith(key: Uint8Array, wrap: WrappedKey): Uint8Array {
+  return xchacha20poly1305(key, fromHex(wrap.nonce)).decrypt(fromHex(wrap.ciphertext));
+}
+
+export function unwrapWithPassphrase(keyset: ContentKeySet, passphrase: string, label?: string): Uint8Array {
+  const candidates = keyset.wraps.filter(
+    (w) => w.kind === 'passphrase' && (label === undefined || w.label === label),
+  );
+  for (const wrap of candidates) {
+    if (!wrap.kdf) continue;
+    const kek = deriveKeyFromPassphrase(passphrase, fromHex(wrap.kdf.salt));
+    try {
+      return unwrapWith(kek, wrap);
+    } catch {
+      // wrong passphrase for this slot; try the next
+    }
+  }
+  throw new Error('no passphrase wrap could be opened with the supplied passphrase');
+}
+
+export function unwrapWithDevice(keyset: ContentKeySet, deviceKeyHex: string, label?: string): Uint8Array {
+  const candidates = keyset.wraps.filter(
+    (w) => w.kind === 'device' && (label === undefined || w.label === label),
+  );
+  for (const wrap of candidates) {
+    try {
+      return unwrapWith(fromHex(deviceKeyHex), wrap);
+    } catch {
+      // not this device's wrap
+    }
+  }
+  throw new Error('no device wrap could be opened with the supplied device key');
+}
+
+/** Content encryption with the unwrapped content key (§9.3: XChaCha20-Poly1305). */
+export interface SealedBlob {
+  nonce: string;
+  ciphertext: string;
+}
+
+export function encryptContent(contentKey: Uint8Array, plaintext: Uint8Array): SealedBlob {
+  const nonce = randomBytes(XCHACHA_NONCE_BYTES);
+  return {
+    nonce: toHex(nonce),
+    ciphertext: toHex(xchacha20poly1305(contentKey, nonce).encrypt(plaintext)),
+  };
+}
+
+export function decryptContent(contentKey: Uint8Array, blob: SealedBlob): Uint8Array {
+  return xchacha20poly1305(contentKey, fromHex(blob.nonce)).decrypt(fromHex(blob.ciphertext));
+}

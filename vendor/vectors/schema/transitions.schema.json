@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/transitions.schema.json",
+  "title": "Edge transition-table vectors (spec §4.3, M-14)",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": ["description", "cases"],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "note": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "edge",
+          "assertions",
+          "expected_outcomes",
+          "expected_final_state"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": { "type": "string", "minLength": 1 },
+          "edge": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge" },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/assertion"
+            }
+          },
+          "expected_outcomes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["index", "accepted", "rejection_reason"],
+              "additionalProperties": false,
+              "properties": {
+                "index": { "type": "integer", "minimum": 0 },
+                "accepted": { "type": "boolean" },
+                "rejection_reason": {
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "enum": [
+                        "edge-id-mismatch",
+                        "invalid-signature",
+                        "signer-not-a-party",
+                        "wrong-signer-for-transition",
+                        "illegal-source-state",
+                        "terminal-state-reached",
+                        "evidence-hash-required",
+                        "evidence-hash-required-for-owner-closure",
+                        "due-is-null",
+                        "expiry-before-due",
+                        "acceptance-window-not-elapsed",
+                        "implicit-transition-not-assertable",
+                        "duplicate-assertion-by-same-party"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "accepted": { "const": true } } },
+                  "then": { "properties": { "rejection_reason": { "type": "null" } } }
+                },
+                {
+                  "if": { "properties": { "accepted": { "const": false } } },
+                  "then": { "properties": { "rejection_reason": { "type": "string" } } }
+                }
+              ]
+            }
+          },
+          "expected_final_state": {
+            "enum": [
+              "none",
+              "proposed",
+              "open",
+              "pending-acceptance",
+              "disputed",
+              "closed",
+              "released",
+              "superseded",
+              "expired"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

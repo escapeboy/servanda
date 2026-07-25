@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/derivation.schema.json",
+  "title": "BIP-39 → SLIP-0010 persona derivation vectors",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": [
+    "description",
+    "warning",
+    "purpose_constant",
+    "mnemonic",
+    "seed",
+    "personas",
+    "org_root"
+  ],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "warning": { "type": "string", "minLength": 1 },
+    "purpose_constant": {
+      "const": 7391,
+      "description": "spec §1.2 registered purpose constant."
+    },
+    "mnemonic": { "type": "string" },
+    "passphrase": { "type": "string" },
+    "seed": { "type": "string", "pattern": "^[0-9a-f]{128}$" },
+    "personas": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "persona_index",
+          "path",
+          "chain_code",
+          "private_key",
+          "public_key",
+          "persona_id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "persona_index": { "type": "integer", "minimum": 0 },
+          "path": { "type": "string", "pattern": "^m/7391'/\\d+'$" },
+          "chain_code": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          },
+          "private_key": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          },
+          "public_key": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          },
+          "persona_id": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          }
+        }
+      }
+    },
+    "org_root": {
+      "type": "object",
+      "required": ["mnemonic", "seed", "path", "private_key", "public_key", "persona_id"],
+      "properties": {
+        "persona_id": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        }
+      }
+    }
+  }
+}

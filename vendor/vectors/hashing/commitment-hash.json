@@ -1,0 +1,466 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/03-commitment.md §3.2",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "commitment_hash = sha256(JCS({intent, owner, owed_to, due, created_at})). Cases with same_hash_as_base=true prove that no other field of the commitment object reaches the hash.",
+  "hashed_fields": [
+    "intent",
+    "owner",
+    "owed_to",
+    "due",
+    "created_at"
+  ],
+  "base_commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+  "cases": [
+    {
+      "name": "base",
+      "description": "Reference commitment; every other case is compared against this hash.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+      "same_hash_as_base": true
+    },
+    {
+      "name": "differs-only-in-evidence-refs",
+      "description": "THE required pair: identical promise, different evidence sets. Two parties agreeing on a promise need not share evidence, so the hash MUST be identical to base.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/repo/pull/341"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2a4c1"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+      "same_hash_as_base": true
+    },
+    {
+      "name": "differs-only-in-empty-evidence-refs",
+      "description": "Evidence removed entirely — still the same promise, still the same hash.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+      "same_hash_as_base": true
+    },
+    {
+      "name": "differs-only-in-confidence",
+      "description": "Extraction confidence is vault-local and excluded from the preimage.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 0.42
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+      "same_hash_as_base": true
+    },
+    {
+      "name": "differs-only-in-source",
+      "description": "How the commitment was captured is vault-local and excluded.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "extracted",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+      "same_hash_as_base": true
+    },
+    {
+      "name": "differs-only-in-conditions",
+      "description": "blocked_by references are vault-local and excluded from the wire identity.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [
+          "0000000000000000000000000000000000000000000000000000000000000000"
+        ],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+      "same_hash_as_base": true
+    },
+    {
+      "name": "differs-in-intent",
+      "description": "intent is one of the five hashed fields.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for InvoiceService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for InvoiceService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for InvoiceService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "a4f64e9d8fda94430a6e0cac2d791a2dc5baf7b0f5276148234239433e032ad1",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "differs-in-owner",
+      "description": "owner is one of the five hashed fields.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9\"}",
+      "commitment_hash": "60fe07c83c4fcd3a14f259fe67328b9384797e69a25d84e5db9264efb8b961c4",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "differs-in-owed-to",
+      "description": "owed_to is one of the five hashed fields.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "993a7a139069987918362f9689325dec6cfed8a5cbf4efa9a2f8f129723ae585",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "differs-in-due",
+      "description": "due is one of the five hashed fields.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-09-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-09-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-09-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "3b092fa9050ecd21f706e4980845268c363090df35578619c8487c1fdf5d656b",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "differs-in-created-at",
+      "description": "created_at is one of the five hashed fields.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-26T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-26T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-26T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "7fdad29078e1222d5c6bda375db879d7afd00564e8985cfc8aa20229e8e95143",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "reflexive-owed-to-null",
+      "description": "§3.1: owed_to null is a reflexive commitment. null is hashed as the JSON literal, not omitted.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": null,
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": null,
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":null,\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "d277ec3057610d7500e4154b051eef4c301b2e3663b18d3fbe8741792f6fc827",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "undated-due-null",
+      "description": "§3.1: due null is valid and expected to be the majority case.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": null,
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Add integration tests for PaymentRetryService",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": null,
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":null,\"intent\":\"Add integration tests for PaymentRetryService\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "578f9b67218d94b1291af40b172d26f1591b85dab4cc2183ddb8fe2d0c4802ae",
+      "same_hash_as_base": false
+    },
+    {
+      "name": "unicode-intent",
+      "description": "Non-ASCII intent, exercising JCS string handling inside the hash preimage.",
+      "commitment": {
+        "v": "servanda/0.1",
+        "type": "commitment",
+        "intent": "Изпрати оферта на Георги — складът, до петък 😀",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "conditions": [],
+        "evidence_refs": [
+          {
+            "kind": "envelope",
+            "value": "session#4412"
+          }
+        ],
+        "created_at": "2026-07-25T08:55:00Z",
+        "source": "explicit",
+        "confidence": 1
+      },
+      "hash_preimage": {
+        "intent": "Изпрати оферта на Георги — складът, до петък 😀",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "due": "2026-08-01T00:00:00Z",
+        "created_at": "2026-07-25T08:55:00Z"
+      },
+      "hash_preimage_canonical": "{\"created_at\":\"2026-07-25T08:55:00Z\",\"due\":\"2026-08-01T00:00:00Z\",\"intent\":\"Изпрати оферта на Георги — складът, до петък 😀\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\"}",
+      "commitment_hash": "d1b9d29a7a9862015f78869c3bc0db0eb2ca6e924e858aa9d398d1646d66b6df",
+      "same_hash_as_base": false
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/00-overview.md (Conventions), §1.3, §1.7, §4.2",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "Ed25519 over sha256(JCS(object without its `sig` field)). Verify by recomputing `sha256_preimage` from `unsigned_object` and checking `signature` against the signer key.",
+  "signing_rule": "ed25519_sign(sha256(JCS(object minus \"sig\")), private_key)",
+  "cases": [
+    {
+      "name": "attestation-by-org-root",
+      "description": "§1.3: an org root attests that a persona key carries these claims.",
+      "signer": {
+        "persona_id": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+        "derivation_path": "m/7391'/0'"
+      },
+      "unsigned_object": {
+        "v": "servanda/0.1",
+        "type": "attestation",
+        "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+        "subject": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "subject_kind": "persona",
+        "claims": {
+          "display_name": "Maria Ivanova",
+          "handle": "maria@acme.com"
+        },
+        "issued_at": "2026-07-01T00:00:00Z",
+        "expires_at": "2027-07-01T00:00:00Z"
+      },
+      "canonical": "{\"claims\":{\"display_name\":\"Maria Ivanova\",\"handle\":\"maria@acme.com\"},\"expires_at\":\"2027-07-01T00:00:00Z\",\"issued_at\":\"2026-07-01T00:00:00Z\",\"org\":\"95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020\",\"subject\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"subject_kind\":\"persona\",\"type\":\"attestation\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "9411eb04d11737a1c234e76115944234c6aedf91198f137797b097e70d67689f",
+      "signature": "a27f04c8e3ed02ef5822ac119917a44cbd8d495acc8f27019c4852da06c2d5626ed408454f1871594d3fb872fa557c6cc8ce33e55ad45d89ecaaff28c44a0f07",
+      "signed_object": {
+        "v": "servanda/0.1",
+        "type": "attestation",
+        "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+        "subject": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "subject_kind": "persona",
+        "claims": {
+          "display_name": "Maria Ivanova",
+          "handle": "maria@acme.com"
+        },
+        "issued_at": "2026-07-01T00:00:00Z",
+        "expires_at": "2027-07-01T00:00:00Z",
+        "sig": "a27f04c8e3ed02ef5822ac119917a44cbd8d495acc8f27019c4852da06c2d5626ed408454f1871594d3fb872fa557c6cc8ce33e55ad45d89ecaaff28c44a0f07"
+      }
+    },
+    {
+      "name": "assertion-proposed",
+      "description": "§4.3: the owner proposes. One signature — socially nothing until confirmed.",
+      "signer": {
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "derivation_path": "m/7391'/0'"
+      },
+      "unsigned_object": {
+        "v": "servanda/0.1",
+        "type": "assertion",
+        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "state": "proposed",
+        "asserted_at": "2026-07-25T09:00:00Z",
+        "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "evidence_hash": null
+      },
+      "canonical": "{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea\",\"evidence_hash\":null,\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "7a6d5491d318b6c4669c7297b98664500f0b581e9352d1d7ec3d026cae5ae9da",
+      "signature": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d",
+      "signed_object": {
+        "v": "servanda/0.1",
+        "type": "assertion",
+        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "state": "proposed",
+        "asserted_at": "2026-07-25T09:00:00Z",
+        "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "evidence_hash": null,
+        "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+      }
+    },
+    {
+      "name": "assertion-confirmed",
+      "description": "§4.3: the counterparty confirms. The edge now exists.",
+      "signer": {
+        "persona_id": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "derivation_path": "m/7391'/1'"
+      },
+      "unsigned_object": {
+        "v": "servanda/0.1",
+        "type": "assertion",
+        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "state": "confirmed",
+        "asserted_at": "2026-07-25T10:00:00Z",
+        "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "evidence_hash": null
+      },
+      "canonical": "{\"asserted_at\":\"2026-07-25T10:00:00Z\",\"by\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"edge_id\":\"50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea\",\"evidence_hash\":null,\"state\":\"confirmed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "5531c7a81312077a320037d5ba678904e9f8f80d32d1b1ce85ad6a11055dcf98",
+      "signature": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00",
+      "signed_object": {
+        "v": "servanda/0.1",
+        "type": "assertion",
+        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "state": "confirmed",
+        "asserted_at": "2026-07-25T10:00:00Z",
+        "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "evidence_hash": null,
+        "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+      }
+    },
+    {
+      "name": "assertion-closed-with-evidence",
+      "description": "§4.4: closure carries the hash of the evidence bundle, never the bundle itself (M-7).",
+      "signer": {
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "derivation_path": "m/7391'/0'"
+      },
+      "unsigned_object": {
+        "v": "servanda/0.1",
+        "type": "assertion",
+        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "state": "closed",
+        "asserted_at": "2026-08-02T12:00:00Z",
+        "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "evidence_hash": "ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da"
+      },
+      "canonical": "{\"asserted_at\":\"2026-08-02T12:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea\",\"evidence_hash\":\"ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da\",\"state\":\"closed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "62e1b7f1d601c54bfbe9650a27a4ec6c93aaba7c2a23ed4ee8946610a5de1ab3",
+      "signature": "f368aad8ec63ef1368932c928980706fe1c9bcdaa8c98e2c5cd66047e2678ed45db2ef7420c8b0fc0aad429d45d71b1ef94944c49365dbdf3fe6ec444d3e4f04",
+      "signed_object": {
+        "v": "servanda/0.1",
+        "type": "assertion",
+        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "state": "closed",
+        "asserted_at": "2026-08-02T12:00:00Z",
+        "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "evidence_hash": "ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da",
+        "sig": "f368aad8ec63ef1368932c928980706fe1c9bcdaa8c98e2c5cd66047e2678ed45db2ef7420c8b0fc0aad429d45d71b1ef94944c49365dbdf3fe6ec444d3e4f04"
+      }
+    },
+    {
+      "name": "rotation-statement",
+      "description": "§1.7: signed by the OLD key, transferring continuity to the new one (sig_old).",
+      "signer": {
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "derivation_path": "m/7391'/0'"
+      },
+      "unsigned_object": {
+        "v": "servanda/0.1",
+        "type": "rotation",
+        "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "new": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "rotated_at": "2026-09-01T00:00:00Z"
+      },
+      "canonical": "{\"new\":\"cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9\",\"old\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"rotated_at\":\"2026-09-01T00:00:00Z\",\"type\":\"rotation\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "0157a055464d779686c15dbfdb679029d78bd119ed374a0af5d2543d64b0b55b",
+      "signature": "8efc090dfd39562890e4669bc7d42243b556f4cc0fd3d31b4bc1e77bf9536a445183d44947cd8c8867f6e8242efd4cee3537f5976695c088b50316249844f10e",
+      "signed_object": {
+        "v": "servanda/0.1",
+        "type": "rotation",
+        "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "new": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "rotated_at": "2026-09-01T00:00:00Z",
+        "sig": "8efc090dfd39562890e4669bc7d42243b556f4cc0fd3d31b4bc1e77bf9536a445183d44947cd8c8867f6e8242efd4cee3537f5976695c088b50316249844f10e"
+      }
+    }
+  ]
+}

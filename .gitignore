@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+coverage/
+.vitest/
+*.log
+/tmp/
+precision-report.md
+.servanda-test-vault/

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/canonicalization.schema.json",
+  "title": "RFC 8785 canonicalization vectors",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": ["description", "cases"],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "input", "canonical", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": { "type": "string", "minLength": 1 },
+          "input": { "type": "string", "description": "Raw JSON text, order-preserving." },
+          "canonical": { "type": "string" },
+          "sha256": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          }
+        }
+      }
+    }
+  }
+}
