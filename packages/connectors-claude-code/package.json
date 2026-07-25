@@ -1,0 +1,26 @@
+{
+  "name": "@servanda/connectors-claude-code",
+  "version": "0.1.0-pre",
+  "description": "Servanda connector: Claude Code session hooks and local transcripts to §2 signal envelopes",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "servanda-cc-hook": "./bin/servanda-cc-hook.mjs"
+  },
+  "files": ["dist", "bin"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/crypto": "workspace:*",
+    "@servanda/types": "workspace:*"
+  }
+}
