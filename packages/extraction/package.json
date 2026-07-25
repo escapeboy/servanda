@@ -1,0 +1,29 @@
+{
+  "name": "@servanda/extraction",
+  "version": "0.1.0-pre",
+  "description": "Servanda §3.4 extraction: tool-less, schema-bound, single-persona commitment extraction from signal envelopes",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "servanda-precision": "./dist/harness/cli.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b",
+    "harness": "node dist/harness/cli.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.0",
+    "@servanda/crypto": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "zod": "^3.24.0"
+  }
+}
