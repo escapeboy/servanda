@@ -15,6 +15,7 @@
     "@servanda/extraction": "workspace:*",
     "@servanda/node": "workspace:*",
     "@servanda/types": "workspace:*",
-    "@servanda/vault": "workspace:*"
+    "@servanda/vault": "workspace:*",
+    "@servanda/executors": "workspace:*"
   }
 }

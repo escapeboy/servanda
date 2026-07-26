@@ -2,7 +2,17 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ClaudeCodeConnector } from '@servanda/connectors-claude-code';
 import { Extractor, createScriptedModelClient, REFLEXIVE } from '@servanda/extraction';
 import { Envelope, type Commitment } from '@servanda/types';
-import { alice, freshInstall, type Install } from './support.js';
+import { commitmentHash } from '@servanda/crypto';
+import { runExecutor, type DraftPrArtifact } from '@servanda/executors';
+import { execFileSync } from 'node:child_process';
+import {
+  alice,
+  ensureFixtureRepo,
+  FIXTURE_HEAD,
+  FIXTURE_REPO,
+  freshInstall,
+  type Install,
+} from './support.js';
 
 /**
  * SCENARIO 1 — "Solo: the full magic-moment cycle" (docs/scenarios.md §1).
@@ -141,6 +151,61 @@ describe('scenario 1 — solo: from a spoken sentence to a brief line', () => {
     expect(committed!.due).toBeNull();
     install.clock.advanceDays(120);
     expect(install.node.escalatable(alice.personaId)).toHaveLength(0);
+  });
+
+  it('the executor turns the promise into a draft PR, not a reminder', async () => {
+    // Scenario 1's inversion: "not a reminder — finished work awaiting approval." A reminder
+    // costs attention; a ready PR costs one review.
+    const outcome = await runExecutor({
+      executorClass: 'tests',
+      commitment: {
+        v: 'servanda/0.1',
+        type: 'commitment',
+        owner: alice.personaId,
+        owed_to: null,
+        due: null,
+        conditions: [],
+        created_at: committed!.created_at,
+        source: 'extracted',
+        confidence: committed!.confidence,
+        // M-7: the executor references the promise by hash and never holds its plaintext.
+        commitment_hash: commitmentHash(committed!),
+      },
+      target: { kind: 'source-file', path: 'src/payments.ts' },
+      persona: alice.personaId,
+      repo: { path: ensureFixtureRepo(), baseBranch: 'main' },
+      intentForReviewer: committed!.intent,
+      now: install.clock.iso(),
+    });
+
+    expect(outcome.kind).toBe('artifact');
+    const artifact = (outcome as { artifact: DraftPrArtifact }).artifact;
+
+    // Draft, always. The executor never merges and never signs (M-13): automation acts under a
+    // persona, never as one.
+    expect(artifact.draft).toBe(true);
+    expect((artifact as unknown as { sig?: unknown }).sig).toBeUndefined();
+
+    // A new class starts at the floor, so this waits for a human no matter how good it is.
+    expect(artifact.autonomy.level).toBe('draft-for-review');
+
+    expect(artifact.changes.length).toBeGreaterThan(0);
+    for (const change of artifact.changes) {
+      // The `tests` class may only write under test/. Capability, not convention.
+      expect(change.path.startsWith('test/')).toBe(true);
+    }
+  });
+
+  it('leaves the fixture repository untouched', () => {
+    // Executors touch only fixture repos, and even then they produce a diff rather than mutate
+    // the tree. If this drifts, the sandbox has stopped containing anything.
+    const head = execFileSync('git', ['-C', FIXTURE_REPO, 'rev-parse', 'HEAD'], {
+      encoding: 'utf8',
+    }).trim();
+    expect(head).toBe(FIXTURE_HEAD);
+    expect(
+      execFileSync('git', ['-C', FIXTURE_REPO, 'status', '--porcelain'], { encoding: 'utf8' }),
+    ).toBe('');
   });
 
   it('surfaces as a brief line naming what was said', () => {

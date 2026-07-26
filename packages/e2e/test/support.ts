@@ -10,6 +10,8 @@ import { ServandaNode } from '@servanda/node';
 const here = fileURLToPath(new URL('.', import.meta.url));
 export const REPO_ROOT = resolve(here, '../../..');
 export const FIXTURE_REPO = join(REPO_ROOT, 'fixtures/archaeology-repo/repo');
+/** Pinned in gate GB; the fixture regenerates to this exact commit on any machine. */
+export const FIXTURE_HEAD = '8779acbf1753fc5ddf67a3ae76434880d171a710';
 
 /**
  * The fixture is generated, not committed — a nested .git would become a gitlink. Materialize it
