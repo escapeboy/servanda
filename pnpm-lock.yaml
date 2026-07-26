@@ -54,6 +54,9 @@ importers:
       '@servanda/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@servanda/envelope':
+        specifier: workspace:*
+        version: link:../envelope
       '@servanda/types':
         specifier: workspace:*
         version: link:../types
@@ -63,6 +66,9 @@ importers:
       '@servanda/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@servanda/envelope':
+        specifier: workspace:*
+        version: link:../envelope
       '@servanda/types':
         specifier: workspace:*
         version: link:../types
@@ -72,6 +78,9 @@ importers:
       '@servanda/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@servanda/envelope':
+        specifier: workspace:*
+        version: link:../envelope
       '@servanda/types':
         specifier: workspace:*
         version: link:../types
@@ -123,6 +132,15 @@ importers:
       '@servanda/vault':
         specifier: workspace:*
         version: link:../vault
+
+  packages/envelope:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/executors:
     dependencies:

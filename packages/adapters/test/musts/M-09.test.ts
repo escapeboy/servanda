@@ -10,8 +10,9 @@ import { commitment, edge, NOW, OWED_TO, REPO, REPO_HEAD } from '../support/fixt
  * §4.7: "Otherwise nodes MUST mark it unverifiable (no auto-escalation)."
  *
  * The adapter layer is where "unverifiable" becomes a value a caller holds, so the rule is
- * enforced here as well as in the transition layer. Two copies of a rule is one copy too many,
- * so the last test asserts they agree rather than hoping they do.
+ * enforced here as well as in the transition layer. Both names now resolve to the single
+ * implementation in `@servanda/types`; the last test is what keeps it that way, failing the
+ * moment either package answers from a local copy again.
  */
 
 const CHILD = 'e'.repeat(64);
@@ -53,7 +54,7 @@ describe('M-9: collective edges require covering decomposition or a named coordi
     expect(outcome.evidence_hash).toBeNull();
   });
 
-  it('agrees with @servanda/node on every row — one rule, not two', () => {
+  it('answers identically to @servanda/node on every row — one rule, not two', () => {
     for (const row of TABLE) {
       const e = edge(row.fulfillment ? { fulfillment: row.fulfillment } : {});
       expect(collectiveDecompositionValid(e), row.name).toBe(isCollectiveEdgeVerifiable(e));

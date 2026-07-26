@@ -1,29 +1,24 @@
-import { hashCanonical } from '@servanda/crypto';
-import { Envelope, UnidentifiedEnvelope } from '@servanda/types';
+import { MAX_LABEL, clip } from '@servanda/envelope';
 
 /**
- * The connector-side envelope boundary.
+ * This connector's share of the §2 envelope boundary.
  *
- * NOTE: this file is deliberately duplicated in @servanda/connectors-github. The two
- * connector packages own no shared package, and the alternative — one connector importing
- * the other — would make an unrelated dependency load-bearing. Twenty lines is cheaper.
- *
- * §2 / M-6: everything that comes from the observed world is DATA. It goes under `payload`
- * (or `refs`/`actor`, which are descriptive), never into `source`, `kind`, `persona`, or a
- * timestamp — the fields a pipeline stage reads to decide what to do.
+ * The crossing itself — bounds, undefined-stripping, sealing — lives in `@servanda/envelope`
+ * and is re-exported here so this package's public surface is unchanged. What stays local is
+ * `label`, because sanitising a display name is a question about *this* source.
  */
 
-/** Payload strings are clipped: an envelope must stay bounded whatever the source does. */
-export const MAX_PAYLOAD_TEXT = 8192;
-export const MAX_LABEL = 200;
-export const MAX_REF = 2048;
+export {
+  MAX_PAYLOAD_TEXT,
+  MAX_LABEL,
+  MAX_REF,
+  clip,
+  compact,
+  sealEnvelope,
+} from '@servanda/envelope';
 
 /** Unicode general category Cc — the C0/C1 control characters. */
 const CONTROL_CHARS = /\p{Cc}/gu;
-
-export function clip(s: string, max: number): string {
-  return s.length <= max ? s : s.slice(0, max);
-}
 
 /**
  * `actor.label` is rendered by clients, so control characters are stripped here. The
@@ -33,23 +28,4 @@ export function clip(s: string, max: number): string {
 export function label(s: string): string {
   const flat = s.replace(CONTROL_CHARS, ' ').replace(/\s+/gu, ' ').trim();
   return clip(flat, MAX_LABEL) || 'unknown';
-}
-
-/** Drops keys whose value is undefined: JCS has no representation for them. */
-export function compact(o: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(o)) {
-    if (o[k] !== undefined) out[k] = o[k];
-  }
-  return out;
-}
-
-/**
- * §2: `id` = sha256 of the canonical form sans id. Parsing before hashing is what makes the
- * id well-defined — zod fills `refs` and strips unknown keys, so two callers that built the
- * same envelope differently still hash the same bytes.
- */
-export function sealEnvelope(candidate: unknown): Envelope {
-  const base = UnidentifiedEnvelope.parse(candidate);
-  return Envelope.parse({ ...base, id: hashCanonical(base) });
 }

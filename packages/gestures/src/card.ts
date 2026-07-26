@@ -1,5 +1,9 @@
 import type { El, PartyView, SealView } from '@servanda/client-web';
-import { COPY, el, partyFor, sealFor, textEl } from '@servanda/client-web';
+// `actionsEl` comes from the app renderer rather than being restated here: the ordering law
+// it encodes — primary first, so Tab and a screen reader both reach the leading action first —
+// must be the same law on a gesture card as on an app card, and one implementation is the only
+// way to say that once.
+import { COPY, actionsEl, el, partyFor, sealFor, textEl } from '@servanda/client-web';
 import type { PlaceId } from './copy.js';
 import { GESTURE_COPY } from './copy.js';
 import type { CommitIntent, ConfirmIntent, ExpectIntent, GestureIntent } from './intent.js';
@@ -252,25 +256,6 @@ export function whenTheOtherHalfArrives(): Delivery {
 }
 
 // ── rendering ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Action before description: the buttons come first, primary first, so the leading action is
- * both the first thing Tab reaches and the first thing a screen reader announces inside the
- * card. The same ordering law the app's cards follow, for the same reason.
- */
-function actionsEl(actions: readonly GestureAction[]): El {
-  return el(
-    'div',
-    { class: 'card-actions' },
-    actions.map((action) =>
-      textEl('button', action.label, {
-        type: 'button',
-        class: action.primary ? 'action action-primary' : 'action',
-        'data-action': action.id,
-      }),
-    ),
-  );
-}
 
 /** M-12: the name and what stands behind it are emitted together, from the same values. */
 function withWhomEl(card: GestureCard): El {

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@servanda/crypto": "workspace:*",
+    "@servanda/envelope": "workspace:*",
     "@servanda/types": "workspace:*"
   }
 }

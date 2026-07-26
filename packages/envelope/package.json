@@ -1,7 +1,7 @@
 {
-  "name": "@servanda/connectors-email",
+  "name": "@servanda/envelope",
   "version": "0.1.0-pre",
-  "description": "Servanda connector: IMAP mail, sent-mail archaeology and BCC/forward capture to §2 signal envelopes",
+  "description": "The §2 envelope boundary shared by every connector: bounds, undefined-stripping, and sealing",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "@servanda/crypto": "workspace:*",
-    "@servanda/envelope": "workspace:*",
     "@servanda/types": "workspace:*"
   }
 }

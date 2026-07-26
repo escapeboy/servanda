@@ -130,7 +130,11 @@ function jsFiles(root, out = []) {
   return out;
 }
 
-const roots = ['connectors-email', 'crypto', 'types'].map((p) => join(PKG, '..', p, 'dist'));
+// This list IS the audit's coverage, and it is written by hand: a package added to this
+// connector's dependencies but not added here leaves a shipped module unscanned while the
+// check still reports "no shipped module imports a network primitive". Widen it whenever the
+// dependency graph widens.
+const roots = ['connectors-email', 'envelope', 'crypto', 'types'].map((p) => join(PKG, '..', p, 'dist'));
 let scanned = 0;
 const hits = [];
 for (const root of roots) {

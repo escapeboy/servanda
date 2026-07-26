@@ -38,8 +38,21 @@ export type SurfaceId =
 
 export const STANDALONE_SURFACES: readonly SurfaceId[] = ['proof', 'first-run'];
 
+/**
+ * Everything `actionsEl` reads. It is deliberately narrower than `ActionView`: what a button
+ * needs is a label, an id and whether it leads, and nothing about what the action *does*. The
+ * app's `ActionView` carries a `dispatch` and a gesture card's action carries an `intent`;
+ * both satisfy this, which is what lets one renderer serve both surfaces instead of two
+ * copies drifting apart on the ordering law below.
+ */
+export interface RenderableAction {
+  readonly id: string;
+  readonly label: string;
+  readonly primary: boolean;
+}
+
 /** Buttons for a list of actions, primary first — action before description, everywhere. */
-export function actionsEl(actions: readonly ActionView[]): El {
+export function actionsEl(actions: readonly RenderableAction[]): El {
   return el(
     'div',
     { class: 'card-actions' },

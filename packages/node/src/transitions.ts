@@ -1,6 +1,11 @@
 import { verifyObject } from '@servanda/crypto';
 import type { Assertion, AssertionOutcome, Edge, EffectiveState, RejectionReason } from '@servanda/types';
-import { DEFAULT_ACCEPTANCE_WINDOW, NON_ASSERTABLE_STATES, TERMINAL_STATES } from '@servanda/types';
+import {
+  DEFAULT_ACCEPTANCE_WINDOW,
+  NON_ASSERTABLE_STATES,
+  TERMINAL_STATES,
+  collectiveDecompositionValid,
+} from '@servanda/types';
 import { addDuration } from './duration.js';
 
 /**
@@ -50,21 +55,13 @@ interface ChainState {
 }
 
 /**
- * §4.7 + M-9: "A collective edge MUST have either `fulfillment.children` whose union covers
- * fulfillment, or `fulfillment.coordinator`. Otherwise nodes MUST mark it unverifiable."
+ * §4.7 + M-9 collective decomposition, under this package's own name.
  *
- * "Covers fulfillment" is not defined in checkable terms for `all`/`any`; the narrowest
- * reading a node can enforce without inventing semantics is: children must be non-empty, and
- * under `k-of-n` there must be a k that the children could actually satisfy.
+ * The rule lives in `@servanda/types` beside the `Edge` schema it is a property of. This
+ * package and `@servanda/adapters` both decide verifiability and neither depends on the other;
+ * each used to carry its own byte-identical copy, kept in step by an agreement test.
  */
-export function isCollectiveEdgeVerifiable(edge: Edge): boolean {
-  const f = edge.fulfillment;
-  if (!f) return true; // not a collective edge
-  if (f.coordinator) return true;
-  if (f.children.length === 0) return false;
-  if (f.policy === 'k-of-n') return f.k !== undefined && f.k > 0 && f.k <= f.children.length;
-  return true;
-}
+export { collectiveDecompositionValid as isCollectiveEdgeVerifiable };
 
 function windowElapsed(edge: Edge, openedAt: string, assertedAt: string): boolean {
   // Interpretation #5: `acceptance_window` is "required iff on-acceptance; default P5D".
@@ -233,7 +230,7 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
     outcomes,
     final_state: ctx.state,
     resolved_at: ctx.resolved_at,
-    unverifiable: !isCollectiveEdgeVerifiable(edge),
+    unverifiable: !collectiveDecompositionValid(edge),
   };
 }
 
