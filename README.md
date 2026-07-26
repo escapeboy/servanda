@@ -61,6 +61,7 @@ Solo use is complete use.
 | `@servanda/federation` | §6: git and hub transports, reconciliation, edge recovery, anti-spam, blind courier |
 | `@servanda/adapters` | Verification adapters: evidence bundles for §4.4 closure, and what makes an edge unverifiable (M-8) |
 | `@servanda/extraction` | Tool-less, schema-bound extraction (§3.4, M-6) |
+| `@servanda/envelope` | The §2 envelope boundary every connector crosses: payload bounds, undefined-stripping, sealing |
 | `@servanda/connectors-*` | Claude Code sessions, GitHub archaeology, mail (IMAP, sent-mail archaeology, BCC/forward) → §2 envelopes |
 | `@servanda/gestures` | In-situ capture and confirmation — confirm a promise where it was spoken |
 | `@servanda/executors` | Sandboxed, capability-enumerated executors; draft-PR output only; trust gradient (§9.4) |
