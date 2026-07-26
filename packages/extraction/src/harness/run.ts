@@ -33,6 +33,14 @@ export interface HarnessOptions {
   readonly apiKey?: string | undefined;
   /** Injected in tests; otherwise chosen from `dryRun` + the presence of an API key. */
   readonly modelClient?: ModelClient;
+  /**
+   * Declares an injected client to be a REAL model rather than a stand-in. Injection defaults to
+   * 'stub' because that is what tests inject; a backend that genuinely calls a model must say so,
+   * or the report would warn readers off findings that are in fact real.
+   */
+  readonly modelClientMode?: 'stub' | 'live';
+  /** How that backend reaches the model, for the report's provenance row. */
+  readonly modelClientNote?: string;
   readonly now?: Date;
 }
 
@@ -84,8 +92,8 @@ export async function runHarness(options: HarnessOptions = {}): Promise<HarnessR
 
   if (options.modelClient !== undefined) {
     model = options.modelClient;
-    mode = 'stub';
-    liveRunSkippedReason = 'an injected model client was supplied';
+    mode = options.modelClientMode ?? 'stub';
+    if (mode === 'stub') liveRunSkippedReason = 'an injected model client was supplied';
   } else if (wantsLive && apiKey !== undefined && apiKey !== '') {
     model = createAnthropicModelClient({ model: options.model ?? DEFAULT_MODEL });
     mode = 'live';
@@ -151,6 +159,7 @@ export async function runHarness(options: HarnessOptions = {}): Promise<HarnessR
     generatedAt: normalizeRfc3339(now.toISOString()),
     mode,
     modelId: model.id,
+    modeNote: options.modelClientNote,
     persona: scan.persona,
     scan: scan.stats,
     batches: batches.length,

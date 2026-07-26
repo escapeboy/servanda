@@ -34,6 +34,12 @@ export interface ReportInput {
   readonly generatedAt: string;
   readonly mode: 'stub' | 'live';
   readonly modelId: string;
+  /**
+   * How the live backend reached a model, when there is one. The report must not claim the
+   * Anthropic API was used when a different backend produced the rows — the whole value of this
+   * document is that a human can trust what it says about its own provenance.
+   */
+  readonly modeNote?: string;
   readonly persona: string;
   readonly scan: ScanResult['stats'];
   readonly batches: number;
@@ -154,7 +160,7 @@ export function renderReport(input: ReportInput): string {
     `| Extraction mode | **${input.mode}** ${
       input.mode === 'stub'
         ? '— deterministic rule-based stand-in, no API calls, no spend'
-        : '— live Anthropic API'
+        : (input.modeNote ?? '— live Anthropic API')
     } |`,
   );
   out.push(`| Model | \`${input.modelId}\` |`);
