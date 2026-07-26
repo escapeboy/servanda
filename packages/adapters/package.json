@@ -1,0 +1,27 @@
+{
+  "name": "@servanda/adapters",
+  "version": "0.1.0-pre",
+  "description": "Servanda verification adapters: read-only, offline observers that produce the §4.4 evidence bundle whose hash an owner cites when closing an edge",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/crypto": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@servanda/node": "workspace:*"
+  }
+}
