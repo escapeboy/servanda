@@ -1,0 +1,25 @@
+{
+  "name": "@servanda/executors",
+  "version": "0.1.0-pre",
+  "description": "Servanda execution layer: sandboxed, capability-enumerated executors producing draft-PR artifacts for review, governed by an earned trust gradient",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/crypto": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "@servanda/vault": "workspace:*",
+    "zod": "^3.24.0"
+  }
+}

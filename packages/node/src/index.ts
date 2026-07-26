@@ -5,3 +5,4 @@ export * from './duration.js';
 export * from './node.js';
 export * from './tools.js';
 export * from './mcp/stdio.js';
+export * from './archaeology.js';

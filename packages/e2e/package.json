@@ -1,0 +1,20 @@
+{
+  "name": "@servanda/e2e",
+  "version": "0.1.0-pre",
+  "description": "End-to-end integration of the scenarios in docs/scenarios.md against a fixture repo",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/connectors-claude-code": "workspace:*",
+    "@servanda/connectors-github": "workspace:*",
+    "@servanda/crypto": "workspace:*",
+    "@servanda/extraction": "workspace:*",
+    "@servanda/node": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "@servanda/vault": "workspace:*"
+  }
+}

@@ -66,6 +66,45 @@ importers:
         specifier: ^1.5.0
         version: 1.6.0
 
+  packages/e2e:
+    dependencies:
+      '@servanda/connectors-claude-code':
+        specifier: workspace:*
+        version: link:../connectors-claude-code
+      '@servanda/connectors-github':
+        specifier: workspace:*
+        version: link:../connectors-github
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/extraction':
+        specifier: workspace:*
+        version: link:../extraction
+      '@servanda/node':
+        specifier: workspace:*
+        version: link:../node
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      '@servanda/vault':
+        specifier: workspace:*
+        version: link:../vault
+
+  packages/executors:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      '@servanda/vault':
+        specifier: workspace:*
+        version: link:../vault
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+
   packages/extraction:
     dependencies:
       '@anthropic-ai/sdk':
