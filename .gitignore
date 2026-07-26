@@ -8,3 +8,7 @@ coverage/
 /tmp/
 precision-report.md
 .servanda-test-vault/
+
+# Serena's local memories. Tooling state, not project truth — the durable record lives in
+# Svod (projects/servanda/) and in docs/. Drop this line to version them instead.
+.serena/
