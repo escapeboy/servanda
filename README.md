@@ -123,10 +123,26 @@ upstream, in the protocol repo).
 
 The spec is a draft, and drafts contradict themselves. The rule here is: **never resolve a spec
 ambiguity silently.** Implement the narrowest reading, comment it at the code site, and file it
-upstream. Seventeen such issues are open against servanda-protocol; the vectors' README documents
-eight more interpretations the generator had to make.
+upstream. Twenty-five such issues are open against servanda-protocol; the vectors' README documents
+the interpretations the generator had to make.
 
 Anything resembling a design change goes to a protocol issue, never into this code.
+
+### Known divergence
+
+One place where this implementation does not follow the spec, recorded here rather than argued
+away:
+
+**§2 says connectors are MCP servers implementing `emit_envelope`. These are not.** The connectors
+here are libraries plus a hook script; nothing in the repository defines an `emit_envelope` tool.
+No gate catches this, for two reasons worth naming: no MUST binds §2's connector surface, and there
+is no conformance vector family for the node surface at all (upstream #25), so nothing outside this
+repository pins §7 or §2's tool contracts either.
+
+Which side is wrong is a protocol question, not an implementation one — a connector that is a
+library composes into a node without a second process, which may be the better design, or may be a
+shortcut the spec should overrule. It is filed as a divergence rather than fixed in either
+direction.
 
 ## License
 
