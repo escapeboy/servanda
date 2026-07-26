@@ -12,11 +12,14 @@ declare -a GATES=(
   "G0:Foundation (types + crypto, vector conformance):gates/g0-vectors.sh"
   "GA:Vault + node (transition table, five tools, M-suite):gates/ga-node.sh"
   "GB:Connectors (deterministic archaeology, envelope validity):gates/gb-connectors.sh"
+  "GK:Email (non-technical capture, hostile MIME):gates/gk-email.sh"
   "GC:Extraction (schema-bound, precision harness):gates/gc-extraction.sh"
   "GD:Executors (sandbox containment, draft PR):gates/gd-executors.sh"
+  "GJ:Adapters (evidence bundles, unverifiable never escalates):gates/gj-adapters.sh"
   "GF:Federation (two nodes agree offline, blind hub):gates/gf-federation.sh"
   "GG:Identity (ladder, attestation, rotation):gates/gg-identity.sh"
   "GE:Clients (brief latency, keyboard walkthrough, vocabulary):gates/ge-clients.sh"
+  "GL:Gestures (in-situ confirm, M-1 uncompilable):gates/gl-gestures.sh"
   "G3:Integration (scenarios 1, 2, 3, 6 end to end):gates/g3-integration.sh"
 )
 
