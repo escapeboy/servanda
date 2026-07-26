@@ -272,19 +272,27 @@ export function findTranscripts(root: string, sinceMs: number): TranscriptIndex 
 }
 
 /**
- * How much of one utterance is worth paying to send.
+ * How much of one utterance is sent for extraction. **Off by default.**
  *
- * Measured on a real 30-day corpus: the median utterance is 123 characters, but the top decile
- * runs to thousands — pasted logs, and machine-authored role prompts addressed to an agent.
- * Those long tails carried 76% of the corpus's characters and produced zero extractions, because
- * an instruction to an agent is not a promise by a person (M-13 makes the same point about who
- * can be a party).
+ * Clipping is a real cost lever and a real recall cost, measured on a 30-day corpus of 1539
+ * envelopes rather than assumed:
  *
- * A promise is a sentence. Clipping the tail leaves the first paragraph — where a stated
- * intention nearly always is — and removes most of the cost and most of the noise. Set to 0 to
- * disable.
+ * | limit | utterances clipped | input cost | utterances whose only promise language was cut |
+ * |------:|------:|------:|------:|
+ * |  1000 | 40.4% |   22% | 6 |
+ * |  2000 | 30.4% |   39% | 5 |
+ * |  4000 | 23.9% |   64% | 2 |
+ * |   off |  0.0% |  100% | 0 |
+ *
+ * There is no threshold that saves money without dropping promises — the curves never cross.
+ * A first pass at 1000 cut extractions from 34 to 22 on the same corpus.
+ *
+ * So the default is OFF. This harness exists to give a human an honest picture of what the
+ * extractor finds; silently discarding six promises to save a few dollars would corrupt exactly
+ * the number it is meant to produce. Clipping stays available as an explicit choice
+ * (`--max-utterance-chars`) for cost-bound runs, where the table above is the price list.
  */
-export const DEFAULT_MAX_UTTERANCE_CHARS = 1000;
+export const DEFAULT_MAX_UTTERANCE_CHARS = 0;
 
 export interface ScanOptions {
   readonly root?: string;

@@ -24,9 +24,17 @@ const utterance = (text: string): Utterance => ({
 });
 
 describe('utterance clipping', () => {
-  it('leaves a normal utterance untouched — the median is ~123 characters', () => {
+  it('is off by default — clipping loses promises, so it is never silent', () => {
+    // Measured: at 1000 chars, six utterances in a 30-day corpus had their only promise
+    // language cut, and extractions fell from 34 to 22. Cost is a choice; recall is not.
+    expect(DEFAULT_MAX_UTTERANCE_CHARS).toBe(0);
+    const long = 'x'.repeat(50_000);
+    expect(clipText(long, DEFAULT_MAX_UTTERANCE_CHARS)).toBe(long);
+  });
+
+  it('leaves a normal utterance untouched when clipping is enabled', () => {
     const text = "I'll add tests for PaymentRetryService once the release ships";
-    expect(clipText(text, DEFAULT_MAX_UTTERANCE_CHARS)).toBe(text);
+    expect(clipText(text, 1000)).toBe(text);
   });
 
   it('keeps the head, where a stated intention actually lives', () => {
