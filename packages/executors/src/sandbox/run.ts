@@ -44,6 +44,37 @@ const PACKAGE_ROOT = join(HERE, '..', '..');
 export const DENY_NETWORK_PRELOAD = join(PACKAGE_ROOT, 'sandbox', 'deny-network.cjs');
 export const SANDBOX_HOST_ENTRY = join(PACKAGE_ROOT, 'dist', 'sandbox', 'host.js');
 
+/**
+ * The environment an executor process gets. Not the parent's, filtered — this, instead of it.
+ * One key, and it is a marker. `GITHUB_TOKEN`, `NPM_TOKEN`, `AWS_SECRET_ACCESS_KEY` and every
+ * other thing the host happens to hold are not "hidden" from the executor; they are absent from
+ * the world it runs in (security.md §2: "they are not in its world").
+ */
+export const SANDBOX_ENV: Readonly<Record<string, string>> = Object.freeze({
+  SERVANDA_SANDBOX: '1',
+});
+
+/**
+ * The exact spawn parameters of a sandboxed executor, in one place, so that the containment
+ * proof can run a canary through the *same* code path rather than a re-creation of it. A proof
+ * that tests a copy of the sandbox proves something about the copy.
+ */
+export function sandboxSpawnArgs(entry: string = SANDBOX_HOST_ENTRY): {
+  command: string;
+  args: string[];
+  options: { env: Record<string, string>; cwd: string; stdio: ['pipe', 'pipe', 'pipe'] };
+} {
+  return {
+    command: process.execPath,
+    args: ['--require', DENY_NETWORK_PRELOAD, entry],
+    options: {
+      env: { ...SANDBOX_ENV },
+      cwd: PACKAGE_ROOT,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  };
+}
+
 export const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_SNAPSHOT_FILES = 2000;
 const MAX_FILE_BYTES = 512 * 1024;
@@ -146,13 +177,8 @@ async function runSandbox(request: unknown, timeoutMs: number): Promise<SandboxR
     );
   }
   return new Promise<SandboxResponse>((resolve, reject) => {
-    const child = spawn(process.execPath, ['--require', DENY_NETWORK_PRELOAD, SANDBOX_HOST_ENTRY], {
-      // The whole environment, replaced. Not filtered — replaced. Whatever secrets this process
-      // holds, the executor's `process.env` has one key in it and it is not a secret.
-      env: { SERVANDA_SANDBOX: '1' },
-      cwd: PACKAGE_ROOT,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    const { command, args, options } = sandboxSpawnArgs();
+    const child = spawn(command, args, options);
 
     let stdout = '';
     let stderr = '';

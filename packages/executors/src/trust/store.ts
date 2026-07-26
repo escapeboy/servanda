@@ -70,6 +70,9 @@ export class TrustStore {
   }
 
   #requirePersona(persona: string): void {
+    // Shape before existence: a malformed persona_id is a caller error, and reporting it as
+    // "no such persona" would send someone looking in the vault for a bug in their own string.
+    trustDir(this.#dir, persona);
     if (!existsSync(join(this.#dir, 'personas', persona, 'persona.json'))) {
       throw new TrustStoreError(`no such persona in this vault: ${persona}`);
     }
