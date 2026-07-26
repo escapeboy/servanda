@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalize, canonicalizeText, canonicalBytes } from '../src/jcs.js';
+import {
+  canonicalize,
+  canonicalizeText,
+  canonicalBytes,
+  JcsDepthExceeded,
+  MAX_CANONICALIZATION_DEPTH,
+} from '../src/jcs.js';
 import { sha256Hex } from '../src/hash.js';
 import { loadVectors, type CanonicalizationCase, type VectorFile } from './vectors.js';
 
@@ -40,5 +46,37 @@ describe('G0 canonicalization (RFC 8785)', () => {
     // The failure mode that rebuilding a sorted object and calling JSON.stringify would hide:
     // JS objects reorder integer-like keys ahead of everything else.
     expect(canonicalize({ '10': 1, '2': 2, a: 3 })).toBe('{"10":1,"2":2,"a":3}');
+  });
+});
+
+describe('canonicalization refuses hostile nesting rather than exhausting the stack', () => {
+  const nest = (depth: number): unknown => {
+    let node: unknown = { leaf: 1 };
+    for (let i = 0; i < depth; i++) node = { nested: node };
+    return node;
+  };
+  const nestArrays = (depth: number): unknown => {
+    let node: unknown = [1];
+    for (let i = 0; i < depth; i++) node = [node];
+    return node;
+  };
+
+  it('canonicalizes any depth a real protocol object could reach', () => {
+    // The deepest object the spec defines nests about five levels.
+    expect(() => canonicalize(nest(32))).not.toThrow();
+    expect(() => canonicalize(nest(MAX_CANONICALIZATION_DEPTH - 2))).not.toThrow();
+  });
+
+  it('throws a typed, catchable error past the bound — objects and arrays alike', () => {
+    // Regression: this input raised a bare RangeError from stack exhaustion, which passed on
+    // macOS and crashed on Linux. A hash function reachable from hostile input must fail the
+    // same way everywhere, and must fail in a way a caller can catch and reject on.
+    expect(() => canonicalize(nest(5000))).toThrow(JcsDepthExceeded);
+    expect(() => canonicalize(nestArrays(5000))).toThrow(JcsDepthExceeded);
+    expect(() => canonicalize(nest(5000))).toThrow(/refusing to canonicalize/);
+  });
+
+  it('the refusal propagates through hashing, so nothing unbounded is ever signed', () => {
+    expect(() => sha256Hex(canonicalBytes(nest(5000)))).toThrow(JcsDepthExceeded);
   });
 });

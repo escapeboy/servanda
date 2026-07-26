@@ -12,6 +12,32 @@
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [k: string]: JsonValue };
 
+/**
+ * Nesting bound.
+ *
+ * Canonicalization is recursive, and it is the most reachable code in the system: every hash and
+ * every signature passes through it, including for objects that arrived from a hostile source.
+ * Without a bound, a deeply nested payload exhausts the stack and raises a `RangeError` — an
+ * uncontrolled failure whose depth threshold varies by platform, so it can pass on one machine
+ * and crash on another. (It did exactly that: the connector's hostile-input suite passed on
+ * macOS and overflowed on Linux CI.)
+ *
+ * The bound converts that into a clean, typed rejection at a depth no legitimate protocol object
+ * approaches — the deepest object the spec defines nests about five levels — while staying far
+ * below any platform's stack limit.
+ */
+export const MAX_CANONICALIZATION_DEPTH = 256;
+
+export class JcsDepthExceeded extends RangeError {
+  override name = 'JcsDepthExceeded';
+  constructor(depth: number) {
+    super(
+      `JCS: input nests deeper than ${depth} levels; refusing to canonicalize. ` +
+        'Reject the object rather than hashing it.',
+    );
+  }
+}
+
 /** RFC 8785 §3.2.2.2 — member ordering is by UTF-16 code unit. JS default string sort is exactly that. */
 function sortKeys(keys: string[]): string[] {
   return [...keys].sort();
@@ -38,7 +64,8 @@ function serializeString(s: string): string {
   return JSON.stringify(s);
 }
 
-function write(value: JsonValue, out: string[]): void {
+function write(value: JsonValue, out: string[], depth: number): void {
+  if (depth > MAX_CANONICALIZATION_DEPTH) throw new JcsDepthExceeded(MAX_CANONICALIZATION_DEPTH);
   if (value === null) {
     out.push('null');
     return;
@@ -63,7 +90,7 @@ function write(value: JsonValue, out: string[]): void {
     out.push('[');
     for (let i = 0; i < value.length; i++) {
       if (i > 0) out.push(',');
-      write(value[i] as JsonValue, out);
+      write(value[i] as JsonValue, out, depth + 1);
     }
     out.push(']');
     return;
@@ -80,7 +107,7 @@ function write(value: JsonValue, out: string[]): void {
     if (!first) out.push(',');
     first = false;
     out.push(serializeString(k), ':');
-    write(v, out);
+    write(v, out, depth + 1);
   }
   out.push('}');
 }
@@ -88,7 +115,7 @@ function write(value: JsonValue, out: string[]): void {
 /** Canonical JSON text (RFC 8785) for a JSON value. */
 export function canonicalize(value: unknown): string {
   const out: string[] = [];
-  write(value as JsonValue, out);
+  write(value as JsonValue, out, 0);
   return out.join('');
 }
 

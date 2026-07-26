@@ -37,6 +37,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Workspace packages resolve through their dist/ entry points, so vitest cannot
+      # import them until they are built.
+      - run: pnpm -r run build
       - name: Every MUST has a named test
         run: bash gates/must-coverage.sh
       - name: Run the M-suite
@@ -73,4 +76,5 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm -r run build
       - run: npx vitest run --reporter=dot

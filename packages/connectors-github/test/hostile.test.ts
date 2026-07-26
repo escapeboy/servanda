@@ -277,7 +277,13 @@ describe('M-6: archaeology input is data — a hostile working tree yields envel
       Buffer.from([0x2f, 0x2f, 0x20, 0x54, 0x4f, 0x44, 0x4f, 0x3a, 0x20, 0x80, 0xe2, 0x82, 0x0a]),
     );
     writeFileSync(join(repo, 'binary.bin'), Buffer.from([0x00, 0x01, 0x02, 0x54, 0x4f, 0x44, 0x4f, 0x00]));
-    writeFileSync(join(repo, 'deep.json'), JSON.stringify(deepNest(5000)));
+    // Built by string repetition rather than JSON.stringify(deepNest(5000)): V8's stringify is
+    // itself recursive and overflows the stack at this depth on Linux's smaller default, so the
+    // TEST became the thing that crashed rather than the connector. The point of this file is to
+    // hand archaeology genuinely hostile input, so construct it without needing a recursive
+    // operation to do it.
+    const DEEP = 5000;
+    writeFileSync(join(repo, 'deep.json'), `${'{"nested":'.repeat(DEEP)}{}${'}'.repeat(DEEP)}`);
     writeFileSync(join(repo, 'flags.ts'), 'export const FEATURE_GHOST = false;\n');
     writeFileSync(join(repo, 'migrations/0001_x.sql'), 'SELECT 1;\n');
     writeFileSync(join(repo, 'migrations/applied.txt'), `${INJECTION}\n`);
