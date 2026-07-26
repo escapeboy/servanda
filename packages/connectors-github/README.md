@@ -46,8 +46,13 @@ anyone. **No field of an envelope is ever interpreted as a command by any pipeli
 Injection text lands inertly in `payload` and never reaches a field the core reads as control.
 
 Because §2 places no bound on `payload` (upstream issue #18), strings are clipped to 8192
-characters with the original length preserved as `text_length`, and only scalars are lifted from
-nested structures. A 2 MB PR body should not become a 2 MB vault object.
+characters and only scalars are lifted from nested structures. A 2 MB PR body should not become a
+2 MB vault object.
+
+Unlike `@servanda/connectors-email` and `@servanda/connectors-claude-code`, this connector does
+**not** record a `text_length` alongside the clipped string, so an envelope from here does not say
+whether anything was cut. Adding it would change every payload this connector emits, and therefore
+every envelope `id` it computes, so it is a decision rather than a fix.
 
 ## Fixture
 
