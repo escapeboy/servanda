@@ -2,7 +2,7 @@
 # GATE G3 — Integration.
 #
 # "end-to-end of scenarios.md #1 and #2 against a fixture repo ... both scenarios pass as
-#  automated e2e tests." Extended to #3 and #6 in the second wave.
+#  automated e2e tests." Extended to #3 and #6, then to #4 and #5 — all six now run here.
 #
 # The unit suites prove each package keeps its own promises. This gate proves the SEAMS hold:
 # a sentence somebody said reaches a brief, and a repository nobody has spoken to produces one.
@@ -39,6 +39,8 @@ for f in \
   packages/e2e/test/scenario-1-solo-cycle.test.ts \
   packages/e2e/test/scenario-2-cold-start.test.ts \
   packages/e2e/test/scenario-3-expectation.test.ts \
+  packages/e2e/test/scenario-4-team.test.ts \
+  packages/e2e/test/scenario-5-cross-org.test.ts \
   packages/e2e/test/scenario-6-attack.test.ts
 do
   if [ ! -f "${f}" ]; then
@@ -56,6 +58,12 @@ npx vitest run packages/e2e/test/scenario-2-cold-start.test.ts --reporter=dot
 
 echo "==> G3/3: scenario 3 — expectation, half-network, nothing ever sent to the counterparty"
 npx vitest run packages/e2e/test/scenario-3-expectation.test.ts --reporter=dot
+
+echo "==> G3/4: scenario 4 — team, three vaults over one git repository, no network"
+npx vitest run packages/e2e/test/scenario-4-team.test.ts --reporter=dot
+
+echo "==> G3/5: scenario 5 — cross-org, domain anchor, and a hash that outlives the terms"
+npx vitest run packages/e2e/test/scenario-5-cross-org.test.ts --reporter=dot
 
 echo "==> G3/6: scenario 6 — the attack that did not happen"
 npx vitest run packages/e2e/test/scenario-6-attack.test.ts --reporter=dot
