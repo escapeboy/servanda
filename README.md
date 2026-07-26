@@ -39,6 +39,8 @@ Solo use is complete use.
 | `@servanda/crypto` | RFC 8785 JCS, SHA-256, Ed25519, SLIP-0010 `m/7391'`, BIP-39, XChaCha20-Poly1305, X25519 blind courier |
 | `@servanda/vault` | Encrypted git-backed sovereign store; commitment / expectation / edge stores; retention decay |
 | `@servanda/node` | Edge state machine (§4.3) and the five MCP tools (§7) |
+| `@servanda/identity` | §1 verification: attestation, revocation boundary, domain anchor, the binding-proof ladder, rotation |
+| `@servanda/federation` | §6: git and hub transports, reconciliation, edge recovery, anti-spam, blind courier |
 | `@servanda/extraction` | Tool-less, schema-bound extraction (§3.4, M-6) |
 | `@servanda/connectors-*` | Claude Code sessions, GitHub repo archaeology and PR/CI events → §2 envelopes |
 | `@servanda/executors` | Sandboxed, capability-enumerated executors; draft-PR output only; trust gradient (§9.4) |
@@ -72,8 +74,10 @@ pnpm gates      # Every gate, in stage order
 | GB | Connectors | Deterministic archaeology; only valid §2 envelopes, ever |
 | GC | Extraction | Schema-bound; precision harness runs (the ≥90% verdict is a **human** gate) |
 | GD | Executors | Cannot reach network or CI secrets; produces a valid draft PR |
+| GF | Federation | Two nodes converge on one chain offline; a hub learns nothing |
+| GG | Identity | The ladder and its downgrades; every forgery fails |
 | GE | Clients | Brief < 100 ms; keyboard-only; zero protocol vocabulary in user-facing strings |
-| G3 | Integration | Scenarios 1 and 2, end to end |
+| G3 | Integration | All six scenarios, end to end |
 
 `gates/must-coverage.sh` separately proves every M-1..M-16 has a named test. A MUST with no test
 is a rule nothing enforces.
