@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import type { WireMessage } from '@servanda/types';
 import type { Transport } from './transport.js';
 import { edgeIdOf, messageId, verifyMessage } from './messages.js';
@@ -9,17 +9,18 @@ import { edgeIdOf, messageId, verifyMessage } from './messages.js';
  * §6.1 git transport — "a shared repository; messages are files under
  * `servanda/{edge_id}/{seq}-{type}.json`; sync = fetch/push".
  *
- * SPEC AMBIGUITY (narrowest reading, reported upstream). The path template is keyed on
- * `edge_id`, but §6.2 also defines `recon_request`/`recon_response`/`recover_request`/
- * `recover_response`, which concern no single edge. Rather than invent an edge_id for them or
- * drop them from this transport, they go under the reserved prefix `servanda/_direct/
- * {recipient}/`. `_direct` cannot collide with a real directory name: edge ids are 64 hex
- * characters and `_` is not a hex digit.
+ * SPEC AMBIGUITY (narrowest reading; reported, not resolved in code). The path template is
+ * keyed on `edge_id`, but §6.2 also defines `recon_request`/`recon_response`/`recover_request`/
+ * `recover_response`, which concern no single edge. Rather than invent an edge_id for them, add
+ * a recipient field to their payloads (that would be a protocol change), or drop them from this
+ * transport, they are filed under the reserved prefix `servanda/_direct/{recipient}/` using the
+ * recipient already passed to `send`. `_direct` cannot collide with a real edge directory: edge
+ * ids are 64 hex characters and `_` is not a hex digit.
  *
- * CONFIDENTIALITY. This transport is a shared repository, so its confidentiality boundary is
- * repository access — not the message. §6.3's blind-courier requirement is scoped to
- * "hub-bound payloads" and is implemented in `hub-transport.ts`. What is *served* on request
- * (recon and recovery responses) is still governed by M-4a; see `serve.ts`.
+ * CONFIDENTIALITY. This transport IS a shared repository, so its confidentiality boundary is
+ * repository access, not the message. §6.3's blind-courier requirement is scoped to "hub-bound
+ * payloads" and is implemented in `hub-transport.ts`. What a node *serves on request* — recon
+ * and recovery responses — is still governed by M-4a; see `serve.ts`.
  */
 
 export interface GitTransportOptions {
@@ -52,7 +53,9 @@ function git(dir: string, args: string[]): string {
   }
 }
 
-interface Placed {
+/** A message as it sits in the shared repository, with the path that addresses it. */
+export interface PlacedMessage {
+  /** Path relative to `servanda/` — either `{edge_id}/…` or `_direct/{recipient}/…`. */
   path: string;
   message: WireMessage;
 }
@@ -60,11 +63,10 @@ interface Placed {
 export class GitTransport implements Transport {
   readonly kind = 'git' as const;
   readonly dir: string;
-  private readonly persona: string;
+  readonly persona: string;
   private readonly remote: string | undefined;
-  private readonly author: { name: string; email: string };
-  /** Messages accepted by `send` but not yet written into the tree. */
-  private pending: WireMessage[] = [];
+  /** Accepted by `send`, not yet written into the tree. */
+  private pending: { recipient: string; message: WireMessage }[] = [];
   /** Content addresses already placed by this side, so a replayed `send` is a no-op. */
   private readonly placed = new Set<string>();
 
@@ -72,10 +74,9 @@ export class GitTransport implements Transport {
     this.dir = opts.dir;
     this.persona = opts.persona;
     this.remote = opts.remote;
-    this.author = opts.author ?? DEFAULT_AUTHOR;
   }
 
-  /** Initialise a working clone. With a remote, clone it; otherwise start an empty repo. */
+  /** Initialise a working clone. With a remote, wire it up; otherwise start a standalone repo. */
   static init(opts: GitTransportOptions): GitTransport {
     const { dir } = opts;
     mkdirSync(dir, { recursive: true });
@@ -98,49 +99,47 @@ export class GitTransport implements Transport {
     return dir;
   }
 
-  async send(_recipient: string, message: WireMessage): Promise<void> {
+  async send(recipient: string, message: WireMessage): Promise<void> {
     if (this.placed.has(messageId(message))) return;
-    this.pending.push(message);
+    this.pending.push({ recipient, message });
   }
 
   async receive(persona: string): Promise<WireMessage[]> {
     const out: WireMessage[] = [];
-    for (const { message } of this.readAll()) {
-      // A courier delivers what it holds; it does not deliver a persona its own outbound copy.
+    for (const { path, message } of this.readAll()) {
+      // A courier does not hand a persona back its own outbound copy.
       if (message.sender === persona) continue;
+      // `_direct/{recipient}` is addressed; an edge directory is shared-repository visible.
+      const parts = path.split(sep);
+      if (parts[0] === DIRECT && parts[1] !== persona) continue;
       out.push(message);
     }
     return out;
   }
 
   /**
-   * fetch → adopt the shared history → re-place anything this side has not yet published →
+   * fetch → adopt the shared history → place anything this side has not yet published →
    * commit → push.
    *
-   * Adopting the remote wholesale before writing is what makes concurrent senders safe without
-   * a merge strategy: a message is either already in the shared history or still in `pending`,
-   * so nothing this side authored can be lost, and two senders never name the same file because
-   * sequence numbers are assigned after the merge, not before it.
+   * Adopting the remote wholesale *before* writing is what makes concurrent senders safe with
+   * no merge strategy: every message this side authored is either already in the shared history
+   * or still in `pending`, so nothing can be lost, and two senders never name the same file
+   * because sequence numbers are assigned after the merge rather than before it.
    */
   async sync(): Promise<void> {
     if (this.remote) {
       git(this.dir, ['fetch', '--quiet', 'origin']);
-      if (this.remoteHasMain()) {
-        git(this.dir, ['checkout', '--quiet', '-B', 'main', 'origin/main']);
-      }
+      if (this.remoteHasMain()) git(this.dir, ['checkout', '--quiet', '-B', 'main', 'origin/main']);
     }
 
-    const written = this.placeAll(this.pending);
-    this.pending = [];
+    const written = this.placeAll();
 
     git(this.dir, ['add', '-A']);
     if (git(this.dir, ['status', '--porcelain']).trim() !== '') {
       git(this.dir, ['commit', '--quiet', '-m', `feat(wire): deliver ${written} message(s)`]);
     }
 
-    if (this.remote) {
-      git(this.dir, ['push', '--quiet', 'origin', 'HEAD:refs/heads/main']);
-    }
+    if (this.remote) git(this.dir, ['push', '--quiet', 'origin', 'HEAD:refs/heads/main']);
   }
 
   private remoteHasMain(): boolean {
@@ -152,14 +151,13 @@ export class GitTransport implements Transport {
     }
   }
 
-  private placeAll(messages: WireMessage[]): number {
+  private placeAll(): number {
     let n = 0;
-    for (const message of messages) {
+    for (const { recipient, message } of this.pending) {
       const id = messageId(message);
       if (this.placed.has(id)) continue;
-      const dir = join(this.dir, SUBDIR, this.relativeDirFor(message));
+      const dir = join(this.dir, SUBDIR, this.relativeDirFor(recipient, message));
       mkdirSync(dir, { recursive: true });
-      // Idempotence across clones: a message already present under any name is not rewritten.
       if (this.alreadyPresent(dir, id)) {
         this.placed.add(id);
         continue;
@@ -169,27 +167,17 @@ export class GitTransport implements Transport {
       this.placed.add(id);
       n++;
     }
+    this.pending = [];
     return n;
   }
 
-  private relativeDirFor(message: WireMessage): string {
+  private relativeDirFor(recipient: string, message: WireMessage): string {
     const edge = edgeIdOf(message);
     if (edge !== null) return edge;
-    const recipient = this.recipientOf(message);
+    if (!/^[0-9a-f]{64}$/.test(recipient)) {
+      throw new GitTransportError(`a ${message.type} needs a persona recipient to be addressable`);
+    }
     return join(DIRECT, recipient);
-  }
-
-  /**
-   * Non-edge-scoped messages carry their recipient in the payload; `recon_*` and `recover_*`
-   * are always addressed, never broadcast.
-   */
-  private recipientOf(message: WireMessage): string {
-    const p = message.payload as Record<string, unknown> | null | undefined;
-    const to = p && typeof p === 'object' ? p['to'] : undefined;
-    if (typeof to === 'string' && /^[0-9a-f]{64}$/.test(to)) return to;
-    throw new GitTransportError(
-      `a non-edge-scoped ${message.type} must name its recipient as payload.to (§6.1 path layout is edge-keyed)`,
-    );
   }
 
   private alreadyPresent(dir: string, id: string): boolean {
@@ -210,27 +198,23 @@ export class GitTransport implements Transport {
   }
 
   /** Every signature-valid message currently in the working tree. */
-  readAll(): Placed[] {
+  readAll(): PlacedMessage[] {
     const root = join(this.dir, SUBDIR);
     if (!existsSync(root)) return [];
-    const out: Placed[] = [];
+    const out: PlacedMessage[] = [];
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const p = join(dir, entry.name);
         if (entry.isDirectory()) walk(p);
         else if (entry.name.endsWith('.json')) {
           const message = this.readFile(p);
-          // A file whose signature does not verify is discarded here and never surfaces.
-          if (message) out.push({ path: p, message });
+          // A file whose signature does not verify never surfaces — a shared repository is
+          // writable by everyone who can clone it, so the file is not the authority.
+          if (message) out.push({ path: relative(root, p), message });
         }
       }
     };
     walk(root);
     return out;
-  }
-
-  /** The persona this transport speaks as. */
-  get self(): string {
-    return this.persona;
   }
 }

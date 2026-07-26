@@ -1,0 +1,236 @@
+import { verifyAssertionChain } from '@servanda/node';
+import type { Assertion, Edge, VerificationLevel, WireMessage } from '@servanda/types';
+import { AssertPayload, ProposePayload } from '@servanda/types';
+import type { Vault } from '@servanda/vault';
+import type { ProposalBudget } from './antispam.js';
+import { verifyMessage } from './messages.js';
+import { applyReconResponse, type ReconApplyResult, type ReconRequest, type ReconResponse } from './recon.js';
+import type { RecoverRequest, RecoverResponse } from './recovery.js';
+import { isParty } from './serve.js';
+
+/**
+ * The inbound half of federation: everything that arrives over a transport passes through here
+ * before it can touch the vault.
+ *
+ * Three rules apply in order, and none of them is negotiable by the sender:
+ *  1. the message signature must verify under the key it names as `sender` (§6.3);
+ *  2. the recipient must be a party to what the message is about (M-4a — a proposal addressed
+ *     to someone else is not stored, whoever delivered it);
+ *  3. every assertion goes through `verifyAssertionChain`, and whatever it rejects is discarded
+ *     (M-14). The wire is the least trusted input in the system; it gets the same table the
+ *     node applies to its own assertions, not a lenient variant.
+ */
+
+export type DiscardReason =
+  | 'signature-does-not-verify'
+  | 'malformed-payload'
+  | 'not-addressed-to-this-persona'
+  | 'proposer-is-not-the-owner'
+  | 'unknown-edge'
+  | 'sender-is-not-a-party'
+  | `transition-table:${string}`;
+
+export interface IngestResult {
+  accepted: { type: WireMessage['type']; edge_id: string | null }[];
+  discarded: { type: string; edge_id: string | null; reason: DiscardReason }[];
+  /** §6.5: admitted by every rule above, but over the client's budget, so never surfaced. */
+  suppressed: { sender: string; edge_id: string; reason: 'rate-limited' | 'level-0-cap-reached' }[];
+  /** Requests needing an answer the caller must route back over a transport. */
+  reconRequests: { from: string; request: ReconRequest }[];
+  recoverRequests: { from: string; request: RecoverRequest }[];
+  /** Result of applying any `recon_response` in this batch. */
+  recon: ReconApplyResult;
+}
+
+export interface InboxOptions {
+  vault: Vault;
+  persona: string;
+  /** §6.5 budget. Without one, no proposal is suppressed — the cap is the client's to set. */
+  budget?: ProposalBudget;
+  /** §1.6 level of a counterparty, used only by the §6.5 budget. */
+  verificationLevel?: (counterparty: string) => VerificationLevel;
+}
+
+function emptyResult(): IngestResult {
+  return {
+    accepted: [],
+    discarded: [],
+    suppressed: [],
+    reconRequests: [],
+    recoverRequests: [],
+    recon: { accepted: [], discarded: [], ignored: [] },
+  };
+}
+
+export class Inbox {
+  private readonly vault: Vault;
+  private readonly persona: string;
+  private readonly budget: ProposalBudget | undefined;
+  private readonly level: (counterparty: string) => VerificationLevel;
+
+  constructor(opts: InboxOptions) {
+    this.vault = opts.vault;
+    this.persona = opts.persona;
+    this.budget = opts.budget;
+    this.level = opts.verificationLevel ?? (() => '0');
+  }
+
+  ingest(messages: WireMessage[]): IngestResult {
+    const result = emptyResult();
+    for (const raw of messages) {
+      // Re-verified even though transports verify: this class is the security boundary, and a
+      // boundary that trusts its caller is not one.
+      const message = verifyMessage(raw as unknown);
+      if (!message) {
+        result.discarded.push({ type: 'unknown', edge_id: null, reason: 'signature-does-not-verify' });
+        continue;
+      }
+      switch (message.type) {
+        case 'propose':
+          this.ingestPropose(message, result);
+          break;
+        case 'assert':
+          this.ingestAssert(message, result);
+          break;
+        case 'recon_request':
+          result.reconRequests.push({ from: message.sender, request: message.payload as ReconRequest });
+          break;
+        case 'recon_response': {
+          const applied = applyReconResponse(this.vault, this.persona, message.payload as ReconResponse);
+          result.recon.accepted.push(...applied.accepted);
+          result.recon.discarded.push(...applied.discarded);
+          result.recon.ignored.push(...applied.ignored);
+          break;
+        }
+        case 'recover_request':
+          result.recoverRequests.push({ from: message.sender, request: message.payload as RecoverRequest });
+          break;
+        case 'recover_response':
+          // §6.6 responses restore edges this node lost. Applying them is a distinct act with
+          // its own trust decision (the requester chose whom to ask), so it is not folded into
+          // routine ingestion; `applyRecoverResponse` is called explicitly.
+          result.accepted.push({ type: message.type, edge_id: null });
+          break;
+        default:
+          // publish/unpublish/attestation/revocation/rotation are §5 and §1 objects; this layer
+          // carries them but does not own their storage rules.
+          result.accepted.push({ type: message.type, edge_id: null });
+      }
+    }
+    return result;
+  }
+
+  private ingestPropose(message: WireMessage, result: IngestResult): void {
+    const parsed = ProposePayload.safeParse(message.payload);
+    if (!parsed.success) {
+      result.discarded.push({ type: 'propose', edge_id: null, reason: 'malformed-payload' });
+      return;
+    }
+    const { edge, assertion } = parsed.data as { edge: Edge; assertion: Assertion };
+
+    // M-4a: a proposal is addressed to the counterparty named in the edge. Delivery to anyone
+    // else — by a curious hub, a shared repository, or a hostile sender — stores nothing.
+    if (edge.owed_to !== this.persona) {
+      result.discarded.push({ type: 'propose', edge_id: edge.edge_id, reason: 'not-addressed-to-this-persona' });
+      return;
+    }
+    // M-1: a promise is owned by its giver, so the proposer must BE the owner.
+    if (message.sender !== edge.owner) {
+      result.discarded.push({ type: 'propose', edge_id: edge.edge_id, reason: 'proposer-is-not-the-owner' });
+      return;
+    }
+
+    // M-14 before anything is written: an invalid `proposed` assertion never creates an edge.
+    const { outcomes } = verifyAssertionChain(edge, [assertion]);
+    const outcome = outcomes[0]!;
+    if (!outcome.accepted) {
+      result.discarded.push({
+        type: 'propose',
+        edge_id: edge.edge_id,
+        reason: `transition-table:${outcome.rejection_reason}` as DiscardReason,
+      });
+      return;
+    }
+
+    // §6.5 last, so a rejected proposal never consumes budget.
+    if (this.budget) {
+      const admission = this.budget.admit(message.sender, this.level(message.sender));
+      if (!admission.surface) {
+        result.suppressed.push({ sender: message.sender, edge_id: edge.edge_id, reason: admission.reason });
+        return;
+      }
+    }
+
+    if (!this.vault.getEdge(this.persona, edge.edge_id)) this.vault.putEdge(this.persona, edge);
+    if (!this.vault.getAssertions(this.persona, edge.edge_id).some((a) => a.sig === assertion.sig)) {
+      this.vault.appendAssertion(this.persona, assertion);
+    }
+    result.accepted.push({ type: 'propose', edge_id: edge.edge_id });
+  }
+
+  private ingestAssert(message: WireMessage, result: IngestResult): void {
+    const parsed = AssertPayload.safeParse(message.payload);
+    if (!parsed.success) {
+      result.discarded.push({ type: 'assert', edge_id: null, reason: 'malformed-payload' });
+      return;
+    }
+    const assertion = parsed.data.assertion as Assertion;
+    const edge = this.vault.getEdge(this.persona, assertion.edge_id);
+    if (!edge) {
+      result.discarded.push({ type: 'assert', edge_id: assertion.edge_id, reason: 'unknown-edge' });
+      return;
+    }
+    if (!isParty(edge, this.persona)) {
+      result.discarded.push({ type: 'assert', edge_id: edge.edge_id, reason: 'not-addressed-to-this-persona' });
+      return;
+    }
+    if (!isParty(edge, message.sender)) {
+      result.discarded.push({ type: 'assert', edge_id: edge.edge_id, reason: 'sender-is-not-a-party' });
+      return;
+    }
+
+    const local = this.vault.getAssertions(this.persona, edge.edge_id);
+    if (local.some((a) => a.sig === assertion.sig)) return; // transports may replay
+
+    const { outcomes } = verifyAssertionChain(edge, [...local, assertion]);
+    const outcome = outcomes[local.length]!;
+    if (!outcome.accepted) {
+      result.discarded.push({
+        type: 'assert',
+        edge_id: edge.edge_id,
+        reason: `transition-table:${outcome.rejection_reason}` as DiscardReason,
+      });
+      return;
+    }
+    this.vault.appendAssertion(this.persona, assertion);
+    result.accepted.push({ type: 'assert', edge_id: edge.edge_id });
+  }
+}
+
+/**
+ * §6.6: apply a recovery response. Edges arrive with their chains; each chain is replayed
+ * through the transition table so a responder cannot hand back a state we would not have
+ * reached ourselves.
+ */
+export function applyRecoverResponse(vault: Vault, persona: string, response: RecoverResponse): {
+  restored: string[];
+  discarded: { edge_id: string; index: number; reason: string }[];
+} {
+  const restored: string[] = [];
+  const discarded: { edge_id: string; index: number; reason: string }[] = [];
+  for (const { edge, assertions } of response.edges) {
+    if (!isParty(edge, persona)) continue;
+    if (!vault.getEdge(persona, edge.edge_id)) vault.putEdge(persona, edge);
+    const held = new Set(vault.getAssertions(persona, edge.edge_id).map((a) => a.sig));
+    const local = vault.getAssertions(persona, edge.edge_id);
+    const incoming = assertions.filter((a) => !held.has(a.sig));
+    const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming]);
+    for (let i = 0; i < incoming.length; i++) {
+      const outcome = outcomes[local.length + i]!;
+      if (outcome.accepted) vault.appendAssertion(persona, incoming[i]!);
+      else discarded.push({ edge_id: edge.edge_id, index: outcome.index, reason: outcome.rejection_reason! });
+    }
+    restored.push(edge.edge_id);
+  }
+  return { restored, discarded };
+}
