@@ -18,6 +18,39 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@24.13.3)
 
+  packages/brief-email:
+    dependencies:
+      '@servanda/client-web':
+        specifier: workspace:*
+        version: link:../client-web
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/client-web:
+    dependencies:
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/connectors-claude-code:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/connectors-github:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
   packages/crypto:
     dependencies:
       '@noble/ciphers':
@@ -33,13 +66,77 @@ importers:
         specifier: ^1.5.0
         version: 1.6.0
 
+  packages/extraction:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.72.0
+        version: 0.72.1(zod@3.25.76)
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+
+  packages/node:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      '@servanda/vault':
+        specifier: workspace:*
+        version: link:../vault
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+
+  packages/tui:
+    dependencies:
+      '@servanda/client-web':
+        specifier: workspace:*
+        version: link:../client-web
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
   packages/types:
     dependencies:
       zod:
         specifier: ^3.24.0
         version: 3.25.76
 
+  packages/vault:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+
 packages:
+
+  '@anthropic-ai/sdk@0.72.1':
+    resolution: {integrity: sha512-MiUnue7qN7DvLIoYHgkedN2z05mRf2CutBzjXXY2krzOhG2r/rIfISS2uVkNLikgToB5hYIzw+xp2jdOtRkqYQ==}
+    hasBin: true
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@babel/runtime@7.29.7':
+    resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
+    engines: {node: '>=6.9.0'}
 
   '@esbuild/aix-ppc64@0.28.1':
     resolution: {integrity: sha512-Svl7tq8k/08+p6CXPpRjQ1fKX+1odH/BQbb48fV6fj3CWHhsoIOoY87w1oHXm0qEpkIK3ZfVgp0hed3XBXzXMQ==}
@@ -458,6 +555,10 @@ packages:
   js-tokens@9.0.1:
     resolution: {integrity: sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ==}
 
+  json-schema-to-ts@3.1.1:
+    resolution: {integrity: sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==}
+    engines: {node: '>=16'}
+
   loupe@3.2.1:
     resolution: {integrity: sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ==}
 
@@ -532,6 +633,9 @@ packages:
   tinyspy@4.0.4:
     resolution: {integrity: sha512-azl+t0z7pw/z958Gy9svOTuzqIk6xq+NSheJzn5MMWtWTFywIacg2wUlzKFGtt3cthx0r2SxMK0yzJOR0IES7Q==}
     engines: {node: '>=14.0.0'}
+
+  ts-algebra@2.0.0:
+    resolution: {integrity: sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -623,6 +727,14 @@ packages:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
+
+  '@anthropic-ai/sdk@0.72.1(zod@3.25.76)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 3.25.76
+
+  '@babel/runtime@7.29.7': {}
 
   '@esbuild/aix-ppc64@0.28.1':
     optional: true
@@ -915,6 +1027,11 @@ snapshots:
 
   js-tokens@9.0.1: {}
 
+  json-schema-to-ts@3.1.1:
+    dependencies:
+      '@babel/runtime': 7.29.7
+      ts-algebra: 2.0.0
+
   loupe@3.2.1: {}
 
   magic-string@0.30.21:
@@ -996,6 +1113,8 @@ snapshots:
   tinyrainbow@2.0.0: {}
 
   tinyspy@4.0.4: {}
+
+  ts-algebra@2.0.0: {}
 
   typescript@5.9.3: {}
 

@@ -1,0 +1,24 @@
+{
+  "name": "@servanda/vault",
+  "version": "0.1.0-pre",
+  "description": "Servanda sovereign local store (L0): encrypted, git-backed, persona-scoped",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/crypto": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "zod": "^3.24.0"
+  }
+}

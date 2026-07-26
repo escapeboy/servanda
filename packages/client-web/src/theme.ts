@@ -1,0 +1,170 @@
+/**
+ * The palette and type, as a stylesheet string.
+ *
+ * Four rules from the doctrine are enforced here and checked by gate GE:
+ *
+ *  - **Light is the default.** Bone on Ink is a register, not a dashboard. Dark mode is the
+ *    inversion onto Ink, nothing more.
+ *  - **Wax is reserved exclusively for the seal.** `#8C2F1B` appears in this file only
+ *    inside `.seal` rules, and it is deliberately not a custom property: a token in `:root`
+ *    is an invitation to spend it somewhere else.
+ *  - **No gradients, no glows.** No `linear-gradient`, no `box-shadow` spread of light.
+ *  - **No webfont is fetched.** The three faces are named and the stack degrades to what
+ *    the machine already has. A client that must render offline cannot start by asking the
+ *    network for a font.
+ */
+
+export const INK = '#14120E';
+export const BONE = '#F7F4EC';
+export const BRONZE = '#C9A86A';
+/** Named for documentation only. The value is written literally in the seal rules below. */
+export const WAX_RESERVED_FOR_SEAL = '#8C2F1B';
+
+export const THEME_CSS = `
+:root {
+  --ink: ${INK};
+  --bone: ${BONE};
+  --bronze: ${BRONZE};
+  --green: #4C6B4F;
+  --amber: #A8792B;
+  --rule: rgba(20, 18, 14, 0.14);
+  --display: Spectral, Iowan Old Style, Palatino, Georgia, serif;
+  --ui: Public Sans, Helvetica Neue, Helvetica, Arial, sans-serif;
+  --mono: JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+
+.servanda {
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 46rem;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.servanda h1,
+.servanda h2 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin: 2rem 0 0.25rem;
+}
+
+.servanda h1 { font-size: 1.75rem; }
+.servanda h2 { font-size: 1.25rem; }
+
+nav {
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.nav-item {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.35rem 0.6rem;
+}
+
+.nav-current { border-color: var(--bronze); }
+
+.cards { list-style: none; margin: 0; padding: 0; }
+
+.card {
+  border-bottom: 1px solid var(--rule);
+  padding: 1rem 0;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.action {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.35rem 0.75rem;
+}
+
+.action-primary { border-color: var(--ink); font-weight: 600; }
+
+.action:focus-visible,
+.nav-item:focus-visible {
+  outline: 2px solid var(--bronze);
+  outline-offset: 2px;
+}
+
+.what { font-family: var(--display); font-size: 1.0625rem; margin: 0 0 0.25rem; }
+
+.with {
+  align-items: baseline;
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 0.15rem;
+}
+
+.party { font-weight: 500; }
+.party-key { font-family: var(--mono); font-size: 0.875rem; }
+
+.trust { color: var(--bronze); font-size: 0.8125rem; }
+.relief-flat { color: rgba(20, 18, 14, 0.55); }
+
+.consequence { font-size: 0.9375rem; margin: 0; }
+.tone-passed { color: var(--amber); }
+.tone-settled { color: var(--green); }
+
+.empty { color: rgba(20, 18, 14, 0.6); font-style: italic; margin: 0.5rem 0; }
+.generated,
+.below-the-line { color: rgba(20, 18, 14, 0.6); font-size: 0.875rem; margin: 0.25rem 0; }
+
+/* The seal, and the only place wax is spent. Degrees of relief carry the evidence level. */
+.seal {
+  border: 1px solid #8C2F1B;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  height: 0.75rem;
+  width: 0.75rem;
+}
+.seal-unsealed { border-color: var(--rule); }
+.seal-half { border-style: dashed; border-color: #8C2F1B; }
+.seal-joined { background: #8C2F1B; }
+.seal-marked { background: #8C2F1B; border-width: 2px; }
+.seal-cracked { background: #8C2F1B; border-style: dotted; }
+.seal-arrow { background: #8C2F1B; border-radius: 50% 50% 50% 0; }
+.seal.relief-continuity { box-shadow: inset 0 0 0 1px var(--bone); }
+.seal.relief-attested { border-width: 2px; }
+.seal.relief-domain { border-width: 3px; }
+.seal.relief-external { border-width: 3px; border-style: double; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --rule: rgba(247, 244, 236, 0.18);
+  }
+  .servanda { background: var(--ink); color: var(--bone); }
+  .action-primary { border-color: var(--bone); }
+  .relief-flat { color: rgba(247, 244, 236, 0.55); }
+  .empty,
+  .generated,
+  .below-the-line { color: rgba(247, 244, 236, 0.6); }
+  .seal.relief-continuity { box-shadow: inset 0 0 0 1px var(--ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none; transition: none; }
+}
+`;

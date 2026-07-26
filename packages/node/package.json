@@ -1,0 +1,28 @@
+{
+  "name": "@servanda/node",
+  "version": "0.1.0-pre",
+  "description": "Servanda node (L1): §4.3 transition table, edge lifecycle, and the §7 MCP surface",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "servanda-node": "./dist/bin/servanda-node.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/crypto": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "@servanda/vault": "workspace:*",
+    "zod": "^3.24.0"
+  }
+}

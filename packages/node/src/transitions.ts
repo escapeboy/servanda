@@ -1,0 +1,243 @@
+import { verifyObject } from '@servanda/crypto';
+import type { Assertion, AssertionOutcome, Edge, EffectiveState, RejectionReason } from '@servanda/types';
+import { DEFAULT_ACCEPTANCE_WINDOW, NON_ASSERTABLE_STATES, TERMINAL_STATES } from '@servanda/types';
+import { addDuration } from './duration.js';
+
+/**
+ * §4.3 transition table — the heart of the node.
+ *
+ * §4.3: "Any assertion violating this table is invalid and MUST be discarded by conforming
+ * nodes (this is how constitutional rules bind rude clients)." M-14 restates it. A verifier
+ * that accepts a `confirmed` assertion signed by the owner has silently discarded the entire
+ * confirm-first guarantee while still passing every positive test — which is why the 19
+ * negative conformance vectors, not the 7 positive ones, are the real specification here.
+ *
+ * A rejected assertion is DISCARDED: it never advances the state, and the chain continues to
+ * be evaluated against the state as it was.
+ *
+ * Interpretations taken from vendor/vectors/README.md (not normative spec text, tracked
+ * upstream): #3 `confirmed` ≡ `open` and an explicit `open` assertion is rejected; #4 the
+ * §4.4 acceptance window is modelled as an internal `pending-acceptance` state; #5 a null
+ * `acceptance_window` on an on-acceptance edge means P5D; #6 `disputed → closed` needs both
+ * parties; #7 supersession is verified only as "both parties asserted `superseded`", because
+ * §4.2's assertion schema has no field able to carry the successor `edge_id`.
+ */
+
+/** Source states that count as "the edge is live" — §4.3's `open` row plus its sub-states. */
+const OPEN_FAMILY: readonly EffectiveState[] = ['open', 'pending-acceptance'] as const;
+
+export interface ChainVerification {
+  outcomes: AssertionOutcome[];
+  final_state: EffectiveState;
+  /**
+   * When the state became terminal, the `asserted_at` of the assertion that took it there.
+   * Retention (§5.4) runs its window from this, not from the wall clock.
+   */
+  resolved_at: string | null;
+  /** §4.7 / M-8 / M-9: a collective edge with neither covering children nor a coordinator. */
+  unverifiable: boolean;
+}
+
+interface ChainState {
+  state: EffectiveState;
+  /** §4.4: when the owner's evidence assertion opened the acceptance window. */
+  window_opened_at: string | null;
+  /** §4.5 interpretation #7: which parties have asserted `superseded`. */
+  superseded_by: Set<string>;
+  /** §4.3 `disputed → closed` requires both parties (interpretation #6). */
+  dispute_closed_by: Set<string>;
+  resolved_at: string | null;
+}
+
+/**
+ * §4.7 + M-9: "A collective edge MUST have either `fulfillment.children` whose union covers
+ * fulfillment, or `fulfillment.coordinator`. Otherwise nodes MUST mark it unverifiable."
+ *
+ * "Covers fulfillment" is not defined in checkable terms for `all`/`any`; the narrowest
+ * reading a node can enforce without inventing semantics is: children must be non-empty, and
+ * under `k-of-n` there must be a k that the children could actually satisfy.
+ */
+export function isCollectiveEdgeVerifiable(edge: Edge): boolean {
+  const f = edge.fulfillment;
+  if (!f) return true; // not a collective edge
+  if (f.coordinator) return true;
+  if (f.children.length === 0) return false;
+  if (f.policy === 'k-of-n') return f.k !== undefined && f.k > 0 && f.k <= f.children.length;
+  return true;
+}
+
+function windowElapsed(edge: Edge, openedAt: string, assertedAt: string): boolean {
+  // Interpretation #5: `acceptance_window` is "required iff on-acceptance; default P5D".
+  // Absent is treated as P5D rather than as "no window", which would let the owner close
+  // instantly — the exact forgery §4.4 exists to prevent.
+  const window = edge.acceptance_window ?? DEFAULT_ACCEPTANCE_WINDOW;
+  return Date.parse(assertedAt) >= addDuration(new Date(Date.parse(openedAt)), window).getTime();
+}
+
+/** Applies one assertion. Returns null on acceptance (mutating `ctx`), or the rejection reason. */
+function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null {
+  // The assertion must be about THIS edge before anything else is worth checking.
+  if (a.edge_id !== edge.edge_id) return 'edge-id-mismatch';
+
+  // Verify `sig` against the key named in `by`. This — not the presence of a signature — is
+  // what stops one party fabricating the counterparty's confirmation.
+  if (!verifyObject(a as unknown as Record<string, unknown>, a.by)) return 'invalid-signature';
+
+  // M-3: edges are strictly two-party. A non-party signature is never valid, whatever it says.
+  if (a.by !== edge.owner && a.by !== edge.owed_to) return 'signer-not-a-party';
+
+  // §4.3 marks `confirmed → open` "(implicit)" with no authorised signer, so no row permits an
+  // explicit `open`. Checked here rather than in the parser: the node must be able to REPORT
+  // this reason, which it could not do if the schema had rejected the value (interpretation #3).
+  if (NON_ASSERTABLE_STATES.includes(a.state)) return 'implicit-transition-not-assertable';
+
+  // Once terminal, the chain is closed to further assertions. Checked before the table so the
+  // reason names the real problem instead of "no such row".
+  if (TERMINAL_STATES.includes(ctx.state)) return 'terminal-state-reached';
+
+  const isOwner = a.by === edge.owner;
+  const isOwedTo = a.by === edge.owed_to;
+
+  switch (a.state) {
+    case 'proposed': {
+      if (ctx.state !== 'none') return 'illegal-source-state';
+      // M-1: a promise is owned by its giver. "They said they would" is an expectation.
+      if (!isOwner) return 'wrong-signer-for-transition';
+      ctx.state = 'proposed';
+      return null;
+    }
+
+    case 'confirmed': {
+      if (ctx.state !== 'proposed') return 'illegal-source-state';
+      // M-2: the counterparty's signature is what makes the edge exist.
+      if (!isOwedTo) return 'wrong-signer-for-transition';
+      ctx.state = 'open'; // interpretation #3: confirmed ≡ open
+      return null;
+    }
+
+    case 'closed': {
+      if (ctx.state === 'open') {
+        // §4.4: under both policies the owner's assertion is the evidence assertion. Under
+        // on-evidence it closes; under on-acceptance it opens the window.
+        if (!isOwner) return 'wrong-signer-for-transition';
+        if (a.evidence_hash === null) return 'evidence-hash-required-for-owner-closure';
+        if (edge.closure_policy === 'on-evidence') {
+          ctx.state = 'closed';
+          ctx.resolved_at = a.asserted_at;
+        } else {
+          ctx.state = 'pending-acceptance';
+          ctx.window_opened_at = a.asserted_at;
+        }
+        return null;
+      }
+      if (ctx.state === 'pending-acceptance') {
+        if (isOwedTo) {
+          // Explicit accept.
+          ctx.state = 'closed';
+          ctx.resolved_at = a.asserted_at;
+          return null;
+        }
+        // Owner re-asserting: tacit acceptance, valid only once the window has elapsed.
+        if (ctx.window_opened_at === null) return 'illegal-source-state';
+        if (!windowElapsed(edge, ctx.window_opened_at, a.asserted_at)) {
+          return 'acceptance-window-not-elapsed';
+        }
+        ctx.state = 'closed';
+        ctx.resolved_at = a.asserted_at;
+        return null;
+      }
+      if (ctx.state === 'disputed') {
+        // §4.3 `disputed → closed`: both parties (interpretation #6).
+        if (ctx.dispute_closed_by.has(a.by)) return 'duplicate-assertion-by-same-party';
+        ctx.dispute_closed_by.add(a.by);
+        if (ctx.dispute_closed_by.size === 2) {
+          ctx.state = 'closed';
+          ctx.resolved_at = a.asserted_at;
+        }
+        return null;
+      }
+      return 'illegal-source-state';
+    }
+
+    case 'released': {
+      if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
+      // §4.3: unilateral forgiveness by the creditor. An owner releasing themselves would let
+      // anyone discharge their own debt.
+      if (!isOwedTo) return 'wrong-signer-for-transition';
+      ctx.state = 'released';
+      ctx.resolved_at = a.asserted_at;
+      return null;
+    }
+
+    case 'expired': {
+      if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
+      // §3.1: undated commitments MUST NOT time-escalate. With no `due` there is no expiry.
+      if (edge.due === null) return 'due-is-null';
+      if (Date.parse(a.asserted_at) < Date.parse(edge.due)) return 'expiry-before-due';
+      // Either party may assert it; both were validated as parties above.
+      ctx.state = 'expired';
+      ctx.resolved_at = a.asserted_at;
+      return null;
+    }
+
+    case 'disputed': {
+      if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
+      if (a.evidence_hash === null) return 'evidence-hash-required';
+      ctx.state = 'disputed';
+      return null;
+    }
+
+    case 'superseded': {
+      if (!OPEN_FAMILY.includes(ctx.state) && ctx.state !== 'disputed') {
+        return 'illegal-source-state';
+      }
+      // §4.5: both parties of the OLD edge must sign. One party signing twice is not two
+      // parties — that substitution is the whole point of the negative vector.
+      if (ctx.superseded_by.has(a.by)) return 'duplicate-assertion-by-same-party';
+      ctx.superseded_by.add(a.by);
+      if (ctx.superseded_by.size === 2) {
+        ctx.state = 'superseded';
+        ctx.resolved_at = a.asserted_at;
+      }
+      return null;
+    }
+
+    default:
+      return 'illegal-source-state';
+  }
+}
+
+/**
+ * Verify a whole assertion chain against an edge.
+ *
+ * Returns a per-assertion outcome (the vectors' `expected_outcomes`) and the effective state
+ * after the chain (`expected_final_state`). Rejected assertions are discarded, never applied.
+ */
+export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): ChainVerification {
+  const ctx: ChainState = {
+    state: 'none',
+    window_opened_at: null,
+    superseded_by: new Set(),
+    dispute_closed_by: new Set(),
+    resolved_at: null,
+  };
+
+  const outcomes: AssertionOutcome[] = assertions.map((a, index) => {
+    const reason = step(edge, ctx, a);
+    return reason === null
+      ? { index, accepted: true }
+      : { index, accepted: false, rejection_reason: reason };
+  });
+
+  return {
+    outcomes,
+    final_state: ctx.state,
+    resolved_at: ctx.resolved_at,
+    unverifiable: !isCollectiveEdgeVerifiable(edge),
+  };
+}
+
+/** Convenience: the effective state alone. */
+export function effectiveState(edge: Edge, assertions: Assertion[]): EffectiveState {
+  return verifyAssertionChain(edge, assertions).final_state;
+}
