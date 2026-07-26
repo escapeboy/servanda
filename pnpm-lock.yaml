@@ -18,6 +18,22 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@24.13.3)
 
+  packages/adapters:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      '@servanda/node':
+        specifier: workspace:*
+        version: link:../node
+
   packages/brief-email:
     dependencies:
       '@servanda/client-web':
@@ -34,6 +50,15 @@ importers:
         version: link:../types
 
   packages/connectors-claude-code:
+    dependencies:
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/connectors-email:
     dependencies:
       '@servanda/crypto':
         specifier: workspace:*
@@ -146,6 +171,15 @@ importers:
       zod:
         specifier: ^3.24.0
         version: 3.25.76
+
+  packages/gestures:
+    dependencies:
+      '@servanda/client-web':
+        specifier: workspace:*
+        version: link:../client-web
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/identity:
     dependencies:

@@ -23,6 +23,22 @@ declare -a GATES=(
   "G3:Integration (scenarios 1, 2, 3, 6 end to end):gates/g3-integration.sh"
 )
 
+# The lockfile check runs FIRST, because it is the one failure that makes every gate below
+# meaningless. CI installs with --frozen-lockfile; a lockfile that has drifted from any
+# package.json kills all four jobs at install, before a single test runs — three separate CI
+# cycles were lost to exactly that before this check existed. Cheap locally, and it fails here
+# rather than eight minutes later in CI.
+echo "──────────────────────────────────────────────────────────────────────"
+echo "  Lockfile — is pnpm-lock.yaml current with every package.json?"
+echo "──────────────────────────────────────────────────────────────────────"
+if pnpm install --frozen-lockfile --ignore-scripts >/dev/null 2>&1; then
+  echo "  ok — pnpm install --frozen-lockfile succeeds, as it will in CI"
+else
+  echo "  FAIL — pnpm-lock.yaml is stale; CI will die at install before running anything." >&2
+  echo "         Run: pnpm install   (then commit pnpm-lock.yaml)" >&2
+  exit 1
+fi
+
 failed=()
 passed=()
 pending=()
