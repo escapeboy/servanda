@@ -1,7 +1,7 @@
 {
   "name": "@servanda/node",
   "version": "0.1.0-pre",
-  "description": "Servanda node (L1): §4.3 transition table, edge lifecycle, and the §7 MCP surface",
+  "description": "Servanda node (L1): \u00a74.3 transition table, edge lifecycle, and the \u00a77 MCP surface",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,9 +13,12 @@
     }
   },
   "bin": {
-    "servanda-node": "./dist/bin/servanda-node.js"
+    "servanda-node": "./dist/bin/servanda-node.js",
+    "servanda-init": "./dist/bin/servanda-init.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b"
   },

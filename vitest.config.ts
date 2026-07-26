@@ -19,5 +19,20 @@ export default defineConfig({
      * wrong.
      */
     hookTimeout: 180_000,
+    /**
+     * Concurrency is capped because the suite is memory-bound, not CPU-bound.
+     *
+     * Every vault open runs Argon2id at the §9.3 minimum — m=64MiB per derivation — and the
+     * scenario tests stand up several vaults each. Left unbounded, vitest starts a worker per
+     * core, each holding 64MiB-plus of KDF state, and the workers starve: the run emits
+     * `[vitest-worker]: Timeout calling "onTaskUpdate"` and, worse, a gate can report failure
+     * for want of a scheduling slot rather than for anything wrong with the code. A federation
+     * gate failed exactly once that way and could not be reproduced in isolation.
+     *
+     * Four workers is enough to keep the run parallel while leaving each one the memory its
+     * KDF actually needs. The suite is not meaningfully slower; it is merely honest.
+     */
+    maxWorkers: 4,
+    minWorkers: 1,
   },
 });

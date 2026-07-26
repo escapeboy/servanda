@@ -19,6 +19,24 @@ reconstruct what it said.
 Those four sentences are not marketing; they are **M-1**, **M-2**, **M-10** and **M-15** of the
 protocol's sixteen MUSTs, and each has a named test in this repository.
 
+## Getting started
+
+```bash
+pnpm install && pnpm -r run build
+
+export SERVANDA_VAULT=~/.servanda
+export SERVANDA_PASSPHRASE='something only you know'
+node packages/node/dist/bin/servanda-init.js     # creates the vault, prints your recovery phrase
+node packages/node/dist/bin/servanda-node.js     # the five §7 tools over MCP stdio
+```
+
+Then point a client at it — your assistant, the terminal register
+(`node packages/tui/bin/servanda.mjs --ink`), or the email brief.
+
+**[docs/USAGE.md](docs/USAGE.md)** walks the whole path: creating and restoring a vault, capturing
+from sessions, repositories and mail, reading the register, working with a counterparty, letting
+executors draft the work, and checking what extraction actually finds.
+
 ## Layering
 
 ```
@@ -41,8 +59,10 @@ Solo use is complete use.
 | `@servanda/node` | Edge state machine (§4.3) and the five MCP tools (§7) |
 | `@servanda/identity` | §1 verification: attestation, revocation boundary, domain anchor, the binding-proof ladder, rotation |
 | `@servanda/federation` | §6: git and hub transports, reconciliation, edge recovery, anti-spam, blind courier |
+| `@servanda/adapters` | Verification adapters: evidence bundles for §4.4 closure, and what makes an edge unverifiable (M-8) |
 | `@servanda/extraction` | Tool-less, schema-bound extraction (§3.4, M-6) |
-| `@servanda/connectors-*` | Claude Code sessions, GitHub repo archaeology and PR/CI events → §2 envelopes |
+| `@servanda/connectors-*` | Claude Code sessions, GitHub archaeology, mail (IMAP, sent-mail archaeology, BCC/forward) → §2 envelopes |
+| `@servanda/gestures` | In-situ capture and confirmation — confirm a promise where it was spoken |
 | `@servanda/executors` | Sandboxed, capability-enumerated executors; draft-PR output only; trust gradient (§9.4) |
 | `@servanda/client-web` · `@servanda/tui` · `@servanda/brief-email` | The Ledger, three renderers, one contract |
 
@@ -74,6 +94,9 @@ pnpm gates      # Every gate, in stage order
 | GB | Connectors | Deterministic archaeology; only valid §2 envelopes, ever |
 | GC | Extraction | Schema-bound; precision harness runs (the ≥90% verdict is a **human** gate) |
 | GD | Executors | Cannot reach network or CI secrets; produces a valid draft PR |
+| GJ | Adapters | Evidence hashes reproducibly; an unverifiable edge never auto-escalates |
+| GK | Email | Deterministic capture; 23 hostile-input cases land inertly |
+| GL | Gestures | Confirming another's promise does not compile; no network from any path |
 | GF | Federation | Two nodes converge on one chain offline; a hub learns nothing |
 | GG | Identity | The ladder and its downgrades; every forgery fails |
 | GE | Clients | Brief < 100 ms; keyboard-only; zero protocol vocabulary in user-facing strings |
