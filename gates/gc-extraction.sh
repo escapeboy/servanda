@@ -130,6 +130,9 @@ else
   echo "    Everything above passed on the deterministic stub. That is a statement about"
   echo "    containment (tool-less, schema-bound, single-persona, M-1 routing), not about"
   echo "    extraction accuracy — precision is a human verdict on a live run."
+  echo "    A live run needs no API key: scripts/precision-via-claude-cli.mjs drives the local"
+  echo "    claude CLI. That backend is tool-less by CONFIGURATION and verifies it per run; the"
+  echo "    API client is tool-less STRUCTURALLY, and remains the path this gate asserts against."
 fi
 
 echo
