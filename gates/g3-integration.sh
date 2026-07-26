@@ -2,12 +2,17 @@
 # GATE G3 — Integration.
 #
 # "end-to-end of scenarios.md #1 and #2 against a fixture repo ... both scenarios pass as
-#  automated e2e tests."
+#  automated e2e tests." Extended to #3 and #6 in the second wave.
 #
 # The unit suites prove each package keeps its own promises. This gate proves the SEAMS hold:
 # a sentence somebody said reaches a brief, and a repository nobody has spoken to produces one.
 # Writing it is what surfaced the missing archaeology ingest path — two green streams with an
 # empty seam between them.
+#
+# #3 and #6 are the two scenarios whose claims are negative — that a counterparty who is not on
+# the network is never contacted, and that an instruction addressed to the machine reaches
+# nothing. A negative claim cannot be proven by a suite that runs whatever it finds, which is
+# why every scenario below is named and its absence is a failure.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -28,11 +33,13 @@ echo "    fixtures/archaeology-repo/repo at ${HEAD_SHA}"
 echo "==> G3: build"
 pnpm -r run build >/dev/null
 
-echo "==> G3: both scenarios must be present"
+echo "==> G3: every scenario must be present"
 # A gate that runs whatever tests happen to exist cannot fail by omission. Name them.
 for f in \
   packages/e2e/test/scenario-1-solo-cycle.test.ts \
-  packages/e2e/test/scenario-2-cold-start.test.ts
+  packages/e2e/test/scenario-2-cold-start.test.ts \
+  packages/e2e/test/scenario-3-expectation.test.ts \
+  packages/e2e/test/scenario-6-attack.test.ts
 do
   if [ ! -f "${f}" ]; then
     echo "FAIL: missing scenario test ${f}" >&2
@@ -46,6 +53,18 @@ npx vitest run packages/e2e/test/scenario-1-solo-cycle.test.ts --reporter=dot
 
 echo "==> G3/2: scenario 2 — cold start, archaeology brief within one run"
 npx vitest run packages/e2e/test/scenario-2-cold-start.test.ts --reporter=dot
+
+echo "==> G3/3: scenario 3 — expectation, half-network, nothing ever sent to the counterparty"
+npx vitest run packages/e2e/test/scenario-3-expectation.test.ts --reporter=dot
+
+echo "==> G3/6: scenario 6 — the attack that did not happen"
+npx vitest run packages/e2e/test/scenario-6-attack.test.ts --reporter=dot
+
+echo "==> G3: the scenario suite survives the M-suite filter"
+# CI runs the constitution suite as \`vitest -t 'M-'\`, which executes M-named tests and skips
+# their siblings. A scenario that assembles state in one \`it\` and reads it in another passes the
+# full run and fails here. It has happened once; this is the check that catches it next time.
+npx vitest run packages/e2e -t 'M-' --reporter=dot
 
 echo "==> G3: the fixture was not modified by the scenarios"
 # Executors touch only fixture repos — and even then they emit a diff rather than mutate a tree.
