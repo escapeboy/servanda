@@ -13,6 +13,8 @@
     "@servanda/connectors-github": "workspace:*",
     "@servanda/crypto": "workspace:*",
     "@servanda/extraction": "workspace:*",
+    "@servanda/federation": "workspace:*",
+    "@servanda/identity": "workspace:*",
     "@servanda/node": "workspace:*",
     "@servanda/types": "workspace:*",
     "@servanda/vault": "workspace:*",

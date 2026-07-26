@@ -14,8 +14,10 @@ declare -a GATES=(
   "GB:Connectors (deterministic archaeology, envelope validity):gates/gb-connectors.sh"
   "GC:Extraction (schema-bound, precision harness):gates/gc-extraction.sh"
   "GD:Executors (sandbox containment, draft PR):gates/gd-executors.sh"
+  "GF:Federation (two nodes agree offline, blind hub):gates/gf-federation.sh"
+  "GG:Identity (ladder, attestation, rotation):gates/gg-identity.sh"
   "GE:Clients (brief latency, keyboard walkthrough, vocabulary):gates/ge-clients.sh"
-  "G3:Integration (scenarios 1 and 2 end to end):gates/g3-integration.sh"
+  "G3:Integration (scenarios 1, 2, 3, 6 end to end):gates/g3-integration.sh"
 )
 
 failed=()

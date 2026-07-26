@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { derivePersona, mnemonicToSeed } from '@servanda/crypto';
+import { derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import type { Assertion } from '@servanda/types';
 import { Vault } from '@servanda/vault';
 import { ServandaNode } from '@servanda/node';
 
@@ -34,6 +35,50 @@ const TEST_MNEMONIC =
 export const seed = mnemonicToSeed(TEST_MNEMONIC);
 export const alice = derivePersona(seed, 0);
 export const bob = derivePersona(seed, 1);
+
+/**
+ * The wave-2 cast. Named rather than indexed because scenarios 4 and 5 are stories about
+ * people, and `derivePersona(seed, 5)` in an assertion tells a reader nothing.
+ */
+export const mila = derivePersona(seed, 2);
+export const stefan = derivePersona(seed, 3);
+export const ivo = derivePersona(seed, 4);
+/** §5.1: a team scope is identified by its group key. A group key is just a keypair. */
+export const studioGroup = derivePersona(seed, 5);
+export const studioOrgRoot = derivePersona(seed, 6);
+export const acme = derivePersona(seed, 7);
+export const studioData = derivePersona(seed, 8);
+export const studioCode = derivePersona(seed, 9);
+export const studioCutover = derivePersona(seed, 10);
+
+/**
+ * A §4.2 signed assertion. §7 exposes five tools and none of them can express `closed`,
+ * `disputed`, `superseded`, `released` or `expired`, so scenarios 4 and 5 sign these directly.
+ * The transition table is still the only authority on what they mean — nothing here decides a
+ * state; `verifyAssertionChain` does, exactly as it does for an assertion off the wire.
+ */
+export function signAssertion(
+  by: { personaId: string; privateKey: string },
+  fields: {
+    edge_id: string;
+    state: Assertion['state'];
+    asserted_at: string;
+    evidence_hash?: string | null;
+  },
+): Assertion {
+  return withSignature(
+    {
+      v: 'servanda/0.1' as const,
+      type: 'assertion' as const,
+      edge_id: fields.edge_id,
+      state: fields.state,
+      asserted_at: fields.asserted_at,
+      by: by.personaId,
+      evidence_hash: fields.evidence_hash ?? null,
+    },
+    by.privateKey,
+  ) as Assertion;
+}
 
 /**
  * A clock the test drives. Every scenario is a story with dates in it, and a story whose
