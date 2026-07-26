@@ -38,6 +38,14 @@ describe('scenario 2 — cold start: value before configuration', () => {
       receivedAt: INSTALL_AT,
       referenceTime: INSTALL_AT,
     });
+
+    // Built here rather than inside an `it`, so every test below stands on its own. CI runs the
+    // M-suite as `vitest -t 'M-'`, which executes the M-named tests and skips their siblings —
+    // state assembled in one `it` and read in another is undefined under any such filter.
+    candidates = archaeologyCandidates(envelopes, {
+      persona: alice.personaId,
+      createdAt: install.clock.iso(),
+    });
   });
 
   it('starts from a genuinely empty install — nothing is pre-seeded', () => {
@@ -76,11 +84,6 @@ describe('scenario 2 — cold start: value before configuration', () => {
   it('turns findings into commitments with no model in the path', () => {
     // §3.1 names `archaeology` a source distinct from `extracted`, and it earns that: a TODO
     // 1295 days old is a fact about the repository, not an inference about what somebody meant.
-    candidates = archaeologyCandidates(envelopes, {
-      persona: alice.personaId,
-      createdAt: install.clock.iso(),
-    });
-
     expect(candidates.length).toBe(envelopes.length);
     for (const c of candidates) {
       expect(c.commitment.source).toBe('archaeology');
