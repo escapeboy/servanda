@@ -1,4 +1,20 @@
+import { availableParallelism } from 'node:os';
 import { defineConfig } from 'vitest/config';
+
+/**
+ * A CEILING on workers, never a floor.
+ *
+ * The first version of this was the constant 4, and it broke CI for three commits while
+ * passing on every local run. On a developer machine with many cores, 4 is *below* what
+ * vitest would have chosen and it relieves the starvation described on `maxWorkers` below.
+ * On a small CI runner, 4 is *above* what the machine can serve, and forcing it there
+ * reproduced the very failure it was meant to cure — no test failed, but workers starved
+ * badly enough that the reporter RPC timed out with `Timeout calling "onTaskUpdate"` and
+ * vitest exited non-zero. A constant cannot be both a cap and a safe default.
+ *
+ * `- 1` leaves a core for the main process, which is the one that has to answer that RPC.
+ */
+const MAX_WORKERS = Math.max(1, Math.min(4, availableParallelism() - 1));
 
 export default defineConfig({
   test: {
@@ -31,8 +47,11 @@ export default defineConfig({
      *
      * Four workers is enough to keep the run parallel while leaving each one the memory its
      * KDF actually needs. The suite is not meaningfully slower; it is merely honest.
+     *
+     * Four is the ceiling, not the number — see `MAX_WORKERS` above for why that distinction
+     * is load-bearing on a small runner.
      */
-    maxWorkers: 4,
+    maxWorkers: MAX_WORKERS,
     minWorkers: 1,
   },
 });
