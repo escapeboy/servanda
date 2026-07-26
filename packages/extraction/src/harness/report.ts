@@ -223,13 +223,19 @@ export function renderReport(input: ReportInput): string {
         'partial guess (§3.4).',
     );
     out.push('');
+    out.push(
+      'A `transport` row is different in kind: the model could not be reached for that batch ' +
+        'at all, so those envelopes were never examined. They are **missing** from the findings ' +
+        'below rather than judged to contain nothing.',
+    );
+    out.push('');
     out.push('| Batch | Stage | Detail |');
     out.push('| --- | --- | --- |');
     for (const { batch, rejection } of input.rejectedBatches) {
       const detail =
         rejection.stage === 'response'
           ? `${rejection.rejection.reason}: ${rejection.rejection.detail}`
-          : rejection.stage === 'attribution'
+          : rejection.stage === 'attribution' || rejection.stage === 'transport'
             ? rejection.detail
             : `${rejection.failure.reason}: ${rejection.failure.detail}`;
       out.push(`| ${batch} | ${rejection.stage} | ${cell(detail, 160)} |`);

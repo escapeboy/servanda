@@ -41,6 +41,8 @@ export interface HarnessOptions {
   readonly modelClientMode?: 'stub' | 'live';
   /** How that backend reaches the model, for the report's provenance row. */
   readonly modelClientNote?: string;
+  /** Attempts per batch before it is recorded as a transport failure. */
+  readonly retries?: number;
   readonly now?: Date;
 }
 
@@ -64,6 +66,28 @@ function contextAround(utterance: Utterance, quote: string): string {
   const from = Math.max(0, at - CONTEXT_RADIUS);
   const to = Math.min(text.length, at + quote.length + CONTEXT_RADIUS);
   return `${from > 0 ? '[…] ' : ''}${text.slice(from, to)}${to < text.length ? ' […]' : ''}`;
+}
+
+function describeError(error: unknown): string {
+  const e = error as { message?: unknown; status?: unknown };
+  const status = typeof e?.status === 'number' ? ` (HTTP ${e.status})` : '';
+  return `${String(e?.message ?? error).slice(0, 200)}${status}`;
+}
+
+/** Exponential backoff. Deterministic delays — no jitter — so a run stays reproducible. */
+async function withRetry<T>(fn: () => Promise<T>, attempts: number): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts - 1) {
+        await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+      }
+    }
+  }
+  throw lastError;
 }
 
 function batched<T>(items: readonly T[], size: number): T[][] {
@@ -118,7 +142,19 @@ export async function runHarness(options: HarnessOptions = {}): Promise<HarnessR
   for (let b = 0; b < batches.length; b++) {
     const batch = batches[b];
     if (batch === undefined) continue;
-    const run = await extractor.extract(batch);
+    // A harness over a hundred sequential network calls must survive one of them failing.
+    // Losing 108 good batches to a single transient connection error is not a result, it is an
+    // outage — and an aborted run silently under-reports rather than reporting less.
+    let run;
+    try {
+      run = await withRetry(() => extractor.extract(batch), options.retries ?? 3);
+    } catch (error) {
+      rejectedBatches.push({
+        batch: b + 1,
+        rejection: { stage: 'transport', detail: describeError(error) },
+      });
+      continue;
+    }
     if (run.rejection !== undefined) {
       rejectedBatches.push({ batch: b + 1, rejection: run.rejection });
       continue;

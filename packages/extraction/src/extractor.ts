@@ -54,7 +54,13 @@ export interface ExtractedItem {
 export type RunRejection =
   | { readonly stage: 'response'; readonly rejection: ResponseRejection }
   | { readonly stage: 'attribution'; readonly detail: string }
-  | { readonly stage: 'routing'; readonly failure: RoutingFailure };
+  | { readonly stage: 'routing'; readonly failure: RoutingFailure }
+  /**
+   * The model could not be reached at all. Distinct from every rejection above, which are
+   * statements about what the model SAID; this one says it never spoke. A reader judging
+   * precision must be able to tell "the model produced nothing usable" from "we never asked".
+   */
+  | { readonly stage: 'transport'; readonly detail: string };
 
 export interface ExtractionRun {
   readonly persona: string;
