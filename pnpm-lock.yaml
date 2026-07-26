@@ -83,6 +83,12 @@ importers:
       '@servanda/extraction':
         specifier: workspace:*
         version: link:../extraction
+      '@servanda/federation':
+        specifier: workspace:*
+        version: link:../federation
+      '@servanda/identity':
+        specifier: workspace:*
+        version: link:../identity
       '@servanda/node':
         specifier: workspace:*
         version: link:../node
