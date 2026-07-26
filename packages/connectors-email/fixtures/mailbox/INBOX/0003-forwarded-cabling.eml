@@ -1,0 +1,27 @@
+Message-ID: <fwd-2026-08-03@pricex.example>
+Date: Mon, 03 Aug 2026 09:00:00 +0300
+Delivered-To: capture@pricex.example
+From: "Ivan Katsarov" <me@pricex.example>
+To: capture@pricex.example
+Subject: Fwd: Cabling spec
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="b1"
+
+--b1
+Content-Type: text/plain; charset=utf-8
+
+Forwarding for the record.
+
+--b1
+Content-Type: message/rfc822
+
+Message-ID: <cabling-2026-07-28@skladco.example>
+Date: Tue, 28 Jul 2026 14:10:00 +0300
+From: "Georgi Petrov" <georgi@skladco.example>
+To: "Ivan Katsarov" <me@pricex.example>
+Subject: Cabling spec
+Content-Type: text/plain; charset=utf-8
+
+We need the cabling spec before the site visit on the 12th.
+
+--b1--
