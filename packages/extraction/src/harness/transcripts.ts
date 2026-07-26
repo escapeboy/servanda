@@ -176,8 +176,19 @@ export function readUtterances(
   return out;
 }
 
+/** Keep the head of an utterance; see DEFAULT_MAX_UTTERANCE_CHARS for why the tail is dropped. */
+export function clipText(text: string, max: number): string {
+  if (max <= 0 || text.length <= max) return text;
+  return `${text.slice(0, max)}…`;
+}
+
 /** §2 envelope. `id` is the sha256 of the canonical form sans id. */
-export function toEnvelope(utterance: Utterance, persona: string, receivedAt: string): Envelope {
+export function toEnvelope(
+  utterance: Utterance,
+  persona: string,
+  receivedAt: string,
+  maxUtteranceChars: number = DEFAULT_MAX_UTTERANCE_CHARS,
+): Envelope {
   const unidentified = {
     v: PROTOCOL_VERSION,
     type: 'envelope' as const,
@@ -187,7 +198,12 @@ export function toEnvelope(utterance: Utterance, persona: string, receivedAt: st
     received_at: receivedAt,
     actor: { label: 'local-user', external_id: utterance.sessionId },
     payload: {
-      text: utterance.text,
+      text: clipText(utterance.text, maxUtteranceChars),
+      // Preserved so a reader can see the clip happened and how much was dropped, rather than
+      // silently judging a truncated utterance as if it were whole.
+      ...(utterance.text.length > maxUtteranceChars && maxUtteranceChars > 0
+        ? { text_clipped_from: utterance.text.length }
+        : {}),
       cwd: utterance.cwd,
       project: utterance.project,
       line: utterance.line,
@@ -255,8 +271,25 @@ export function findTranscripts(root: string, sinceMs: number): TranscriptIndex 
   return { files, subagentFilesSkipped };
 }
 
+/**
+ * How much of one utterance is worth paying to send.
+ *
+ * Measured on a real 30-day corpus: the median utterance is 123 characters, but the top decile
+ * runs to thousands — pasted logs, and machine-authored role prompts addressed to an agent.
+ * Those long tails carried 76% of the corpus's characters and produced zero extractions, because
+ * an instruction to an agent is not a promise by a person (M-13 makes the same point about who
+ * can be a party).
+ *
+ * A promise is a sentence. Clipping the tail leaves the first paragraph — where a stated
+ * intention nearly always is — and removes most of the cost and most of the noise. Set to 0 to
+ * disable.
+ */
+export const DEFAULT_MAX_UTTERANCE_CHARS = 1000;
+
 export interface ScanOptions {
   readonly root?: string;
+  /** Characters of each utterance sent for extraction; 0 disables clipping. */
+  readonly maxUtteranceChars?: number;
   readonly days?: number;
   readonly persona?: string;
   readonly maxTranscripts?: number;
@@ -288,6 +321,7 @@ export interface ScanResult {
 }
 
 export function scanTranscripts(options: ScanOptions = {}): ScanResult {
+  const maxUtteranceChars = options.maxUtteranceChars ?? DEFAULT_MAX_UTTERANCE_CHARS;
   const root = options.root ?? DEFAULT_PROJECTS_ROOT;
   const days = options.days ?? 30;
   const persona = options.persona ?? harnessPersona();
@@ -332,7 +366,7 @@ export function scanTranscripts(options: ScanOptions = {}): ScanResult {
         continue;
       }
       seen.add(key);
-      const envelope = toEnvelope(utterance, persona, receivedAt);
+      const envelope = toEnvelope(utterance, persona, receivedAt, maxUtteranceChars);
       if (sources.has(envelope.id)) continue;
       envelopes.push(envelope);
       sources.set(envelope.id, utterance);

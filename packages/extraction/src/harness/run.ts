@@ -43,6 +43,8 @@ export interface HarnessOptions {
   readonly modelClientNote?: string;
   /** Attempts per batch before it is recorded as a transport failure. */
   readonly retries?: number;
+  /** Characters of each utterance sent for extraction; 0 disables clipping. */
+  readonly maxUtteranceChars?: number;
   readonly now?: Date;
 }
 
@@ -105,6 +107,7 @@ export async function runHarness(options: HarnessOptions = {}): Promise<HarnessR
     maxTranscripts: options.maxTranscripts,
     maxUtterancesPerTranscript: options.maxUtterancesPerTranscript,
     maxEnvelopes: options.maxEnvelopes,
+    ...(options.maxUtteranceChars === undefined ? {} : { maxUtteranceChars: options.maxUtteranceChars }),
     now,
   });
 
@@ -259,6 +262,9 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
         break;
       case '--max-envelopes':
         out['maxEnvelopes'] = Number(next());
+        break;
+      case '--max-utterance-chars':
+        out['maxUtteranceChars'] = Number(next());
         break;
       case '--model':
         out['model'] = next();
