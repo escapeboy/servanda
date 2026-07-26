@@ -34,7 +34,17 @@ export interface PartyView {
 export type ActionDispatch =
   | { readonly kind: 'tool'; readonly tool: NodeToolName; readonly args: Record<string, unknown> }
   | { readonly kind: 'needs-input'; readonly tool: NodeToolName; readonly needs: 'date' }
-  | { readonly kind: 'unmapped'; readonly action: OpenLoopAction };
+  | { readonly kind: 'unmapped'; readonly action: OpenLoopAction }
+  /**
+   * One party agreeing, for themselves alone, that the words of a promise may be shown on
+   * its proof page. Deliberately not a tool call and deliberately not a setting: it is a
+   * consent, it is recorded per party, and one party's consent shows nothing on its own.
+   */
+  | { readonly kind: 'consent'; readonly consent: 'show-words'; readonly by: 'owner' | 'owed-to' }
+  /** Connecting or disconnecting a source. Never a control that grants leeway (doctrine). */
+  | { readonly kind: 'source'; readonly source: string; readonly op: 'connect' | 'disconnect' }
+  /** The first-run path, which has no register behind it yet. */
+  | { readonly kind: 'first-run'; readonly step: string };
 
 export interface ActionView {
   readonly id: string;
@@ -100,12 +110,20 @@ function daysBetween(fromIso: string, toIso: string): number {
   return Math.floor((Date.parse(toIso) - Date.parse(fromIso)) / DAY_MS);
 }
 
+/** A raw 64-character key is not a name and is never shown as one. */
+export function shortKey(key: string): string {
+  return `${key.slice(0, 6)}…${key.slice(-4)}`;
+}
+
+export function isKeyShaped(value: string): boolean {
+  return KEY_SHAPE.test(value);
+}
+
 export function partyFor(counterparty: string | null, level: VerificationLevel): PartyView | null {
   if (counterparty === null || counterparty.trim().length === 0) return null;
-  const isKey = KEY_SHAPE.test(counterparty);
+  const isKey = isKeyShaped(counterparty);
   return {
-    // A raw 64-character key is not a name and is not shown as one.
-    display: isKey ? `${counterparty.slice(0, 6)}…${counterparty.slice(-4)}` : counterparty,
+    display: isKey ? shortKey(counterparty) : counterparty,
     isKey,
     trust: trustFor(level),
   };
@@ -267,7 +285,8 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
 /** Honour the node's choice of leading action without adopting its wording. */
 function leadWith(card: CardView, tool: string): readonly ActionView[] {
   const index = card.actions.findIndex(
-    (a) => a.dispatch.kind !== 'unmapped' && a.dispatch.tool === tool,
+    (a) =>
+      (a.dispatch.kind === 'tool' || a.dispatch.kind === 'needs-input') && a.dispatch.tool === tool,
   );
   if (index <= 0) return card.actions;
   const led = card.actions[index];

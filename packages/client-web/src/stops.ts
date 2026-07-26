@@ -1,5 +1,6 @@
 import { COPY } from './copy.js';
 import type { AppView, SurfaceId } from './render.js';
+import { STANDALONE_SURFACES } from './render.js';
 import type { CardView } from './view.js';
 
 /**
@@ -25,6 +26,8 @@ export const SURFACES: readonly { id: SurfaceId; label: string }[] = [
   { id: 'waiting', label: COPY.nav.waiting },
   { id: 'closed', label: COPY.nav.closed },
   { id: 'inbox', label: COPY.nav.inbox },
+  { id: 'team', label: COPY.nav.team },
+  { id: 'trust', label: COPY.nav.trust },
 ];
 
 function cardsShowing(app: AppView): readonly CardView[] {
@@ -33,12 +36,50 @@ function cardsShowing(app: AppView): readonly CardView[] {
   return app.ledger.sections.find((s) => s.id === app.surface)?.cards ?? [];
 }
 
+/**
+ * Stops that do not come from a card: the source controls on Integrations & Trust, the
+ * consent on a proof page, the two controls of the recovery sheet. The team surface
+ * contributes none — it is a read, not a console.
+ */
+function loneStops(app: AppView): Stop[] {
+  if (app.surface === 'trust') {
+    return app.integrations.sources.map((source) => ({
+      id: source.action.id,
+      label: source.action.label,
+      kind: 'action' as const,
+      cardId: source.id,
+    }));
+  }
+  if (app.surface === 'proof') {
+    return (app.proof?.actions ?? []).map((action) => ({
+      id: action.id,
+      label: action.label,
+      kind: 'action' as const,
+    }));
+  }
+  if (app.surface === 'first-run') {
+    const steps = app.onboarding.steps.flatMap((step) => (step.action === null ? [] : [step.action]));
+    return [...steps, ...app.onboarding.recovery.actions].map((action) => ({
+      id: action.id,
+      label: action.label,
+      kind: 'action' as const,
+    }));
+  }
+  return [];
+}
+
 export function stopsFor(app: AppView): Stop[] {
-  const stops: Stop[] = SURFACES.map(({ id, label }) => ({ id, label, kind: 'surface' }));
+  // A standalone surface has no navigation to walk: a proof page is a link someone sent
+  // you, and first run happens before there is anything to navigate between.
+  const standalone = STANDALONE_SURFACES.includes(app.surface);
+  const stops: Stop[] = standalone
+    ? []
+    : SURFACES.map(({ id, label }) => ({ id, label, kind: 'surface' }));
   for (const card of cardsShowing(app)) {
     for (const action of card.actions) {
       stops.push({ id: action.id, label: action.label, kind: 'action', cardId: card.id });
     }
   }
+  stops.push(...loneStops(app));
   return stops;
 }

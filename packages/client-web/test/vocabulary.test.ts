@@ -12,7 +12,7 @@ import {
   scanVocabulary,
   visibleText,
 } from '../src/index.js';
-import { NOW, everySurface } from './fixture.js';
+import { NOW, everySurface, everyViewAnywhere } from './fixture.js';
 
 /**
  * The vocabulary law, checked against what a person actually reads. Internal type names may
@@ -42,6 +42,12 @@ describe('no surface speaks the vocabulary of its own machinery', () => {
     }
     expect(scanVocabulary(['Acknowledge the change'])).toEqual([]);
     expect(scanVocabulary(['A knowledge base'])).toEqual([]);
+  });
+
+  it('keeps the surfaces added later clean too, rendered', async () => {
+    for (const view of await everyViewAnywhere()) {
+      expect(scanAll(visibleText(appEl(view)))).toEqual([]);
+    }
   });
 });
 

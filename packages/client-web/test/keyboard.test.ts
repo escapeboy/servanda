@@ -10,7 +10,7 @@ import {
   stopsFor,
   walk,
 } from '../src/index.js';
-import { app, everySurface } from './fixture.js';
+import { ALL_SURFACES, PRODUCT_SURFACES, app, everySurface, everyViewAnywhere } from './fixture.js';
 
 /**
  * The keyboard-only walkthrough. Not "we support keyboards" — an actual walk of every
@@ -114,6 +114,69 @@ describe('the web surface is fully operable without a pointer', () => {
 function activateWith(stop: { actionId: string | null }, key: string): string | null {
   return (ACTIVATION_KEYS as readonly string[]).includes(key) ? stop.actionId : null;
 }
+
+/**
+ * The same walkthrough over the surfaces added later — the team standup, Integrations &
+ * Trust, first run and the proof page. Full keyboard operation is a platform floor, so a
+ * new surface does not get a grace period.
+ */
+describe('every surface added later is operable without a pointer too', () => {
+  it('strands no control on any surface, old or new', async () => {
+    for (const view of await everyViewAnywhere()) {
+      expect(pointerOnlyControls(appEl(view)).map((e) => JSON.stringify(e.attrs))).toEqual([]);
+    }
+  });
+
+  it('reaches every action each new surface offers, in the order the view model gives', async () => {
+    for (const surface of PRODUCT_SURFACES) {
+      const view = await app(surface);
+      const reachable = focusOrder(appEl(view))
+        .map((s) => s.actionId)
+        .filter((id): id is string => id !== null);
+      const offered = stopsFor(view)
+        .filter((s) => s.kind === 'action')
+        .map((s) => s.id);
+      // The team surface offers none by design; the other three do.
+      if (surface !== 'team') expect(offered.length).toBeGreaterThan(0);
+      expect(reachable).toEqual(offered);
+    }
+  });
+
+  it('walks Tab all the way round every surface and comes back to the start', async () => {
+    for (const surface of ALL_SURFACES) {
+      const stops = focusOrder(appEl(await app(surface)));
+      expect(stops.length).toBeGreaterThan(0);
+      let index = 0;
+      for (let i = 0; i < stops.length; i++) index = nextStop(stops, index);
+      expect(index).toBe(0);
+    }
+  });
+
+  it('gives every stop on every surface a name a screen reader can announce', async () => {
+    for (const view of await everyViewAnywhere()) {
+      for (const stop of focusOrder(appEl(view))) expect(stop.name.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('activates every new surface’s actions with Enter and Space, and nothing else', async () => {
+    for (const surface of PRODUCT_SURFACES) {
+      const stops = focusOrder(appEl(await app(surface))).filter((s) => s.actionId !== null);
+      for (const stop of stops) {
+        for (const key of ACTIVATION_KEYS) expect(activateWith(stop, key)).toBe(stop.actionId);
+        for (const key of ['a', 'Escape', 'ArrowRight']) expect(activateWith(stop, key)).toBeNull();
+      }
+    }
+  });
+
+  it('renders the standalone surfaces without navigation, and the rest with it', async () => {
+    for (const surface of ['proof', 'first-run'] as const) {
+      expect(renderToHtml(appEl(await app(surface)))).not.toContain('<nav');
+    }
+    for (const surface of ['team', 'trust'] as const) {
+      expect(renderToHtml(appEl(await app(surface)))).toContain('<nav aria-label="Servanda">');
+    }
+  });
+});
 
 describe('a register is a list, so it is rendered as one', () => {
   it('uses native list, heading and button semantics', async () => {

@@ -11,7 +11,10 @@ import type {
   OpenLoopsInput,
   OpenLoopsOutput,
 } from '@servanda/types';
+import type { IntegrationsInput } from './integrations.js';
 import type { NodeClient } from './node-client.js';
+import type { ProofRecord } from './proof.js';
+import type { TeamInput } from './team.js';
 
 /**
  * A stand-in node: §7 in, §7 out, nothing behind it.
@@ -122,3 +125,93 @@ export function makeFixture(size = 24, now = '2026-03-01T09:00:00Z'): FixtureSta
     },
   };
 }
+
+const KEY_A = 'a'.repeat(64);
+const KEY_B = 'b'.repeat(64);
+const TEAM_SCOPE = 'c'.repeat(64);
+const OTHER_SCOPE = 'd'.repeat(64);
+
+/**
+ * A closed cross-org promise, as scenarios §5 leaves it: both signatures, an acceptance
+ * window, a dispute, a fix, and a close. The plaintext is `null` by default because that is
+ * the state an old promise is actually in once its keeping period has passed (§5.4) — and
+ * the proof page has to be right in that state first, not as an afterthought.
+ */
+export function makeProofFixture(overrides: Partial<ProofRecord> = {}): ProofRecord {
+  return {
+    edge_id: '7'.repeat(64),
+    commitment_hash: '3'.repeat(64),
+    proposed_at: '2026-06-02T10:15:00Z',
+    due: '2026-09-30T00:00:00Z',
+    owner: { key: KEY_A, display: 'Studio (studio.bg)', verification_level: '3' },
+    owed_to: { key: KEY_B, display: 'Acme (acme.com)', verification_level: '3' },
+    chain: [
+      { state: 'proposed', asserted_at: '2026-06-02T10:15:00Z', by: KEY_A, evidence_hash: null },
+      { state: 'confirmed', asserted_at: '2026-06-02T16:40:00Z', by: KEY_B, evidence_hash: null },
+      { state: 'disputed', asserted_at: '2026-10-01T09:00:00Z', by: KEY_B, evidence_hash: '4'.repeat(64) },
+      { state: 'closed', asserted_at: '2026-10-06T11:20:00Z', by: KEY_B, evidence_hash: '5'.repeat(64) },
+    ],
+    plaintext: null,
+    ...overrides,
+  };
+}
+
+export const TEAM_SCOPE_KEY = TEAM_SCOPE;
+export const OTHER_SCOPE_KEY = OTHER_SCOPE;
+
+/**
+ * A team surface's input, deliberately mixed: one promise shared here, one shared into a
+ * different scope, one nobody shared at all. Every test of M-4 in this layer starts from a
+ * register that contains things the surface must not show.
+ */
+export function makeTeamFixture(now = '2026-03-01T09:00:00Z'): TeamInput {
+  const base = makeFixture(6, now).items;
+  const at = (i: number): OpenLoopItem => base[i] ?? (base[0] as OpenLoopItem);
+  return {
+    scope: { key: TEAM_SCOPE, label: 'Platform' },
+    publications: [
+      {
+        // Scenarios §4, near enough. Deliberately avoids the word "staging", which an
+        // existing affordance test scans for as a substring and would flag as "tag".
+        item: { ...at(0), id: 'shared-here', intent_or_expect: 'Pull a copy of live data for the repro' },
+        shared: { scope: TEAM_SCOPE, by: KEY_A },
+        otherParty: { display: 'Stefan Vidal', level: '2' },
+        blocks: ['SPRINT-114'],
+      },
+      {
+        item: { ...at(1), id: 'shared-elsewhere', intent_or_expect: 'Draft the pricing note' },
+        shared: { scope: OTHER_SCOPE, by: KEY_B },
+        otherParty: { display: 'Ines Ferreira', level: '1' },
+        blocks: [],
+      },
+      {
+        item: { ...at(2), id: 'never-shared', intent_or_expect: 'Reply to the recruiter' },
+        shared: null,
+        otherParty: { display: 'Tom Alderson', level: '0' },
+        blocks: [],
+      },
+    ],
+  };
+}
+
+/** Sources and gradients, including one kind of work with a ceiling below the top rung. */
+export function makeIntegrationsFixture(): IntegrationsInput {
+  return {
+    sources: [
+      { id: 'mail', label: 'Mail', connected: true, lastRead: '2026-03-01T08:40:00Z' },
+      { id: 'code-review', label: 'Code review', connected: true, lastRead: null },
+      { id: 'calendar', label: 'Calendar', connected: false, lastRead: null },
+    ],
+    classes: [
+      { id: 'tests', label: 'Writing tests', standing: 'draft', toNextRung: 2 },
+      { id: 'dead-code', label: 'Removing dead code', standing: 'window', toNextRung: 5 },
+      { id: 'ci-config', label: 'Changing how the build runs', standing: 'suggest', toNextRung: 3, ceiling: 'draft' },
+    ],
+  };
+}
+
+/** Twelve words, fixed, so a printed sheet is reproducible in a test. */
+export const RECOVERY_WORDS: readonly string[] = [
+  'harbour', 'kettle', 'marble', 'orchard', 'plover', 'quarry',
+  'ribbon', 'saddle', 'thistle', 'umber', 'vellum', 'walnut',
+];

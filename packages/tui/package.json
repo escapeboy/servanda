@@ -15,12 +15,14 @@
   "bin": {
     "servanda": "./bin/servanda.mjs"
   },
-  "files": ["dist", "bin"],
+  "files": ["dist", "bin", "ink"],
   "scripts": {
     "build": "tsc -b"
   },
   "dependencies": {
     "@servanda/client-web": "workspace:*",
-    "@servanda/types": "workspace:*"
+    "@servanda/types": "workspace:*",
+    "ink": "^7.1.1",
+    "react": "^19.2.0"
   }
 }

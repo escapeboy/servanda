@@ -131,6 +131,65 @@ nav {
 .generated,
 .below-the-line { color: rgba(20, 18, 14, 0.6); font-size: 0.875rem; margin: 0.25rem 0; }
 
+.blocks { color: rgba(20, 18, 14, 0.6); font-size: 0.875rem; margin: 0.15rem 0 0; }
+.outcome { font-family: var(--display); font-size: 1.125rem; margin: 0.5rem 0 1rem; }
+
+/* Hashes, keys and timestamps. Evidence is set in mono and shown whole, never truncated
+   by the stylesheet — a certificate nobody can read the fingerprint on proves nothing. */
+.hash {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.fingerprint { margin: 0.25rem 0; }
+
+.parties,
+.dates,
+.chain,
+.classes,
+.rungs,
+.steps,
+.recovery-words { list-style: none; margin: 0; padding: 0; }
+
+.party-pair { display: inline-flex; gap: 0.4rem; align-items: baseline; }
+
+.party-row,
+.date-row,
+.chain-step {
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.party-role,
+.date-label { color: rgba(20, 18, 14, 0.6); font-size: 0.875rem; min-width: 8rem; }
+.chain-evidence { color: var(--bronze); font-size: 0.8125rem; }
+
+.step { border-bottom: 1px solid var(--rule); padding: 1rem 0; }
+.step-done { opacity: 0.6; }
+.recovery { border-top: 1px solid var(--rule); margin-top: 2rem; }
+.recovery-words { columns: 2; font-family: var(--mono); margin: 0.5rem 0; }
+
+.work-class { border-bottom: 1px solid var(--rule); padding: 0.75rem 0; }
+.work-class h3 { font-family: var(--ui); font-size: 1rem; font-weight: 600; margin: 0 0 0.35rem; }
+
+/* A rung is a reading, not a control: nothing here is a button and nothing is focusable. */
+.rung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  padding: 0.2rem 0;
+}
+.rung-state { color: rgba(20, 18, 14, 0.6); font-size: 0.8125rem; }
+.rung-explains { color: rgba(20, 18, 14, 0.6); font-size: 0.8125rem; }
+.rung-earned .rung-label { color: var(--green); }
+.rung-standing .rung-label { font-weight: 600; }
+.rung-locked,
+.rung-closed { color: rgba(20, 18, 14, 0.55); }
+
 /* The seal, and the only place wax is spent. Degrees of relief carry the evidence level. */
 .seal {
   border: 1px solid #8C2F1B;
@@ -160,7 +219,14 @@ nav {
   .relief-flat { color: rgba(247, 244, 236, 0.55); }
   .empty,
   .generated,
+  .blocks,
+  .party-role,
+  .date-label,
+  .rung-state,
+  .rung-explains,
   .below-the-line { color: rgba(247, 244, 236, 0.6); }
+  .rung-locked,
+  .rung-closed { color: rgba(247, 244, 236, 0.55); }
   .seal.relief-continuity { box-shadow: inset 0 0 0 1px var(--ink); }
 }
 

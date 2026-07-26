@@ -3,10 +3,14 @@ import type { AppView, SurfaceId } from '@servanda/client-web';
 import {
   COPY,
   FixtureNodeClient,
+  RECOVERY_WORDS,
   appEl,
   focusOrder,
   loadApp,
   makeFixture,
+  makeIntegrationsFixture,
+  makeProofFixture,
+  makeTeamFixture,
   scanAll,
   stopsFor,
   visibleText,
@@ -18,10 +22,28 @@ const NOW = '2026-03-01T09:00:00Z';
 async function app(surface: SurfaceId = 'brief'): Promise<AppView> {
   const fixture = makeFixture(24, NOW);
   const client = new FixtureNodeClient(fixture);
-  return loadApp(client, { surface, now: NOW, pending: { items: fixture.pending } });
+  return loadApp(client, {
+    surface,
+    now: NOW,
+    pending: { items: fixture.pending },
+    team: makeTeamFixture(NOW),
+    integrations: makeIntegrationsFixture(),
+    onboarding: { recoveryWords: RECOVERY_WORDS },
+    proof: makeProofFixture({ plaintext: 'the words of the promise', viewer: 'owner' }),
+  });
 }
 
-const surfaces: SurfaceId[] = ['brief', 'owe', 'waiting', 'closed', 'inbox'];
+const surfaces: SurfaceId[] = [
+  'brief',
+  'owe',
+  'waiting',
+  'closed',
+  'inbox',
+  'team',
+  'trust',
+  'first-run',
+  'proof',
+];
 
 describe('the terminal is the same surface, in text', () => {
   it('walks exactly the stops the browser walks', async () => {

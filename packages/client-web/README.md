@@ -1,10 +1,29 @@
 # @servanda/client-web
 
-The Ledger — the one canonical surface. Three views: **Brief**, **Owe / Waiting / Closed**, and the
-**Confirmation inbox**.
+The one canonical surface. Seven views — **Brief**, **Owe / Waiting / Closed**, the **Confirmation
+inbox**, the **team standup** and **Sources and trust** — plus two that stand outside it: the
+**proof page** (a certificate at its own link) and **first run**.
 
 Governed by `docs/ui-design.md`, which is doctrine rather than style guidance. The rules below are
 enforced by gate GE, not left to review.
+
+## The four product surfaces
+
+- **Proof page** (`buildProof` / `proofEl` / `proofDocument`). A closed cross-org promise becomes a
+  certificate anyone with the link can check: both parties with their evidence, the dates, the state
+  chain, the commitment hash. It renders **from hashes alone** — after retention decay removes the
+  plaintext (§5.4, ADR-0004, M-15) the certificate is unchanged, which is the entire point. The words
+  of a promise are shown only when **both** parties consented; consent is per party, defaults to off,
+  and is combined with `&&`, so no argument exists by which one party discloses for the other.
+- **Team standup** (`buildTeam`). The blocking graph, built **only** from what a party chose to share
+  into this team (M-4). Unshared promises and promises shared into another team are filtered out
+  first, before anything is formatted. No per-person anything (M-11): your standup writes itself.
+- **First run** (`buildOnboarding`). Sign up → connect → first note, with an offered, skippable,
+  printable recovery sheet. Checked by `scanFirstRun`, which forbids technical vocabulary outright on
+  this path — the word *install* included, by name.
+- **Sources and trust** (`buildIntegrations`). Connected sources, and the trust gradient per kind of
+  work. Rungs are **displayed but earned**: a rung carries no control, no focus stop and no id a
+  handler could bind to, and locked rungs say what would open them.
 
 ## The register
 

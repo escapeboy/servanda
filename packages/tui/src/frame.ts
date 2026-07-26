@@ -1,5 +1,15 @@
-import type { AppView, CardView, SealShape, Stop } from '@servanda/client-web';
-import { COPY, SURFACES, stopsFor } from '@servanda/client-web';
+import type {
+  ActionView,
+  AppView,
+  CardView,
+  IntegrationsView,
+  OnboardingView,
+  ProofView,
+  SealShape,
+  Stop,
+  TeamView,
+} from '@servanda/client-web';
+import { COPY, STANDALONE_SURFACES, SURFACES, stopsFor } from '@servanda/client-web';
 
 /**
  * The terminal rendering: view model in, lines of text out.
@@ -59,10 +69,115 @@ export interface FrameState {
   readonly cursor: number;
 }
 
+/** A row of controls that does not belong to a card: sources, consents, first-run steps. */
+function loneActionsLine(actions: readonly ActionView[], focused: string | null): string {
+  return actions
+    .map((action) => (action.id === focused ? `> [${action.label}]` : `  [${action.label}]`))
+    .join(' ');
+}
+
+/**
+ * The team standup, in text. Same entries, same order, same words — this is a rendering of
+ * `TeamView`, so it cannot show anything the browser hides (M-4) or count anything (M-11).
+ */
+function teamLines(team: TeamView): string[] {
+  const lines: string[] = [team.heading, team.lede, ''];
+  if (team.entries.length === 0) lines.push(team.empty, '');
+  for (const entry of team.entries) {
+    const parties = entry.between.map((p) => `${p.display} · ${p.trust.label}`).join(' · ');
+    lines.push(
+      entry.what,
+      `${MARK[entry.seal.shape]} ${entry.seal.label} · ${parties}`,
+      entry.ifNothingHappens,
+      entry.blocksLine,
+      '',
+    );
+  }
+  lines.push(team.note);
+  return lines;
+}
+
+/** Sources and trust. The rungs are lines of text here for the same reason they are spans
+ *  in the browser: they are a reading, and there is nothing to press. */
+function integrationsLines(view: IntegrationsView, focused: string | null): string[] {
+  const lines: string[] = [view.heading, '', view.sourcesHeading, ''];
+  for (const source of view.sources) {
+    lines.push(loneActionsLine([source.action], focused), source.label, source.status, source.lastRead, '');
+  }
+  lines.push(view.trustHeading, view.trustLede, '');
+  for (const workClass of view.classes) {
+    lines.push(workClass.label);
+    for (const rung of workClass.rungs) {
+      lines.push(`  ${rung.label} · ${rung.stateLabel}${rung.explains === null ? '' : ` · ${rung.explains}`}`);
+    }
+    lines.push('');
+  }
+  return lines;
+}
+
+function onboardingLines(view: OnboardingView, focused: string | null): string[] {
+  const lines: string[] = [view.heading, view.lede, ''];
+  for (const step of view.steps) {
+    if (step.action !== null) lines.push(loneActionsLine([step.action], focused));
+    lines.push(step.heading, step.blurb, '');
+  }
+  lines.push(view.custody, '');
+  const sheet = view.recovery;
+  lines.push(sheet.heading, loneActionsLine(sheet.actions, focused), sheet.blurb, sheet.wordsHeading);
+  lines.push(...sheet.words, '', sheet.later);
+  return lines;
+}
+
+function proofLines(view: ProofView, focused: string | null): string[] {
+  const lines: string[] = [view.heading, view.lede, view.outcome, '', view.betweenHeading];
+  for (const party of view.parties) {
+    lines.push(`${party.role} · ${party.party.display} · ${party.party.trust.label}`, party.key);
+  }
+  lines.push('', view.datesHeading);
+  for (const date of view.dates) lines.push(`${date.label} · ${date.value}`);
+  lines.push('', view.chainHeading);
+  for (const step of view.chain) {
+    lines.push(
+      // The mark is a convenience; the words carry the meaning, exactly as on a card.
+      `${MARK[step.seal.shape]} ${step.seal.label} · ${step.label} · ${step.when} · ${step.signedBy}${step.evidence === null ? '' : ` · ${COPY.proof.evidence}`}`,
+    );
+  }
+  lines.push('', view.fingerprintHeading, view.fingerprint, view.fingerprintNote);
+  lines.push('', view.wordsHeading);
+  if (view.words !== null) lines.push(view.words);
+  lines.push(view.wordsNote);
+  if (view.actions.length > 0) lines.push(loneActionsLine(view.actions, focused));
+  return lines;
+}
+
 export function frameLines(state: FrameState): string[] {
   const stops: Stop[] = stopsFor(state.app);
   const focused = stops[state.cursor]?.id ?? null;
-  const lines: string[] = [COPY.appName, navLine(state.app.surface, focused), RULE];
+  // A standalone surface has no navigation in the browser, so it has none here either.
+  const standalone = STANDALONE_SURFACES.includes(state.app.surface);
+  const lines: string[] = standalone
+    ? [COPY.appName, RULE]
+    : [COPY.appName, navLine(state.app.surface, focused), RULE];
+
+  if (state.app.surface === 'team') {
+    lines.push(...teamLines(state.app.team));
+    return lines;
+  }
+
+  if (state.app.surface === 'trust') {
+    lines.push(...integrationsLines(state.app.integrations, focused));
+    return lines;
+  }
+
+  if (state.app.surface === 'first-run') {
+    lines.push(...onboardingLines(state.app.onboarding, focused));
+    return lines;
+  }
+
+  if (state.app.surface === 'proof') {
+    if (state.app.proof !== null) lines.push(...proofLines(state.app.proof, focused));
+    return lines;
+  }
 
   if (state.app.surface === 'brief') {
     lines.push(state.app.brief.heading, state.app.brief.generatedLine, '');

@@ -13,7 +13,7 @@ import {
   trustFor,
   walk,
 } from '../../src/index.js';
-import { NOW, everySurface } from '../fixture.js';
+import { NOW, everySurface, everyViewAnywhere } from '../fixture.js';
 
 const LEVELS = Object.keys(VERIFICATION_LEVEL_LABELS) as VerificationLevel[];
 
@@ -72,8 +72,10 @@ describe('M-12: the level is always displayed, and a name never rises above its 
   });
 
   it('emits no name without its evidence, on any surface', async () => {
+    // Every surface, including the team standup and the proof page — a certificate a
+    // stranger reads is exactly where a bare name would do the most damage.
     let names = 0;
-    for (const view of await everySurface()) {
+    for (const view of await everyViewAnywhere()) {
       const tree = appEl(view);
       const nodes = walk(tree);
       for (const node of nodes) {

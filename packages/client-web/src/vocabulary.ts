@@ -53,3 +53,53 @@ export function scanExclamations(strings: readonly string[]): Violation[] {
 export function scanAll(strings: readonly string[]): Violation[] {
   return [...scanVocabulary(strings), ...scanExclamations(strings)];
 }
+
+/**
+ * The non-technical-default law, as code.
+ *
+ * "Any surface, flow, or sentence that requires knowing what a node, vault, MCP or ledger
+ * *is* has violated this document" — and on the first-run path the bar is higher still,
+ * because a person on it has not agreed to learn anything yet. `install` heads the list
+ * because the doctrine names it: the word does not exist on this path.
+ *
+ * The technical path is parallel and equal; it is simply not this one, so these terms are
+ * forbidden on first run and nowhere else.
+ */
+export const FIRST_RUN_FORBIDDEN = [
+  'install',
+  'download',
+  'setup',
+  'configure',
+  'server',
+  'terminal',
+  'command line',
+  'docker',
+  'localhost',
+  'self-hosted',
+  'api',
+  'sync',
+  'encryption',
+  'private key',
+  'public key',
+  'passphrase',
+  'seed phrase',
+] as const;
+
+const FIRST_RUN_MATCHERS = FIRST_RUN_FORBIDDEN.map(
+  (term) =>
+    [term, new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}\\w*\\b`, 'iu')] as const,
+);
+
+/**
+ * Scans the first-run path. Applied on top of `scanAll`, never instead of it: everything
+ * forbidden everywhere is still forbidden here.
+ */
+export function scanFirstRun(strings: readonly string[]): Violation[] {
+  const out: Violation[] = [...scanAll(strings)];
+  for (const text of strings) {
+    for (const [term, matcher] of FIRST_RUN_MATCHERS) {
+      if (matcher.test(text)) out.push({ term, text });
+    }
+  }
+  return out;
+}
