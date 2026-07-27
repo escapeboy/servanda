@@ -294,13 +294,17 @@ function withWhomEl(card: GestureCard): El {
  * half of M-6 lives: quoted words are shown, and shown is all they ever are.
  */
 export function gestureCardEl(card: GestureCard): El {
+  // The buttons are announced before the words they act on, so they have to say which words
+  // those are. A gesture card carries one promise, but it is delivered beside other cards in a
+  // batched brief, where "Confirm, button" on its own names nothing.
+  const whatId = `gesture-what-${card.id}`;
   return el(
     'article',
     { class: `gesture-card gesture-${card.kind}`, 'data-card': card.id, 'data-place': card.place },
     [
       textEl('h2', card.heading, { class: 'gesture-heading' }),
-      actionsEl(card.actions),
-      textEl('blockquote', card.what, { class: 'what quoted' }),
+      actionsEl(card.actions, whatId),
+      textEl('blockquote', card.what, { class: 'what quoted', id: whatId }),
       withWhomEl(card),
       textEl('p', card.ifIDoNothing, { class: 'consequence' }),
       textEl('p', card.provenance, { class: 'provenance' }),

@@ -89,7 +89,14 @@ export interface OpenedRegister {
  */
 export function openRegister(opts: OpenVaultOptions): OpenedRegister {
   const vault = Vault.open({ dir: opts.dir, passphrase: opts.passphrase });
-  const personas = vault.listPersonaIds().map((id) => vault.getPersona(id));
+  // Sorted by persona_index — creation order, and the only ordering that means anything to
+  // the person. `listPersonaIds` sorts by persona_id, which is a public key: deterministic,
+  // but arbitrary with respect to which persona somebody actually made first, so "the default
+  // persona" would otherwise be decided by a hash.
+  const personas = vault
+    .listPersonaIds()
+    .map((id) => vault.getPersona(id))
+    .sort((a, b) => a.persona_index - b.persona_index);
   if (personas.length === 0) {
     throw new Error(
       `the vault at ${opts.dir} holds no persona. Create one with servanda-init before reading a register.`,
