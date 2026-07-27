@@ -51,8 +51,16 @@ export interface RenderableAction {
   readonly primary: boolean;
 }
 
-/** Buttons for a list of actions, primary first — action before description, everywhere. */
-export function actionsEl(actions: readonly RenderableAction[]): El {
+/**
+ * Buttons for a list of actions, primary first — action before description, everywhere.
+ *
+ * `describedBy` is the id of the text those actions act on, and it is not optional in
+ * practice. The ordering law puts the button before the promise, which is right for a
+ * sighted reader scanning a column and wrong for anyone who hears the page: a brief with
+ * five cards announces "Mark done, button" five times with nothing to tell them apart. The
+ * association restores what the visual layout conveys by proximity.
+ */
+export function actionsEl(actions: readonly RenderableAction[], describedBy?: string): El {
   return el(
     'div',
     { class: 'card-actions' },
@@ -61,13 +69,19 @@ export function actionsEl(actions: readonly RenderableAction[]): El {
         type: 'button',
         class: action.primary ? 'action action-primary' : 'action',
         'data-action': action.id,
+        ...(describedBy === undefined ? {} : { 'aria-describedby': describedBy }),
       }),
     ),
   );
 }
 
+/** The id of a card's own words — what its buttons point at, and what names the card. */
+function whatId(cardId: string): string {
+  return `what-${cardId}`;
+}
+
 function actionsOf(card: CardView): El {
-  return actionsEl(card.actions);
+  return actionsEl(card.actions, whatId(card.id));
 }
 
 /**
@@ -84,8 +98,22 @@ function partyPairEl(party: PartyView): El {
   ]);
 }
 
-function sealEl(shape: string, label: string): El {
-  return el('span', { class: `seal seal-${shape}`, role: 'img', 'aria-label': label });
+/**
+ * The mark, and how much relief it is struck in.
+ *
+ * Two axes, deliberately: the SHAPE is the promise's state (§4), the RELIEF is the evidence
+ * behind the name (M-12). They are independent — a confirmed promise with an unverified
+ * counterparty is a joined seal struck flat — so both classes land on the same element and
+ * neither can be read off the other.
+ *
+ * The relief was for a long time emitted on the trust *text* instead, where the stylesheet's
+ * `.seal.relief-*` rules could never match it. Every level therefore rendered as the same
+ * 1px circle, and the M-12 test still passed: it asserted the class name appeared in the
+ * HTML, and a substring cannot tell which element carries it.
+ */
+function sealEl(shape: string, label: string, relief?: string): El {
+  const relieved = relief === undefined ? '' : ` relief-${relief}`;
+  return el('span', { class: `seal seal-${shape}${relieved}`, role: 'img', 'aria-label': label });
 }
 
 /**
@@ -94,24 +122,31 @@ function sealEl(shape: string, label: string): El {
  * that renders a name and omits what stands behind it.
  */
 function withWhomOf(card: CardView): El {
-  const seal = sealEl(card.seal.shape, card.seal.label);
   if (card.withWhom === null) {
-    // Not a name, so there is no evidence level to display beside it (M-12 is about names).
+    // Not a name, so there is no evidence level to display beside it (M-12 is about names),
+    // and no relief to strike the seal in.
     return el('p', { class: 'with' }, [
-      seal,
+      sealEl(card.seal.shape, card.seal.label),
       textEl('span', COPY.party.justYou, { class: 'party party-self' }),
     ]);
   }
-  return el('p', { class: 'with' }, [seal, partyPairEl(card.withWhom)]);
+  return el('p', { class: 'with' }, [
+    sealEl(card.seal.shape, card.seal.label, card.withWhom.trust.relief),
+    partyPairEl(card.withWhom),
+  ]);
 }
 
 export function cardEl(card: CardView): El {
-  return el('li', { class: 'card', 'data-card': card.id }, [
-    actionsOf(card),
-    textEl('p', card.what, { class: 'what' }),
-    withWhomOf(card),
-    textEl('p', card.ifIDoNothing, { class: `consequence tone-${card.tone}` }),
-  ]);
+  return el(
+    'li',
+    { class: 'card', 'data-card': card.id, 'aria-labelledby': whatId(card.id) },
+    [
+      actionsOf(card),
+      textEl('p', card.what, { class: 'what', id: whatId(card.id) }),
+      withWhomOf(card),
+      textEl('p', card.ifIDoNothing, { class: `consequence tone-${card.tone}` }),
+    ],
+  );
 }
 
 function cardsEl(cards: readonly CardView[], empty: string): El {

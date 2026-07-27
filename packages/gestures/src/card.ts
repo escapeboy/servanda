@@ -259,19 +259,24 @@ export function whenTheOtherHalfArrives(): Delivery {
 
 /** M-12: the name and what stands behind it are emitted together, from the same values. */
 function withWhomEl(card: GestureCard): El {
-  const seal = el('span', {
-    class: `seal seal-${card.seal.shape}`,
-    role: 'img',
-    'aria-label': card.seal.label,
-  });
+  // Shape is the promise's state; relief is the evidence behind the name (M-12). Both land on
+  // the seal, because the stylesheet's `.seal.relief-*` rules match nowhere else — relief put
+  // on the trust text renders every level as the same flat circle.
+  const sealClass = (relief?: string): string =>
+    `seal seal-${card.seal.shape}${relief === undefined ? '' : ` relief-${relief}`}`;
+
   if (card.withWhom === null) {
     return el('p', { class: 'with' }, [
-      seal,
+      el('span', { class: sealClass(), role: 'img', 'aria-label': card.seal.label }),
       textEl('span', COPY.party.justYou, { class: 'party party-self' }),
     ]);
   }
   return el('p', { class: 'with' }, [
-    seal,
+    el('span', {
+      class: sealClass(card.withWhom.trust.relief),
+      role: 'img',
+      'aria-label': card.seal.label,
+    }),
     el('span', { class: 'party-pair' }, [
       textEl('span', card.withWhom.display, {
         class: card.withWhom.isKey ? 'party party-key' : 'party',

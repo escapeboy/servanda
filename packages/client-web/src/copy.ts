@@ -14,6 +14,32 @@
  * Gate GE greps this table and the rendered output of all three surfaces.
  */
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
+/**
+ * An instant, for a person. `2026-07-27T03:34:55.588Z` → `27 July 2026, 03:34 UTC`.
+ *
+ * Written out rather than handed to `toLocaleString`, which reads the machine's locale and
+ * time zone: the same brief would then render differently on the laptop that composed it and
+ * the server that mailed it, and no test could pin either. Law 3 above is the reason this
+ * exists at all — a timestamp with milliseconds and a `Z` requires knowing how the system is
+ * built, which is exactly what this table promises never to require.
+ *
+ * UTC is named rather than converted, because converting would need a zone this module is
+ * forbidden to read. An unparseable value is returned untouched: showing the raw string is
+ * honest, and inventing a date is not.
+ */
+export function readableInstant(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/u.exec(iso);
+  if (m === null) return iso;
+  const month = MONTHS[Number(m[2]) - 1];
+  if (month === undefined) return iso;
+  return `${Number(m[3])} ${month} ${m[1]}, ${m[4]}:${m[5]} UTC`;
+}
+
 export const COPY = {
   appName: 'Servanda',
 
@@ -22,7 +48,7 @@ export const COPY = {
     empty: 'Nothing is waiting on you today.',
     /** Everything the attention market ranked below the fold. Count, never a nudge. */
     belowTheLine: (n: number): string => (n === 1 ? '1 more, further down.' : `${n} more, further down.`),
-    generated: (when: string): string => `As of ${when}.`,
+    generated: (when: string): string => `As of ${readableInstant(when)}.`,
   },
 
   sections: {

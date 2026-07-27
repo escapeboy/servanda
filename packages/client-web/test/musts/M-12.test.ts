@@ -64,6 +64,23 @@ describe('M-12: the level is always displayed, and a name never rises above its 
     }
   });
 
+  /**
+   * The assertion above was true of a page on which relief was INVISIBLE.
+   *
+   * `toContain` cannot tell which element carries a class. Relief was emitted on the trust
+   * text while the stylesheet strikes it on `.seal.relief-*`, so every level from continuity
+   * upward rendered as the same 1px circle and this suite stayed green. Browsers match rules
+   * by element, so the test has to as well.
+   */
+  it('strikes the relief on the seal, where the stylesheet can reach it', () => {
+    for (const level of LEVELS) {
+      const relief = RELIEF_BY_LEVEL[level];
+      const html = renderToHtml(cardEl(cardFor(itemAt(level), NOW, false)));
+      const sealClass = /class="(seal[^"]*)"/u.exec(html)?.[1] ?? '';
+      expect(sealClass, `level ${level}`).toContain(`relief-${relief}`);
+    }
+  });
+
   it('shows an unconfirmed name as unconfirmed, in flat relief', () => {
     const html = renderToHtml(cardEl(cardFor(itemAt('0'), NOW, false)));
     expect(html).toContain('relief-flat');
