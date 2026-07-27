@@ -140,12 +140,26 @@ easily as at a server.
 ### Terminal
 
 ```bash
-node packages/tui/bin/servanda.mjs        # plain text
-node packages/tui/bin/servanda.mjs --ink  # rich renderer
+SERVANDA_VAULT=~/.servanda SERVANDA_PASSPHRASE='…' node packages/tui/bin/servanda.mjs
+SERVANDA_VAULT=~/.servanda SERVANDA_PASSPHRASE='…' node packages/tui/bin/servanda.mjs --ink
 ```
 
 Views: **Today · You owe · You are waiting · Closed · To confirm · Standup · Sources and trust.**
 Full keyboard operation; Tab reaches the leading action of every card first.
+
+Run it with **no** environment and you get a **demonstration** on invented promises, labelled as
+one in a line above the frame. That mode exists because the surfaces were built before anything
+could serve them real data, and it is still the right thing to show someone with no vault yet —
+but a sample must never be mistakable for a register, so it says which it is, every time.
+
+`SERVANDA_VAULT` set without `SERVANDA_PASSPHRASE` is an error, not a fallback. Showing a sample
+where somebody expected their own promises is worse than refusing.
+
+`SERVANDA_PERSONA` selects one by `persona_id` or by its local label; omitted, you get the first.
+
+**To confirm** is empty against a real vault, and that is honest rather than broken: §7's `confirm`
+takes an id and nothing in the five tools hands one out, so a client cannot discover what is
+waiting. Filed upstream — until it is answered, the queue is reachable only from inside the node.
 
 ### Email brief
 

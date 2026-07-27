@@ -318,7 +318,16 @@ console.log('    visibility check verified against a newly shared promise');
 "
 
 echo "==> GE: client suites"
-npx vitest run packages/client-web/test packages/tui/test packages/brief-email/test --reporter=dot
+npx vitest run packages/client-web/test packages/tui/test packages/brief-email/test \
+  packages/client-local/test --reporter=dot
+
+# The register must read the vault it lives in. `FixtureNodeClient` was for a long time the only
+# NodeClient in the repository, so every suite above could pass while no shipped surface could
+# show a real promise. This asserts the property those suites structurally cannot: a promise
+# written through the local client comes back out, and the fixture client — asked the same
+# question — does not know it.
+echo "==> GE: the local register is not the fixture"
+npx vitest run packages/client-local/test -t 'proving the data came from the vault' --reporter=dot
 
 echo "==> GE: named MUST tests for this layer"
 coverage="$(bash gates/must-coverage.sh 2>&1 || true)"

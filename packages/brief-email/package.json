@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@servanda/client-web": "workspace:*",
+    "@servanda/client-local": "workspace:*",
     "@servanda/types": "workspace:*"
   }
 }

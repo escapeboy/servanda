@@ -1,7 +1,7 @@
 {
-  "name": "@servanda/tui",
+  "name": "@servanda/client-local",
   "version": "0.1.0-pre",
-  "description": "Servanda terminal surface: the same brief and register as text, over the same five tools",
+  "description": "A NodeClient backed by a real vault — the bridge that lets a client read your own register",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -12,18 +12,15 @@
       "default": "./dist/index.js"
     }
   },
-  "bin": {
-    "servanda": "./bin/servanda.mjs"
-  },
-  "files": ["dist", "bin", "ink"],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc -b"
   },
   "dependencies": {
-    "@servanda/client-local": "workspace:*",
     "@servanda/client-web": "workspace:*",
+    "@servanda/crypto": "workspace:*",
+    "@servanda/node": "workspace:*",
     "@servanda/types": "workspace:*",
-    "ink": "^7.1.1",
-    "react": "^19.2.0"
+    "@servanda/vault": "workspace:*"
   }
 }

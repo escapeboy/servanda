@@ -65,6 +65,7 @@ Solo use is complete use.
 | `@servanda/connectors-*` | Claude Code sessions, GitHub archaeology, mail (IMAP, sent-mail archaeology, BCC/forward) → §2 envelopes |
 | `@servanda/gestures` | In-situ capture and confirmation — confirm a promise where it was spoken |
 | `@servanda/executors` | Sandboxed, capability-enumerated executors; draft-PR output only; trust gradient (§9.4) |
+| `@servanda/client-local` | A `NodeClient` backed by a real vault — what lets a client show *your* register, not a sample |
 | `@servanda/client-web` · `@servanda/tui` · `@servanda/brief-email` | The Ledger, three renderers, one contract |
 
 ## Conformance is the definition

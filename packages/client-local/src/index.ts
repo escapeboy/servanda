@@ -1,0 +1,117 @@
+import type { NodeClient } from '@servanda/client-web';
+import { ServandaNode } from '@servanda/node';
+import type {
+  BriefInput,
+  BriefOutput,
+  CommitInput,
+  CommitOutput,
+  ConfirmInput,
+  ConfirmOutput,
+  ExpectInput,
+  ExpectOutput,
+  OpenLoopsInput,
+  OpenLoopsOutput,
+} from '@servanda/types';
+import { Vault } from '@servanda/vault';
+
+/**
+ * The register, read from the vault it actually lives in.
+ *
+ * `NodeClient` was written as a narrow interface so that every surface could be built against
+ * a stand-in "and pointed at a real one later with no change above this line". This is that
+ * real one. Until it existed, `FixtureNodeClient` was the only implementation, which meant the
+ * shipped TUI, the web ledger and the email brief could render only invented promises — the
+ * vault worked, the node worked, and no client could reach either. An empty seam between two
+ * finished halves.
+ *
+ * It lives in its own package for a dependency reason, not an aesthetic one: the interface
+ * belongs to `@servanda/client-web` and the implementation needs `@servanda/node` and
+ * `@servanda/vault`. A client package that imported the node would put a whole vault stack
+ * behind a browser bundle, and a node that imported the client would invert §7 — the contract
+ * exists so that clients depend on the node's *shape*, never the reverse. A third package
+ * depending on both is the only arrangement that keeps that arrow pointing one way.
+ *
+ * The methods are async because `NodeClient` is; the node underneath is synchronous, and
+ * nothing here adds concurrency. A remote client would genuinely await a transport, and the
+ * interface has to fit both.
+ */
+export class LocalNodeClient implements NodeClient {
+  private readonly node: ServandaNode;
+
+  constructor(node: ServandaNode) {
+    this.node = node;
+  }
+
+  async commit(input: CommitInput): Promise<CommitOutput> {
+    return this.node.commit(input);
+  }
+
+  async expect(input: ExpectInput): Promise<ExpectOutput> {
+    return this.node.expect(input);
+  }
+
+  async confirm(input: ConfirmInput): Promise<ConfirmOutput> {
+    return this.node.confirm(input);
+  }
+
+  /** Tool name verbatim, per §7. The node spells the method `openLoops`; the wire spells it this way. */
+  async open_loops(input: OpenLoopsInput): Promise<OpenLoopsOutput> {
+    return this.node.openLoops(input);
+  }
+
+  async brief(input: BriefInput): Promise<BriefOutput> {
+    return this.node.brief(input);
+  }
+}
+
+export interface OpenVaultOptions {
+  dir: string;
+  passphrase: string;
+  /** persona_id or context label. Omitted means the first persona in the vault. */
+  persona?: string | undefined;
+  now?: (() => Date) | undefined;
+}
+
+export interface OpenedRegister {
+  client: LocalNodeClient;
+  vault: Vault;
+  node: ServandaNode;
+  /** The persona whose register this is — resolved, so a caller can display it. */
+  personaId: string;
+}
+
+/**
+ * Open a vault on disk and return a client onto it.
+ *
+ * The passphrase is a parameter rather than something read from the environment here, because
+ * a library that reaches for `process.env` cannot be used by a caller who keeps secrets
+ * somewhere else. Entry points decide where a passphrase comes from; this decides nothing.
+ */
+export function openRegister(opts: OpenVaultOptions): OpenedRegister {
+  const vault = Vault.open({ dir: opts.dir, passphrase: opts.passphrase });
+  const personas = vault.listPersonaIds().map((id) => vault.getPersona(id));
+  if (personas.length === 0) {
+    throw new Error(
+      `the vault at ${opts.dir} holds no persona. Create one with servanda-init before reading a register.`,
+    );
+  }
+
+  // §1.2: a persona may be named by its persona_id or by its local context label — the same
+  // two names the node itself accepts, so a caller never has to learn a third vocabulary.
+  const wanted = opts.persona;
+  const found =
+    wanted === undefined
+      ? personas[0]
+      : personas.find((p) => p.persona_id === wanted || p.label === wanted);
+  if (found === undefined) {
+    const known = personas.map((p) => `${p.label} (${p.persona_id.slice(0, 8)}…)`).join(', ');
+    throw new Error(`no persona named "${wanted}" in this vault. Known: ${known}`);
+  }
+
+  const node = new ServandaNode({
+    vault,
+    activePersona: found.persona_id,
+    ...(opts.now === undefined ? {} : { now: opts.now }),
+  });
+  return { client: new LocalNodeClient(node), vault, node, personaId: found.persona_id };
+}

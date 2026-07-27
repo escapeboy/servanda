@@ -7,7 +7,9 @@
   "include": ["src/**/*"],
   "references": [
     { "path": "../types" },
-    { "path": "../client-web" },
-    { "path": "../client-local" }
+    { "path": "../crypto" },
+    { "path": "../vault" },
+    { "path": "../node" },
+    { "path": "../client-web" }
   ]
 }

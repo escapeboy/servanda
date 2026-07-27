@@ -36,12 +36,33 @@ importers:
 
   packages/brief-email:
     dependencies:
+      '@servanda/client-local':
+        specifier: workspace:*
+        version: link:../client-local
       '@servanda/client-web':
         specifier: workspace:*
         version: link:../client-web
       '@servanda/types':
         specifier: workspace:*
         version: link:../types
+
+  packages/client-local:
+    dependencies:
+      '@servanda/client-web':
+        specifier: workspace:*
+        version: link:../client-web
+      '@servanda/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+      '@servanda/node':
+        specifier: workspace:*
+        version: link:../node
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+      '@servanda/vault':
+        specifier: workspace:*
+        version: link:../vault
 
   packages/client-web:
     dependencies:
@@ -228,6 +249,9 @@ importers:
 
   packages/tui:
     dependencies:
+      '@servanda/client-local':
+        specifier: workspace:*
+        version: link:../client-local
       '@servanda/client-web':
         specifier: workspace:*
         version: link:../client-web
