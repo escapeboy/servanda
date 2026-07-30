@@ -93,10 +93,46 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r run build
 
-      # `pnpm publish` — not `npm publish`. Every package depends on its siblings through
-      # `workspace:*`, and only pnpm rewrites that to a real version on the way out. An `npm
-      # publish` here would ship 18 packages whose dependencies no registry can resolve.
-      - run: pnpm publish -r --access public --provenance --no-git-checks
+      # Pack with pnpm, upload with npm — pnpm's own documented split, and here it is load-bearing
+      # twice over.
+      #
+      # Only pnpm rewrites the `workspace:*` every package uses to reach its siblings; an `npm
+      # pack` would ship 18 dependency trees no registry can resolve. But only the npm CLI
+      # implements the OIDC exchange that trusted publishing needs — pnpm documents no OIDC
+      # support at all, and from v11 its publish is native and no longer delegates to npm, so a
+      # `pnpm publish` that happens to work today would break on the next pnpm major.
+      #
+      # `-r` would also pack the workspace root, which is `private: true` and must never reach the
+      # registry; filtering to ./packages/* keeps it out by construction rather than by a check
+      # after the fact.
+      - name: Pack every publishable package
+        run: >
+          pnpm --filter './packages/*' --filter '!@servanda/e2e'
+          pack --pack-destination "$RUNNER_TEMP/tarballs"
+
+      # Both credentials are offered, and that is the migration, not indecision: the npm CLI tries
+      # OIDC first and falls back to the token. A package with a trusted publisher configured is
+      # published without any long-lived secret; one that still lacks it publishes on the token
+      # instead of failing the release. So the eighteen packages can be migrated one at a time
+      # without a flag day, and the token is deleted once the last one is done.
+      #
+      # `NPM_CONFIG_PROVENANCE` stays set even though trusted publishing generates provenance on
+      # its own: on the token path nothing would generate it, and a release without an attestation
+      # is the one outcome this workflow exists to prevent.
+      - name: Publish to npm
+        run: |
+          shopt -s nullglob
+          tarballs=("$RUNNER_TEMP"/tarballs/*.tgz)
+          if [ ${#tarballs[@]} -ne 18 ]; then
+            echo "expected 18 tarballs, found ${#tarballs[@]}" >&2
+            printf '%s\n' "${tarballs[@]}" >&2
+            exit 1
+          fi
+          for t in "${tarballs[@]}"; do
+            echo "::group::publish $(basename "$t")"
+            npm publish "$t" --access public
+            echo "::endgroup::"
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
