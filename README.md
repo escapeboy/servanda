@@ -7,8 +7,18 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status:** in development against spec v0 (DRAFT v0.1-pre). Nothing here is published, deployed,
-> or stable. The protocol is the product; this is the implementation that proves it runs.
+> **Status: v0.1.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
+> the implementation that proves it runs.
+>
+> This is a pre-release, and two things follow from that. **The cryptography has not been externally
+> reviewed** ([#7](https://github.com/escapeboy/servanda-protocol/issues/7)) — see
+> [SECURITY.md](SECURITY.md). And **a break is already scheduled**: upstream
+> [#8](https://github.com/escapeboy/servanda-protocol/issues/8) and
+> [#16](https://github.com/escapeboy/servanda-protocol/issues/16) add domain separation to every
+> identifier preimage, which changes every `commitment_hash`, every `edge_id` and every envelope
+> `id`. **Vaults created at this tag will not migrate** — see [CHANGELOG.md](CHANGELOG.md).
+>
+> Read it, run it, file issues against it. Do not yet keep in it a promise you need in a year.
 
 ## What it is
 
@@ -20,6 +30,20 @@ Those four sentences are not marketing; they are **M-1**, **M-2**, **M-10** and 
 protocol's sixteen MUSTs, and each has a named test in this repository.
 
 ## Getting started
+
+From npm:
+
+```bash
+npm install -g @servanda/node        # servanda-init, servanda-node
+npm install -g @servanda/tui         # the terminal register
+
+export SERVANDA_VAULT=~/.servanda
+export SERVANDA_PASSPHRASE='something only you know'
+servanda-init                        # creates the vault, prints your recovery phrase
+servanda-node                        # the five §7 tools over MCP stdio
+```
+
+Or from source:
 
 ```bash
 pnpm install && pnpm -r run build
@@ -145,6 +169,12 @@ library composes into a node without a second process, which may be the better d
 shortcut the spec should overrule. It is filed as a divergence rather than fixed in either
 direction.
 
+## Contributing and security
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has the working rules — the spec is normative, a failing vector
+is never fixed by editing the vector, and gates define done. Vulnerabilities go through
+[SECURITY.md](SECURITY.md), never a public issue.
+
 ## License
 
-Apache-2.0 (see upstream issue #4 — the reference implementation's license is still open).
+Apache-2.0. See [LICENSE](LICENSE).

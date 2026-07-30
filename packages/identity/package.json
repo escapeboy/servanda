@@ -3,6 +3,17 @@
   "version": "0.1.0-pre",
   "description": "Servanda identity (§1): attestation, revocation, domain anchor, binding-proof ladder, rotation, persona linking",
   "license": "Apache-2.0",
+  "author": "Nikola Katsarov (https://github.com/escapeboy)",
+  "homepage": "https://github.com/escapeboy/servanda#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/escapeboy/servanda.git",
+    "directory": "packages/identity"
+  },
+  "bugs": "https://github.com/escapeboy/servanda/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

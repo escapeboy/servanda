@@ -1,0 +1,102 @@
+name: Release
+
+# Publishing happens from CI, not from a laptop, so the provenance attestation npm records
+# actually attests to something: a public build of a public commit. A locally published tarball
+# would carry the same version number and prove nothing about where it came from.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  # A tag that disagrees with the manifests would publish a version nobody can find from the
+  # release page. Fail before anything reaches the registry, where it cannot be taken back.
+  version:
+    name: Tag matches the workspace version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(node -p "require('./package.json').version")
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json version $pkg" >&2
+            exit 1
+          fi
+          mismatched=$(node -e "
+            const fs = require('fs');
+            const bad = fs.readdirSync('packages')
+              .map(p => JSON.parse(fs.readFileSync('packages/' + p + '/package.json', 'utf8')))
+              .filter(j => j.version !== '$pkg')
+              .map(j => j.name + '@' + j.version);
+            console.log(bad.join(' '));
+          ")
+          if [ -n "$mismatched" ]; then
+            echo "packages disagree with $pkg: $mismatched" >&2
+            exit 1
+          fi
+
+  # The gates and the full suite run as SEPARATE jobs, exactly as in ci.yml. The suite is
+  # memory-bound — every vault open runs Argon2id at the §9.3 minimum — so running the gate
+  # scripts and the full suite back to back on one runner starves the workers and times them
+  # out. That failure looks like a broken gate and is not one.
+  gates:
+    name: All gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No `version:` here — package.json's `packageManager` field pins pnpm, and
+      # specifying both makes the action fail with ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r run build
+      - name: Every MUST has a named test
+        run: bash gates/must-coverage.sh
+      - name: Gates
+        run: bash gates/run-all.sh
+
+  full-suite:
+    name: Full test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r run build
+      - run: npx vitest run --reporter=dot
+
+  publish:
+    name: Publish to npm
+    needs: [version, gates, full-suite]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r run build
+
+      # `pnpm publish` — not `npm publish`. Every package depends on its siblings through
+      # `workspace:*`, and only pnpm rewrites that to a real version on the way out. An `npm
+      # publish` here would ship 18 packages whose dependencies no registry can resolve.
+      - run: pnpm publish -r --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
