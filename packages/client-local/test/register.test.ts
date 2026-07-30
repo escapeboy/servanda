@@ -64,7 +64,7 @@ describe('LocalNodeClient — the register reads the vault it lives in', () => {
   });
 
   afterAll(() => {
-    rmSync(opened.dir, { recursive: true, force: true });
+    rmSync(opened.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   });
 
   it('starts from a vault that a person actually created, not a stand-in', () => {
@@ -105,7 +105,7 @@ describe('LocalNodeClient — the register reads the vault it lives in', () => {
       });
       expect(app.brief.cards).toHaveLength(0);
     } finally {
-      rmSync(empty.dir, { recursive: true, force: true });
+      rmSync(empty.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
     }
   });
 

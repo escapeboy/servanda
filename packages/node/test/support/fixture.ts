@@ -92,7 +92,12 @@ export function makeFixture(opts: FixtureOptions = {}): Fixture {
       now = d;
     },
     cleanup() {
-      rmSync(dir, { recursive: true, force: true });
+      // `force` swallows ENOENT and nothing else. Tearing down a git-backed vault raced on CI
+      // and threw `ENOTEMPTY: rmdir '.git/info'`, which fails the whole FILE from `afterAll`
+      // while every assertion in it passed — a green suite reported red. Retries are the
+      // documented remedy: node's rm retries EBUSY/EMFILE/ENFILE/ENOTEMPTY/EPERM, but only
+      // when asked. Every temp-dir teardown in the repo carries the same options.
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
     },
   };
 }

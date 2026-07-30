@@ -181,7 +181,7 @@ const proposed = responses.get(3)?.result?.structuredContent;
 check(proposed?.state === 'proposed' && typeof proposed?.edge_id === 'string',
   'commit produced a proposed edge with no second participant present (M-10)');
 
-rmSync(dir, { recursive: true, force: true });
+rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 
 // ── B. static import-graph audit ──────────────────────────────────────────────────────────
 

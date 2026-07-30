@@ -124,7 +124,7 @@ export function makePair(opts: PairOptions = {}): Pair {
       now = d;
     },
     cleanup() {
-      rmSync(root, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
     },
   };
 }
@@ -160,7 +160,7 @@ export function makeSolo(index = 0, opts: { now?: Date; budget?: ProposalBudget 
     privateKey: derived.privateKey,
     vault,
     inbox: new Inbox({ vault, persona: derived.personaId, budget: opts.budget }),
-    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+    cleanup: () => rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }),
   };
 }
 

@@ -142,5 +142,5 @@ export function ciEnvelope(overrides: Record<string, unknown> = {}): Envelope {
 export function workspace(files: Record<string, string>): { root: string; cleanup: () => void } {
   const root = mkdtempSync(join(tmpdir(), 'servanda-adapters-'));
   for (const [path, content] of Object.entries(files)) writeFileSync(join(root, path), content);
-  return { root, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return { root, cleanup: () => rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }) };
 }

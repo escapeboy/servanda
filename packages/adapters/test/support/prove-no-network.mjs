@@ -143,7 +143,7 @@ console.log('RESULT ' + JSON.stringify(out));
       'a url ref is NotVerifiable offline, with a null hash (M-8)', String(out.none?.reason));
   }
 }
-rmSync(workspace, { recursive: true, force: true });
+rmSync(workspace, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 
 // ── B. static import-graph audit ──────────────────────────────────────────────────────────
 
@@ -244,7 +244,7 @@ for (const call of invocations) {
   check(/GIT_CONFIG_GLOBAL=\/dev\/null/.test(call.env), "the caller's git config was replaced");
   check(/GIT_TERMINAL_PROMPT=0/.test(call.env), 'terminal prompting is disabled');
 }
-rmSync(shimDir, { recursive: true, force: true });
+rmSync(shimDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 
 let refusedFetch = false;
 try {

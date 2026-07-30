@@ -298,7 +298,7 @@ describe('M-6: archaeology input is data — a hostile working tree yields envel
   });
 
   afterAll(() => {
-    rmSync(repo, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   });
 
   it('every emitted envelope is a valid §2 envelope with a closed kind and the bound persona', () => {

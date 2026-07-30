@@ -126,7 +126,7 @@ try {
   process.stdout.write(`${JSON.stringify({ ok: false, failures: [`threw: ${err?.stack ?? err}`] })}\n`);
   process.exitCode = 1;
 } finally {
-  rmSync(root, { recursive: true, force: true });
+  rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 }
 
 if (failures.length > 0) process.exitCode = 1;

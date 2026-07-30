@@ -55,7 +55,7 @@ describe('M-16: a device key is never sole custodian of the content key', () => 
       expect(() => Vault.open({ dir, passphrase: TEST_PASSPHRASE })).not.toThrow();
       expect(() => Vault.open({ dir, deviceKey: { keyHex: DEVICE_KEY, label: 'laptop' } })).not.toThrow();
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
     }
   });
 
