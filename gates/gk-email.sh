@@ -14,7 +14,7 @@
 #   4. The package cannot reach the network — proved with an armed trap plus controls, the way
 #      gates/ga-node.sh does, not asserted.
 #   5. The MUSTs this layer owns (M-5, M-6, M-12) have named tests, and whole-repo MUST
-#      coverage still stands at 16/16.
+#      coverage still stands complete.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -140,7 +140,15 @@ for f in "${PKG}/test/musts/M-05.test.ts" "${PKG}/test/musts/M-06.test.ts" "${PK
   fi
 done
 
-coverage="$(bash gates/must-coverage.sh 2>&1 || true)"
+# `|| true` used to be here, so a must-coverage FAILURE was captured as text and the gate went
+# on to grep it for the rows it cared about. A MUST with no test would have passed this gate.
+# The status is kept and acted on; the output is still captured, because the rows below are read
+# from it.
+if ! coverage="$(bash gates/must-coverage.sh 2>&1)"; then
+  echo "FAIL: must-coverage did not pass" >&2
+  printf '%s\n' "${coverage}" >&2
+  exit 1
+fi
 for id in "M-5" "M-6" "M-12"; do
   if ! printf '%s' "${coverage}" | grep -qE "ok +${id}\b"; then
     echo "FAIL: must-coverage does not register ${id}" >&2
@@ -150,12 +158,11 @@ for id in "M-5" "M-6" "M-12"; do
   printf '    %s\n' "$(printf '%s' "${coverage}" | grep -E "ok +${id}\b")"
 done
 
-if ! printf '%s' "${coverage}" | grep -q "16/16 MUSTs covered"; then
-  echo "FAIL: whole-repo MUST coverage is not 16/16" >&2
-  printf '%s\n' "${coverage}" >&2
-  exit 1
-fi
-printf '    %s\n' "$(printf '%s' "${coverage}" | grep '16/16')"
+# No hardcoded total. The number moves every time §8 resolves another MUST, and a gate that
+# pins it either fails for the wrong reason or — as three gates did when M-19 landed — reports a
+# stale count as if it were the whole list. `must-coverage.sh` exits non-zero when any registered
+# MUST lacks a test, and `set -e` above is what makes that binding here.
+printf '    %s\n' "$(printf '%s' "${coverage}" | grep 'MUSTs covered')"
 
 echo
 echo "GATE GK: PASS"

@@ -1,6 +1,6 @@
 # @servanda/tui
 
-The register as text, for engineers. Full parity with the web client through the same five §7 tools —
+The register as text, for engineers. Full parity with the web client through the same six §7 tools —
 a different renderer, not a different product.
 
 Same doctrine as `@servanda/client-web`: notary register, no exclamation marks, human vocabulary

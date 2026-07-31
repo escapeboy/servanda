@@ -1,6 +1,6 @@
 import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
-import { MAX_PAYLOAD_TEXT, clip, compact } from './envelope.js';
+import { compact } from './envelope.js';
 import type { ImapClient, ImapMessageSource } from './imap.js';
 import { addressesOf, buildEnvelope, threadIdOf } from './capture.js';
 import type { CaptureContext, EmailIdentity } from './capture.js';
@@ -237,7 +237,7 @@ function envelopesForSent(
       payload: compact({
         // The sentence as written. DATA (M-6): a sent mail reading "ignore previous
         // instructions" is a string in `payload.candidate_text`, nothing more.
-        candidate_text: clip(candidate.text, MAX_PAYLOAD_TEXT),
+        candidate_text: candidate.text,
         candidate_index: candidate.index,
         counterparties: addressesOf(parsed.to),
         // Mailbox state, not a judgement — see buildThreadIndex.

@@ -8,7 +8,7 @@ import type { ServandaNode } from '../node.js';
  * and stdout, messages containing no embedded newlines, stderr free for logging.
  *
  * Written by hand rather than on @modelcontextprotocol/sdk deliberately. The §7 surface is
- * five tools and no resources, prompts, sampling or tasks; the SDK's value here would be
+ * six tools and no resources, prompts, sampling or tasks; the SDK's value here would be
  * mostly its HTTP transports, and pulling in a dependency whose transitive graph includes a
  * fetch stack would weaken exactly the property GA has to prove — that a conforming node
  * needs no network (M-10). Nothing in this file, or anything it imports, can open a socket.

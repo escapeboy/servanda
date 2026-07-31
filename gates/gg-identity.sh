@@ -11,7 +11,7 @@
 #      trip it, and a negative control showing the denial comes from the trap rather than from
 #      an absent network;
 #   4. M-12 and M-13 have named behavioural tests in this layer;
-#   5. gates/must-coverage.sh still reports 16/16.
+#   5. gates/must-coverage.sh still reports every MUST covered.
 #
 # A stage is done only when its gate passes. This script is the definition of done for GG.
 set -euo pipefail
@@ -67,7 +67,7 @@ echo "==> GG/5: ADR-0014 recovery, including the designed dead end"
 npx vitest run packages/identity/test/recovery.test.ts --reporter=dot
 
 echo
-echo "==> GG/5: MUST coverage across the whole repo (must stay 16/16)"
+echo "==> GG/5: MUST coverage across the whole repo (every registered MUST has a test)"
 bash gates/must-coverage.sh
 
 echo

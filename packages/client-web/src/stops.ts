@@ -7,7 +7,7 @@ import type { CardView } from './view.js';
  * Everything a person can reach, in the order they reach it — derived from the view model,
  * not from any one rendering.
  *
- * This is what makes "full parity via the same five tools" checkable rather than asserted:
+ * This is what makes "full parity via the same six tools" checkable rather than asserted:
  * the browser's Tab order and the terminal's cursor walk are both required to equal this
  * list, so a control that exists in one surface and not the other is a test failure.
  */

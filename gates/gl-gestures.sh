@@ -15,7 +15,7 @@
 #   4. M-6: hostile message text — injection, control characters, bidi overrides, huge bodies
 #      — is quoted and never read as control.
 #   5. No network from any gesture path, proved the way gate GA proves it for the node.
-#   6. M-1, M-6 and M-12 have named tests here, must-coverage still registers all sixteen,
+#   6. M-1, M-6 and M-12 have named tests here, must-coverage passes for every registered MUST,
 #      and the suites pass.
 #
 # Every scanner in here is checked against a known violation. A check that cannot fail proves
@@ -305,7 +305,15 @@ echo "==> GL: gesture suite"
 npx vitest run "${PKG}/test" --reporter=dot
 
 echo "==> GL: named MUST tests for this layer"
-coverage="$(bash gates/must-coverage.sh 2>&1 || true)"
+# `|| true` used to be here, so a must-coverage FAILURE was captured as text and the gate went
+# on to grep it for the rows it cared about. A MUST with no test would have passed this gate.
+# The status is kept and acted on; the output is still captured, because the rows below are read
+# from it.
+if ! coverage="$(bash gates/must-coverage.sh 2>&1)"; then
+  echo "FAIL: must-coverage did not pass" >&2
+  printf '%s\n' "${coverage}" >&2
+  exit 1
+fi
 for must in "${MUSTS[@]}"; do
   file="${PKG}/test/musts/${must}.test.ts"
   if [ ! -f "${file}" ]; then
@@ -319,11 +327,8 @@ for must in "${MUSTS[@]}"; do
   fi
   printf '    %s\n' "$(printf '%s' "${coverage}" | grep -E "ok +${must}\b")"
 done
-if ! printf '%s' "${coverage}" | grep -qE '16/16 MUSTs covered'; then
-  echo "FAIL: must-coverage is no longer at 16/16" >&2
-  printf '%s\n' "${coverage}" >&2
-  exit 1
-fi
+# The total is deliberately not pinned here — see the note in gk-email.sh. `must-coverage.sh`
+# fails on its own when a registered MUST has no test.
 printf '   %s\n' "$(printf '%s' "${coverage}" | grep -E 'MUSTs covered')"
 
 echo

@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 
 declare -a GATES=(
   "G0:Foundation (types + crypto, vector conformance):gates/g0-vectors.sh"
-  "GA:Vault + node (transition table, five tools, M-suite):gates/ga-node.sh"
+  "GA:Vault + node (transition table, six tools, M-suite):gates/ga-node.sh"
   "GB:Connectors (deterministic archaeology, envelope validity):gates/gb-connectors.sh"
   "GK:Email (non-technical capture, hostile MIME):gates/gk-email.sh"
   "GC:Extraction (schema-bound, precision harness):gates/gc-extraction.sh"

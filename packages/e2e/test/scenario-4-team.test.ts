@@ -39,16 +39,17 @@ import {
  * injected clock and every state change is a signature that the §4.3 transition table accepted.
  *
  * GAPS this test does not paper over (reported, and none of them is stubbed green below):
- *   1. §7 exposes five tools, and none of them can assert `closed`, `disputed`, `superseded`,
- *      `released` or `expired`. `OpenLoopItem.actions` names `done`/`release`/`supersede`/
- *      `delegate`, but there is no tool that performs any of them. Every such assertion here is
- *      signed directly and fed through `verifyAssertionChain` — the table remains the authority,
- *      but a conforming *client* could not do what Mila and Ivo do below.
- *   2. `brief()` offers an edge's owner `{tool:'confirm', decision:'confirm'}` as "Mark done".
- *      Executing that action throws `M2Violation`, because `confirm` on an edge is the
- *      counterparty's acceptance and an owner may never sign it. The brief offers the owner an
- *      action that cannot succeed. Asserted below only as M-2 holding, never as the brief's
- *      offer working.
+ *   1. §7's `act` now signs `done` and `release`, so `closed` and `released` ARE reachable
+ *      through the surface. `disputed`, `superseded` and `expired` are not: no tool expresses
+ *      them, and `supersede`/`delegate` are advertised bound to nothing (M-20). Those assertions
+ *      here are signed directly and fed through `verifyAssertionChain` — the table remains the
+ *      authority, but a conforming *client* could not yet supersede what Mila and Ivo supersede
+ *      below.
+ *   2. Closed by M-20/M-21. `brief()` used to offer an edge's owner `{tool:'confirm'}` labelled
+ *      "Mark done" — an action that throws `M2Violation`, because `confirm` on an edge is the
+ *      counterparty's acceptance and an owner may never sign it. The owner is now offered
+ *      `{act:'done', tool:'act'}`, which signs. The M-2 assertion below survives on its own
+ *      terms: it tests that a direct owner `confirm` is refused, not that a brief offered it.
  *   3. There is no path from a confirmed extraction to a proposed edge. `confirm` files a
  *      vault-local commitment; `commit(propose:true)` builds its own commitment with its own
  *      `created_at`, hence its own `commitment_hash`. Mila's one tap therefore reaches the wire

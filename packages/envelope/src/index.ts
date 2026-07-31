@@ -1,5 +1,6 @@
 import { envelopeId } from '@servanda/crypto';
 import { Envelope, UnidentifiedEnvelope } from '@servanda/types';
+import { bound, boundsViolation } from './bounds.js';
 
 /**
  * The connector-side envelope boundary.
@@ -23,14 +24,17 @@ import { Envelope, UnidentifiedEnvelope } from '@servanda/types';
  * visible decision instead of an invisible divergence between near-identical files.
  */
 
-/** Payload strings are clipped: an envelope must stay bounded whatever the source does. */
-export const MAX_PAYLOAD_TEXT = 8192;
-export const MAX_LABEL = 200;
-export const MAX_REF = 2048;
-
-export function clip(s: string, max: number): string {
-  return s.length <= max ? s : s.slice(0, max);
-}
+export {
+  MAX_ENVELOPE_OCTETS,
+  MAX_PAYLOAD_TEXT,
+  MAX_PAYLOAD_DEPTH,
+  MAX_REFS,
+  MAX_REF,
+  MAX_LABEL,
+  boundsViolation,
+  clip,
+  octets,
+} from './bounds.js';
 
 /** Drops keys whose value is undefined: JCS has no representation for them. */
 export function compact(o: Record<string, unknown>): Record<string, unknown> {
@@ -48,8 +52,41 @@ export function compact(o: Record<string, unknown>): Record<string, unknown> {
  *
  * The tag itself lives in `@servanda/crypto` with the other two identifier tags, so §0's single
  * rule has a single home.
+ *
+ * M-19: the bounds are applied HERE, not left to each connector, because this is the only place
+ * that sees the envelope whole. A connector clipping a string on its own can keep a value inside
+ * the bound and still leave the envelope silently truncated — nothing downstream would know a cut
+ * happened. Bounding at the seal means every emitted envelope is inside §2 and carries `clipped`
+ * whenever it had to be brought there.
  */
 export function sealEnvelope(candidate: unknown): Envelope {
   const base = UnidentifiedEnvelope.parse(candidate);
-  return Envelope.parse({ ...base, id: envelopeId(base) });
+  const bounded = UnidentifiedEnvelope.parse(bound(base));
+  return Envelope.parse({ ...bounded, id: envelopeId(bounded) });
+}
+
+/**
+ * The node half of M-19: an envelope that arrives already formed is REJECTED if it exceeds a
+ * bound, never canonicalized and never quietly re-clipped.
+ *
+ * Re-clipping would be the tempting thing and it is wrong twice over: it changes the canonical
+ * form, so the `id` this node computes stops matching the one its sender computed, and it hides
+ * that the sender emitted something §2 forbids.
+ *
+ * This implementation has no ingress for foreign envelopes — its connectors are libraries called
+ * in-process, the divergence from §2's `emit_envelope` recorded in the README — so nothing calls
+ * this today. It exists because the obligation is on the node, not on the connector, and a rule
+ * with no callable form is a rule nothing can be held to.
+ */
+export class EnvelopeBoundsExceeded extends RangeError {
+  override name = 'EnvelopeBoundsExceeded';
+  constructor(reason: string) {
+    super(`§2 bounds exceeded: ${reason}. Rejecting the envelope rather than canonicalizing it.`);
+  }
+}
+
+export function acceptEnvelope(candidate: unknown): Envelope {
+  const reason = boundsViolation(candidate);
+  if (reason !== null) throw new EnvelopeBoundsExceeded(reason);
+  return Envelope.parse(candidate);
 }

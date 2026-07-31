@@ -1,6 +1,6 @@
 import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
-import { MAX_PAYLOAD_TEXT, MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
+import { MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
 
 /**
  * GitHub / CI webhook deliveries → §2 envelopes.
@@ -37,7 +37,7 @@ function obj(v: unknown): Obj | undefined {
 }
 
 function str(v: unknown): string | undefined {
-  return typeof v === 'string' && v.length > 0 ? clip(v, MAX_PAYLOAD_TEXT) : undefined;
+  return typeof v === 'string' && v.length > 0 ? v : undefined;
 }
 
 function num(v: unknown): number | undefined {

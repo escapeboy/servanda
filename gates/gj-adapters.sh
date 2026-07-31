@@ -19,7 +19,7 @@
 #   4. nothing reaches the network, proved the GA way: a trap, positive controls that it is
 #      armed, a negative control that the denial is the trap's, a static import audit, and —
 #      because the git adapter spawns a child the trap cannot cover — a recorded invocation;
-#   5. M-8, M-9 and M-13 have named behavioural tests here, and §8 still reports 16/16 overall.
+#   5. M-8, M-9 and M-13 have named behavioural tests here, and §8 coverage stays complete.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

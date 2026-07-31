@@ -90,7 +90,15 @@ for f in \
   fi
 done
 
-coverage="$(bash gates/must-coverage.sh 2>&1 || true)"
+# `|| true` used to be here, so a must-coverage FAILURE was captured as text and the gate went
+# on to grep it for the rows it cared about. A MUST with no test would have passed this gate.
+# The status is kept and acted on; the output is still captured, because the rows below are read
+# from it.
+if ! coverage="$(bash gates/must-coverage.sh 2>&1)"; then
+  echo "FAIL: must-coverage did not pass" >&2
+  printf '%s\n' "${coverage}" >&2
+  exit 1
+fi
 for id in "M-5" "M-6"; do
   if ! printf '%s' "${coverage}" | grep -qE "ok +${id}\b"; then
     echo "FAIL: must-coverage does not register ${id}" >&2

@@ -1,5 +1,5 @@
 import type { Envelope } from '@servanda/types';
-import { MAX_PAYLOAD_TEXT, MAX_REF, clip, compact } from './envelope.js';
+import { MAX_REF, clip, compact } from './envelope.js';
 import type { ImapMessageSource } from './imap.js';
 import { addressesOf, buildEnvelope } from './capture.js';
 import type { CaptureContext, EmailIdentity } from './capture.js';
@@ -95,13 +95,14 @@ function originalFromEmbedded(embedded: ParsedMessage): Record<string, unknown> 
     from_raw: from === undefined ? undefined : clip(from.raw, 512),
     to: addressesOf(embedded.to),
     cc: addressesOf(embedded.cc),
-    subject: embedded.subject === undefined ? undefined : clip(embedded.subject, MAX_PAYLOAD_TEXT),
+    subject: embedded.subject,
     date: embedded.date,
     message_id: embedded.messageId,
     in_reply_to: embedded.inReplyTo,
     references_count: embedded.references.length,
-    text: clip(embedded.text, MAX_PAYLOAD_TEXT),
-    text_length: embedded.textLength,
+    text: embedded.text,
+    // See capture.ts: the parser's pre-cut count, not §2's post-clip one.
+    text_source_chars: embedded.textLength,
     html: embedded.html,
     attachment_count: embedded.attachments.length,
     raw_bytes: embedded.rawBytes,
@@ -122,8 +123,7 @@ function originalFromInline(inline: InlineOriginal): Record<string, unknown> {
     // Parsed only if it happens to be a real date; never used for `occurred_at`.
     date: rfc3339FromMailDate(pseudo['date']),
     date_raw: pseudo['date'],
-    text: clip(body, MAX_PAYLOAD_TEXT),
-    text_length: body.length,
+    text: body,
   });
 }
 

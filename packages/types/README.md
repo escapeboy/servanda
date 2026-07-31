@@ -17,7 +17,7 @@ the store that writes it and the UI that renders it.
 | `edge` | Edge, assertion, states, rejection reasons (§4) |
 | `scope` | Scopes, scope descriptor, publish/unpublish (§5) |
 | `wire` | Wire messages, hub envelope (§6) |
-| `node-surface` | The five tools' input/output schemas (§7) |
+| `node-surface` | The six tools' input/output schemas (§7) |
 | `musts` | `MUSTS` and `MUST_IDS` (§8) |
 
 ## The one distinction worth knowing

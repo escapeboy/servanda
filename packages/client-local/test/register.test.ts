@@ -11,7 +11,7 @@ import { LocalNodeClient, openRegister } from '../src/index.js';
  * The gap this package closes, stated as a test.
  *
  * Before it, `FixtureNodeClient` was the only `NodeClient` in the repository: the vault stored
- * promises, the node served the five tools, and no shipped surface could show either. Every
+ * promises, the node served §7, and no shipped surface could show either. Every
  * client test passed, because every client test ran against invented data. The property that
  * nothing asserted was the one a person actually cares about — **that the register shows what
  * is in their vault**.

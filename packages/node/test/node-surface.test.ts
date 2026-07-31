@@ -71,7 +71,7 @@ describe('§7 node surface: exactly six tools, exactly the spec’s shapes', () 
 });
 
 describe('§7 over MCP stdio', () => {
-  it('initialises, lists the five tools, and calls them', () => {
+  it('initialises, lists the six tools, and calls them', () => {
     const server = new McpServer(fx.node);
 
     const init = server.handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} });

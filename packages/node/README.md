@@ -28,7 +28,7 @@ Effective state folds `confirmed` into `open` and adds `pending-acceptance` to m
 window, which §4.3 has no row for. Both are interpretations, documented upstream (issues #12, #13),
 not invented silently.
 
-## The five tools (§7)
+## The six tools (§7)
 
 ```ts
 const node = new ServandaNode({ vault, activePersona, now });

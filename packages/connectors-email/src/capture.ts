@@ -2,7 +2,6 @@ import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
 import {
   FROM_VERIFICATION,
-  MAX_PAYLOAD_TEXT,
   MAX_REF,
   clip,
   compact,
@@ -196,10 +195,12 @@ export function buildEnvelope(
       references_count: parsed.references.length,
       is_reply: parsed.inReplyTo !== undefined || parsed.references.length > 0,
 
-      subject: parsed.subject === undefined ? undefined : clip(parsed.subject, MAX_PAYLOAD_TEXT),
-      text: clip(parsed.text, MAX_PAYLOAD_TEXT),
-      // The original length, preserved, so a clipped body is never mistaken for a short one.
-      text_length: parsed.textLength,
+      subject: parsed.subject,
+      text: parsed.text,
+      // How long the body was BEFORE the MIME parser cut it — a different question from §2's
+      // `text_length`, which the envelope boundary writes and which counts octets of the value
+      // that reached it. Both can be present; neither substitutes for the other.
+      text_source_chars: parsed.textLength,
       html: parsed.html,
       raw_bytes: parsed.rawBytes,
       truncated: parsed.truncated,

@@ -27,7 +27,8 @@ lives in your vault, not on a server. It can be proven years later without anyon
 reconstruct what it said.
 
 Those four sentences are not marketing; they are **M-1**, **M-2**, **M-10** and **M-15** of the
-protocol's sixteen MUSTs, and each has a named test in this repository.
+protocol's MUSTs, and each has a named test in this repository — as does every other MUST §8
+places on a node.
 
 ## Getting started
 
@@ -40,7 +41,7 @@ npm install -g @servanda/tui         # the terminal register
 export SERVANDA_VAULT=~/.servanda
 export SERVANDA_PASSPHRASE='something only you know'
 servanda-init                        # creates the vault, prints your recovery phrase
-servanda-node                        # the five §7 tools over MCP stdio
+servanda-node                        # the six §7 tools over MCP stdio
 ```
 
 Or from source:
@@ -51,7 +52,7 @@ pnpm install && pnpm -r run build
 export SERVANDA_VAULT=~/.servanda
 export SERVANDA_PASSPHRASE='something only you know'
 node packages/node/dist/bin/servanda-init.js     # creates the vault, prints your recovery phrase
-node packages/node/dist/bin/servanda-node.js     # the five §7 tools over MCP stdio
+node packages/node/dist/bin/servanda-node.js     # the six §7 tools over MCP stdio
 ```
 
 Then point a client at it — your assistant, the terminal register
@@ -116,7 +117,7 @@ pnpm gates      # Every gate, in stage order
 | Gate | Stage | Proves |
 |---|---|---|
 | G0 | Foundation | 100% of the protocol vectors pass |
-| GA | Vault + node | Negative transitions rejected; five tools answer offline; M-suite green |
+| GA | Vault + node | Negative transitions rejected; six tools answer offline; M-suite green |
 | GB | Connectors | Deterministic archaeology; only valid §2 envelopes, ever |
 | GC | Extraction | Schema-bound; precision harness runs (the ≥90% verdict is a **human** gate) |
 | GD | Executors | Cannot reach network or CI secrets; produces a valid draft PR |

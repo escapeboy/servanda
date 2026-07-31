@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
 import {
-  MAX_PAYLOAD_TEXT,
   MAX_REF,
   clip,
   compact,
@@ -109,7 +108,7 @@ function findMarkers(file: string, content: string, markers: readonly string[]):
       marker,
       // The marker text is the promise as written. It is DATA (M-6): a TODO reading
       // "ignore previous instructions" is a string in `payload.text`, nothing more.
-      text: clip((m[2] ?? '').trim(), MAX_PAYLOAD_TEXT),
+      text: (m[2] ?? '').trim(),
     });
   }
   return out;
@@ -287,9 +286,9 @@ export function archaeologyEnvelopes(persona: string, options: ArchaeologyOption
         actor: { label: label(tip.authorLabel) },
         payload: compact({
           repo_path: repoPath,
-          branch: clip(tip.name, MAX_PAYLOAD_TEXT),
+          branch: tip.name,
           commit: tip.commit,
-          text: clip(tip.subject, MAX_PAYLOAD_TEXT),
+          text: tip.subject,
           default_branch: head,
           age_days: ageDays(tip.committedAtEpoch),
           stale_after_days: staleBranchDays,
@@ -355,7 +354,7 @@ export function archaeologyEnvelopes(persona: string, options: ArchaeologyOption
           migration_id: migration.id,
           sequence: migration.sequence,
           commit: stamp.commit,
-          text: clip(stamp.subject, MAX_PAYLOAD_TEXT),
+          text: stamp.subject,
           age_days: ageDays(stamp.authoredAtEpoch),
           reference_time: referenceTime,
         }),

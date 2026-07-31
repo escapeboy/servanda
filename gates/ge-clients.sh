@@ -330,7 +330,15 @@ echo "==> GE: the local register is not the fixture"
 npx vitest run packages/client-local/test -t 'proving the data came from the vault' --reporter=dot
 
 echo "==> GE: named MUST tests for this layer"
-coverage="$(bash gates/must-coverage.sh 2>&1 || true)"
+# `|| true` used to be here, so a must-coverage FAILURE was captured as text and the gate went
+# on to grep it for the rows it cared about. A MUST with no test would have passed this gate.
+# The status is kept and acted on; the output is still captured, because the rows below are read
+# from it.
+if ! coverage="$(bash gates/must-coverage.sh 2>&1)"; then
+  echo "FAIL: must-coverage did not pass" >&2
+  printf '%s\n' "${coverage}" >&2
+  exit 1
+fi
 for must in "${MUSTS[@]}"; do
   file="packages/client-web/test/musts/${must}.test.ts"
   if [ ! -f "${file}" ]; then

@@ -33,7 +33,7 @@ export interface LoadAppOptions {
   readonly persona?: string | null;
   readonly pending?: OpenLoopsOutput;
   /**
-   * The three surfaces that are not built from the five tools. A team surface is built from
+   * The three surfaces that are not built from the six tools. A team surface is built from
    * what parties chose to share (§5.2); a proof page from one promise's hashes; first run
    * from nothing at all, because there is nothing yet. Each is absent by default, and
    * absent means empty rather than fabricated.
@@ -45,7 +45,7 @@ export interface LoadAppOptions {
 }
 
 /**
- * The whole surface, assembled from the five tools and nothing else.
+ * The whole surface, assembled from the six tools and nothing else.
  *
  * `now` is a parameter. A register that renders differently depending on when you look at
  * it cannot be tested, and a morning email composed by a scheduler needs the same view the

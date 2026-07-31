@@ -59,9 +59,9 @@ SERVANDA_INDEX=1 SERVANDA_LABEL=work node packages/node/dist/bin/servanda-init.j
 
 ## 2. Run the node
 
-The node speaks MCP over stdio and exposes the five tools of §7 — `commit`, `expect`, `confirm`,
-`open_loops`, `brief`. Configuration comes from the environment because stdio is the protocol
-channel and must carry nothing else.
+The node speaks MCP over stdio and exposes the six tools of §7 — `commit`, `expect`, `confirm`,
+`open_loops`, `brief`, `act`. Configuration comes from the environment because stdio is the
+protocol channel and must carry nothing else.
 
 ```bash
 node packages/node/dist/bin/servanda-node.js
@@ -157,9 +157,10 @@ where somebody expected their own promises is worse than refusing.
 
 `SERVANDA_PERSONA` selects one by `persona_id` or by its local label; omitted, you get the first.
 
-**To confirm** is empty against a real vault, and that is honest rather than broken: §7's `confirm`
-takes an id and nothing in the five tools hands one out, so a client cannot discover what is
-waiting. Filed upstream — until it is answered, the queue is reachable only from inside the node.
+**To confirm** was empty against a real vault for a while, and the reason was worth stating: §7's
+`confirm` takes an id and no tool handed one out, so a client could write to the queue and never
+read it. `open_loops` now takes `view: 'pending'` and answers with the waiting extractions, ids
+included, so the queue is reachable from outside the node.
 
 ### Email brief
 

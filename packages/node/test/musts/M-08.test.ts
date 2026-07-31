@@ -106,7 +106,7 @@ describe('M-8: unverifiable edges MUST NOT auto-escalate', () => {
 
     // owed_to forgives it; escalation stops. §4.3 `open → released` is asserted by owed_to
     // alone; signed here directly because release reaches the wire through a client action,
-    // not through one of the five §7 tools.
+    // not through one of the six §7 tools.
     const forgiveness = withSignature(
       {
         v: PROTOCOL_VERSION,

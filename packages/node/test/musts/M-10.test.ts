@@ -9,7 +9,7 @@ import { makeFixture, nodeAs, syncEdge, type Fixture } from '../support/fixture.
  *
  * Owned by this layer. Two halves:
  *  1. In-process: every §7 tool works against a bare vault with nobody else present.
- *  2. Out-of-process (`prove-no-network.mjs`): the shipped node answers all five tools inside a
+ *  2. Out-of-process (`prove-no-network.mjs`): the shipped node answers all six tools inside a
  *     child process whose network primitives throw, with positive and negative controls that
  *     show the trap is armed, plus a static audit of the shipped module graph.
  */

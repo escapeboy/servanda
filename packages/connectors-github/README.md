@@ -45,14 +45,14 @@ These connectors read attacker-reachable text — PR comments, issue bodies, TOD
 anyone. **No field of an envelope is ever interpreted as a command by any pipeline stage.**
 Injection text lands inertly in `payload` and never reaches a field the core reads as control.
 
-Because §2 places no bound on `payload` (upstream issue #18), strings are clipped to 8192
-characters and only scalars are lifted from nested structures. A 2 MB PR body should not become a
-2 MB vault object.
+§2 now bounds `payload` (M-19, upstream issue #18) and this connector no longer clips anything on
+its own: `sealEnvelope` applies the bounds for every connector alike, marks the envelope
+`clipped: true` when it had to cut, and records the observed octet length as `<key>_length`. Only
+scalars are lifted from nested structures. A 2 MB PR body should not become a 2 MB vault object.
 
-Unlike `@servanda/connectors-email` and `@servanda/connectors-claude-code`, this connector does
-**not** record a `text_length` alongside the clipped string, so an envelope from here does not say
-whether anything was cut. Adding it would change every payload this connector emits, and therefore
-every envelope `id` it computes, so it is a decision rather than a fix.
+That also ends an asymmetry this README used to have to describe: envelopes from here said nothing
+about whether anything had been cut, while the two sibling connectors did. The marker now comes
+from the shared boundary, so no connector can be silent about a truncation by omission.
 
 ## Fixture
 

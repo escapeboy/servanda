@@ -1,6 +1,6 @@
 import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
-import { MAX_PAYLOAD_TEXT, MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
+import { MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
 
 /**
  * Claude Code session hook → §2 envelopes.
@@ -75,8 +75,7 @@ export function envelopeFromHookEvent(
       session_source: str(o['source']),
       end_reason: str(o['reason']),
       role: name === 'UserPromptSubmit' ? 'user' : undefined,
-      text: prompt === undefined ? undefined : clip(prompt, MAX_PAYLOAD_TEXT),
-      text_length: prompt === undefined ? undefined : prompt.length,
+      text: prompt,
     }),
     refs,
     persona,

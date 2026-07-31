@@ -52,8 +52,8 @@ export const studioCode = derivePersona(seed, 9);
 export const studioCutover = derivePersona(seed, 10);
 
 /**
- * A §4.2 signed assertion. §7 exposes five tools and none of them can express `closed`,
- * `disputed`, `superseded`, `released` or `expired`, so scenarios 4 and 5 sign these directly.
+ * A §4.2 signed assertion. §7's `act` expresses `closed` and `released`; `disputed`, `superseded`
+ * and `expired` have no tool at all, so scenarios 4 and 5 sign those directly.
  * The transition table is still the only authority on what they mean — nothing here decides a
  * state; `verifyAssertionChain` does, exactly as it does for an assertion off the wire.
  */

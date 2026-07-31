@@ -176,9 +176,11 @@ describe('scenario 3 — expectation: the freelancer and the silent client', () 
     // ask for a wire proposal. An external label is not a resolvable counterparty, so it is
     // refused — by returning a vault-local record, not by throwing.
     const slot = overdueBrief.slots.find((s) => s.headline === PHASE_1)!;
+    // An expectation slot always offers one — a slot with nothing to do is not in the brief.
+    const action = slot.primary_action!;
     proposeAttempt = install.node.commit({
-      intent: slot.primary_action.args['intent'] as string,
-      owed_to: slot.primary_action.args['owed_to'] as string,
+      intent: action.args['intent'] as string,
+      owed_to: action.args['owed_to'] as string,
       due: DUE,
       persona: null,
       propose: true,

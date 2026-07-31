@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
-import { MAX_PAYLOAD_TEXT, MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
+import { MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
 
 /**
  * Reader for Claude Code's local session transcripts (`~/.claude/projects/**\/*.jsonl`).
@@ -106,8 +106,7 @@ export function envelopeFromLine(
       message_uuid: uuid,
       parent_uuid: str(o['parentUuid']),
       role,
-      text: clip(text, MAX_PAYLOAD_TEXT),
-      text_length: text.length,
+      text,
       cwd: str(o['cwd']),
       git_branch: str(o['gitBranch']),
       cli_version: str(o['version']),

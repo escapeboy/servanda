@@ -44,6 +44,15 @@ export const Envelope = z.object({
   actor: EnvelopeActor,
   payload: z.record(z.unknown()),
   refs: z.array(EnvelopeRef).default([]),
+  /**
+   * §2 / M-19: present and `true` when any member had to be clipped to bring the envelope inside
+   * the §2 bounds. Absent — never `false` — when nothing was cut.
+   *
+   * The asymmetry is deliberate. This member is part of the canonical form the `id` is computed
+   * over, so writing `false` would make two nodes that observed the same event agree on the
+   * identifier only if they also agreed to write it. Absence needs no agreement.
+   */
+  clipped: z.literal(true).optional(),
   /** §2: a connector instance is bound to exactly one persona at registration (M-5). */
   persona: PersonaId,
 });

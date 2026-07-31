@@ -9,7 +9,7 @@
 #      executor's class permits, and leaving the fixture byte-identical;
 #   3. the trust gradient promotes on unedited approvals, collapses asymmetrically on a single
 #      correction, and cannot be pushed past a per-class ceiling by any amount of history;
-#   4. M-13 and M-8 have named behavioural tests here, and §8 still reports 16/16 overall.
+#   4. M-13 and M-8 have named behavioural tests here, and §8 coverage stays complete.
 #
 # A stage is done only when its gate passes. This script is the definition of done for GD.
 set -euo pipefail

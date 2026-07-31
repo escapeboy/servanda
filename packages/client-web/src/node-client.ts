@@ -12,7 +12,7 @@ import type {
 } from '@servanda/types';
 
 /**
- * The five §7 tools, and nothing else.
+ * The six §7 tools, and nothing else.
  *
  * Deliberately a narrow interface rather than an import of the node package: a client that
  * can only reach what §7 defines is a client that stays interchangeable, which is the whole
