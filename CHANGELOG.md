@@ -58,6 +58,14 @@ changes bytes on disk or the shape of a tool's answer, so a vault or a client bu
 - CI actions were still on Node 20 majors; bumped to `checkout@v7`, `setup-node@v7`,
   `pnpm/action-setup@v6`. `setup-node@v7` also drops the dummy `NODE_AUTH_TOKEN` fallback, which
   the OIDC publish path is better off without.
+- **Trusted publishing had never been used.** Eighteen publishers were configured and the publish
+  job ran Node 22 — npm 10.9, which has no OIDC support at all — so both 0.1.0-pre and 0.2.0-pre
+  went out on a token while every observable signal (green run, signed provenance, registry
+  metadata) matched what a working OIDC publish produces. The publish job runs Node 24 now, and
+  `gates/oidc-probe.sh` proves the exchange for every package before anything is published: npm
+  performs the OIDC exchange *before* honouring `--dry-run`, so the proof costs nothing and
+  publishes nothing. `NODE_AUTH_TOKEN` is gone from the publish step. Proven 2026-07-31: 18/18
+  exchanged a token with no token in the environment.
 
 ## [0.1.0-pre] — 2026-07-30
 

@@ -124,17 +124,32 @@ Name them in the describe block, files at `packages/<pkg>/test/musts/M-NN.test.t
 follows ownership: M-20 concerns the node surface (`packages/node`), and the other two land where
 the rule lives once the upstream text is final.
 
-## Order of work
+## Order of work — DONE, shipped as v0.2.0-pre on 2026-07-31
 
-1. `gates/sync-vectors.sh ../servanda-protocol`; watch G0 go red. That red is the spec.
-2. `crypto` domain separation → G0 hashing green.
-3. `types` — `NODE_TOOL_NAMES`, the `Edge` refinement, `MUSTS` entries.
-4. `node` — `act`, `open_loops` pending, `windowElapsed` without its default.
-5. Clients — typed act, copy table.
-6. Prose sweep over the eighteen "five tools" mentions that are not CHANGELOG history.
-7. `gates/run-all.sh`, then the full suite. **Separate runs, not back to back** — see
-   `mem:testing-strategy`.
+1. ✅ `gates/sync-vectors.sh ../servanda-protocol`; watch G0 go red. That red is the spec.
+2. ✅ `crypto` domain separation → G0 hashing green.
+3. ✅ `types` — `NODE_TOOL_NAMES`, the `Edge` refinement, `MUSTS` entries.
+4. ✅ `node` — `act`, `open_loops` pending, `windowElapsed` without its default.
+5. ✅ Clients — typed act, copy table.
+6. ✅ Prose sweep. It was twenty mentions, not eighteen, and two of them were not counts at
+   all: `packages/e2e` asserted in prose that no §7 tool could reach `closed` or `released`,
+   which `act` made false.
+7. ✅ `gates/run-all.sh`, then the full suite, as separate runs.
+
+### What the plan did not anticipate
+
+- **M-19 needed the bounds moved, not added.** Each connector clipped its own payload strings,
+  which keeps a value inside the bound and leaves the envelope silent about the cut — the one
+  thing M-19 forbids. `sealEnvelope` is the only place that sees an envelope whole, so that is
+  where §2 is applied now, and three connectors stopped clipping.
+- **M-17 and M-18 were not in the plan and should have been.** Their `addressing/` vectors were
+  vendored and counted by gate G0 and replayed by nothing. Adding a G0 check that each required
+  vector file is *named by some test* found a third unread family in the same run: the §1.6
+  verification ladder.
+- **Three gate holes, all the same shape** — a check that could not fail. `must-coverage.sh`
+  counted to a hardcoded 16; five gates captured its output with `|| true`; G0 counted files
+  without noticing nothing read them.
 
 ## Last Updated
 
-2026-07-31
+2026-07-31 (marked complete after the v0.2.0-pre release)
