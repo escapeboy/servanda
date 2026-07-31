@@ -27,7 +27,7 @@ you will be credited in the advisory.
 
 ## What is in scope
 
-Anything that breaks one of the sixteen MUSTs in `@servanda/types`, in particular:
+Anything that breaks one of the MUSTs enumerated in `@servanda/types` (`MUSTS`), in particular:
 
 | Area | The property that must hold |
 |---|---|
