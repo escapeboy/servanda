@@ -38,12 +38,26 @@ changes bytes on disk or the shape of a tool's answer, so a vault or a client bu
   the seal, in octets, cutting on Unicode scalar boundaries. An envelope that had to be cut says
   so; `clipped` is `true` or absent, never `false`.
 
+- **M-17 and M-18** — §6.7 addressing. `verifyInboxRecord` rejects a record signed by anything but
+  the persona it names, and says whether the signer was merely wrong or was somebody else's key;
+  `hubsFor` returns the declared order untouched and returns nothing once the record has expired.
+  The out-of-band bootstrap encodes, decodes and renders, and the courtesy renderer refuses an
+  unverified payload rather than presenting it with a caveat — it holds no keys, which gate GF
+  now proves by scanning the shipped module.
+
 ### Fixed
 
 - `gates/must-coverage.sh` built its id list as `Array.from({length: 16})` and reported 16/16
   while M-20 went unchecked. It reads `MUST_IDS` now.
 - Five gates captured that script's output with `|| true`, so a MUST with no test would have
   passed them.
+- **Gate G0 counted vector files without noticing that nothing read them.** `addressing/`
+  (4 + 2 cases) and `node-surface/verification-levels.json` (10 cases) were present, counted, and
+  replayed by no test — a green gate over an oracle nobody consulted. G0 now fails when a required
+  vector file is named by no test, and all three families are replayed.
+- CI actions were still on Node 20 majors; bumped to `checkout@v7`, `setup-node@v7`,
+  `pnpm/action-setup@v6`. `setup-node@v7` also drops the dummy `NODE_AUTH_TOKEN` fallback, which
+  the OIDC publish path is better off without.
 
 ## [0.1.0-pre] — 2026-07-30
 

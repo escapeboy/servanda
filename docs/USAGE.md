@@ -234,5 +234,5 @@ pnpm test         # full suite
 pnpm gates        # every gate, in order
 ```
 
-A stage is done only when its gate passes, and `gates/must-coverage.sh` separately proves every one
-of M-1..M-16 has a named test. A MUST with no test is a rule nothing enforces.
+A stage is done only when its gate passes, and `gates/must-coverage.sh` separately proves that every
+§8 MUST has a named test. A MUST with no test is a rule nothing enforces.

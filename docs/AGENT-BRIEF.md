@@ -6,7 +6,7 @@ of them are the difference between a conforming node and a non-conforming one.
 ## Sources of truth, in priority order
 
 1. **Svod MCP → `projects/servanda/spec/00..09`** — NORMATIVE. Read the sections your stream
-   touches before writing code. M-1..M-16 (§8) are binding.
+   touches before writing code. Every §8 MUST is binding.
 2. **Svod MCP → `projects/servanda/docs/*`** — rationale. `ui-design.md` governs all UI
    decisions. ADRs 0001–0014 are accepted decisions; ADR-0015 (in-repo) records the language choice.
 3. **`vendor/vectors/`** — the conformance oracle, vendored from

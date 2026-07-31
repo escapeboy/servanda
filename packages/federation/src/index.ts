@@ -1,5 +1,7 @@
 export * from './transport.js';
 export * from './messages.js';
+export * from './addressing.js';
+export * from './bootstrap.js';
 export * from './git-transport.js';
 export * from './hub.js';
 export * from './hub-transport.js';

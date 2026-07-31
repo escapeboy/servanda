@@ -21,6 +21,10 @@ export const MUSTS = {
   'M-14': 'Assertions violating the transition table are invalid and MUST be discarded.',
   'M-15': 'Retention decay: plaintext SHOULD be deleted, edge+assertion chains MUST be preserved. Personal-scope escrow MUST NOT exist; team-scope escrow MUST be protocol-visible.',
   'M-16': 'A device key MUST NOT be sole custodian of vault content keys.',
+  'M-17':
+    'Only the persona key may alter its inbox record: a record whose signature does not verify against the persona it names MUST be rejected. A hub cannot move its users.',
+  'M-18':
+    'A courtesy renderer MUST NOT hold or use signing keys. It verifies and presents; confirmation is asserted from a node holding the persona’s keys.',
   'M-19':
     'Envelopes are bounded: a connector MUST NOT emit, and a node MUST NOT canonicalize, an envelope exceeding the §2 bounds. Exceeding input is clipped and marked, never silently truncated and never silently dropped.',
   'M-20':

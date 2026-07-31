@@ -180,15 +180,11 @@ describe('schemas reject what the spec forbids', () => {
 
 describe('§8 constitution surface', () => {
   it('enumerates every MUST the spec has resolved', () => {
-    // Nineteen, not twenty-one. M-17 (only the persona key may alter its inbox record) and M-18
-    // (a courtesy renderer holds no keys) are §6.7 rules, outside §8's Node level, and NOTHING
-    // HERE IMPLEMENTS THEM — the `addressing/` vectors are vendored and counted by gate G0, but
-    // no test replays them. That is an open gap, stated here rather than left to look like a
-    // deliberate exclusion. The ids are not contiguous and never will be: §8 appends, and
-    // nothing is ever renumbered.
-    expect(MUST_IDS).toHaveLength(19);
-    expect(MUST_IDS).not.toContain('M-17');
-    expect(MUST_IDS).not.toContain('M-18');
+    // All twenty-one §8 names. M-17 and M-18 are §6.7 rules that §8 places at the Federating-node
+    // level rather than the Node minimum; they were absent here while the `addressing/` vectors
+    // sat vendored and replayed by nothing, which gate G0 could not see because it counts files
+    // and cases, not replays.
+    expect(MUST_IDS).toHaveLength(21);
     expect(MUST_IDS[0]).toBe('M-1');
     expect(MUST_IDS.at(-1)).toBe('M-21');
     for (const id of MUST_IDS) expect(MUSTS[id].length).toBeGreaterThan(20);

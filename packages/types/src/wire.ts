@@ -76,6 +76,26 @@ export const WireMessage = z.object({
 });
 export type WireMessage = z.infer<typeof WireMessage>;
 
+/**
+ * §6.7 inbox record — where a persona says its mail should go.
+ *
+ * `hubs` is ORDERED, most-preferred first, and the order is normative: a sender must walk it as
+ * written. It is typed as a plain array because there is no way to make "do not sort this" a type,
+ * which is exactly why §6.7 states it as a MUST NOT and `hubsFor` hands the list back untouched.
+ *
+ * M-17: the signature is verified against `persona` — the record carries its own verification key,
+ * so no registry and no hub cooperation is involved in deciding whether to believe it.
+ */
+export const InboxRecord = z.object({
+  v: ProtocolVersion,
+  type: z.literal('inbox'),
+  persona: PersonaId,
+  hubs: z.array(z.string().min(1)),
+  issued_at: Rfc3339,
+  sig: SignatureHex,
+});
+export type InboxRecord = z.infer<typeof InboxRecord>;
+
 /** §6.3 blind-courier envelope as a hub sees it: recipient, ciphertext, timestamps. Nothing else. */
 export const HubEnvelope = z.object({
   v: ProtocolVersion,

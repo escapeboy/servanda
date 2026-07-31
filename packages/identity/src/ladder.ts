@@ -26,11 +26,15 @@ import type { BindingProofVerdict } from './binding-proof.js';
  */
 
 /**
- * SPEC AMBIGUITY (reported). §1.6 lists the numeric levels "ascending" but gives `ext` no rank
- * relative to them. This ordering is a decision, not a spec rule: `ext` sits above continuity
- * and below attested, because a binding proof is the persona's own signature on a channel it
- * controls — self-assertion — while an attestation is a third party staking its key. Where the
- * spec is silent, self-assertion must not outrank a third party.
+ * RESOLVED. §1.6 once listed the numeric levels "ascending" and gave `ext` no rank relative to
+ * them, so this order was a decision taken here: `ext` above continuity and below attested,
+ * because a binding proof is the persona's own signature on a channel it controls —
+ * self-assertion — while an attestation is a third party staking its key, and where the spec is
+ * silent self-assertion must not outrank a third party.
+ *
+ * `node-surface/verification-levels.json` now pins `0 < 1 < ext < 2 < 3` with that same
+ * reasoning, and `packages/identity/test/musts/M-12.test.ts` replays it. The local reading became
+ * the rule, which is why the ranks below are no longer ours to change.
  */
 export const LEVEL_RANK: Readonly<Record<VerificationLevel, number>> = Object.freeze({
   '0': 0,

@@ -45,6 +45,7 @@ for f in "${required[@]}"; do
   fi
 done
 echo "    all ${#required[@]} vector files present"
+export G0_REQUIRED="${required[*]}"
 
 echo "==> G0: expected case counts"
 node --input-type=module -e '
@@ -71,6 +72,34 @@ for (const [file, n] of Object.entries(expected)) {
 const personas = JSON.parse(readFileSync(`${dir}/derivation/persona-keys.json`, "utf8")).personas.length;
 if (personas !== 5) { console.error(`FAIL: derivation has ${personas} personas, expected 5`); bad++; }
 else console.log(`    derivation/persona-keys.json: ${personas} personas`);
+process.exit(bad ? 1 : 0);
+'
+
+# PRESENCE IS NOT REPLAY. The two checks above prove a family is on disk and has the case count
+# the spec says; neither notices that nothing reads it. `addressing/` sat here for days, present
+# and counted, replayed by no test — this gate reported green over an oracle nobody consulted.
+# So each required file must now be NAMED by at least one test, which is the cheapest thing that
+# would have caught it.
+echo "==> G0: every vector family is replayed by some test"
+node --input-type=module -e '
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+const required = process.env.G0_REQUIRED.split(" ").filter(Boolean);
+function walk(dir, out = []) {
+  for (const e of readdirSync(dir)) {
+    if (e === "node_modules" || e === "dist" || e === ".git") continue;
+    const p = join(dir, e);
+    if (statSync(p).isDirectory()) walk(p, out);
+    else if (p.endsWith(".test.ts")) out.push(p);
+  }
+  return out;
+}
+const sources = walk("packages").map((f) => readFileSync(f, "utf8")).join("\n");
+let bad = 0;
+for (const file of required) {
+  if (sources.includes(file)) console.log(`    ${file}: replayed`);
+  else { console.error(`FAIL: ${file} is present and counted, and no test names it`); bad++; }
+}
 process.exit(bad ? 1 : 0);
 '
 

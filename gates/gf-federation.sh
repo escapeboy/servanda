@@ -57,7 +57,7 @@ npx vitest run packages/federation/test/musts/M-14.test.ts --reporter=dot
 echo
 echo "==> GF/5: one named test file per MUST this layer owns"
 missing=0
-for i in 02 04 07 11 14; do
+for i in 02 04 07 11 14 17 18; do
   f="packages/federation/test/musts/M-${i}.test.ts"
   if [ ! -f "${f}" ]; then
     echo "  FAIL M-${i} ${f} does not exist" >&2
@@ -70,6 +70,29 @@ if [ "${missing}" -gt 0 ]; then
   echo "FAIL: ${missing} MUST(s) this layer owns have no test file. §8 is binding on code." >&2
   exit 1
 fi
+
+# M-18 asserted on the SHIPPED module, not on the source a test can read. A courtesy renderer
+# that could sign would be a party able to manufacture confirmations for people who have no node
+# — the concentration §6.7 built it to avoid — so "it holds no keys" is checked the way GF checks
+# "it reaches no network": by scanning what actually ships, with a control proving the scan fires.
+echo
+echo "==> GF/6: M-18 — the shipped courtesy renderer cannot sign"
+node --input-type=module -e '
+import { readFileSync } from "node:fs";
+const FILE = "packages/federation/dist/bootstrap.js";
+const FORBIDDEN = [/\bsignObject\b/, /\bwithSignature\b/, /\bsignMessage\b/, /\bprivateKey\b/, /getPublicKey/];
+const text = readFileSync(FILE, "utf8");
+const hits = FORBIDDEN.filter((re) => re.test(text));
+if (hits.length > 0) {
+  console.error(`FAIL: ${FILE} references a signing primitive: ${hits.join(", ")}`);
+  process.exit(1);
+}
+if (!FORBIDDEN.some((re) => re.test("withSignature(o, k)"))) {
+  console.error("FAIL: the scanner does not detect a known violation");
+  process.exit(1);
+}
+console.log(`    ${FILE}: 0 signing primitives, scanner verified against a known violation`);
+'
 
 echo
 echo "==> GF/5: MUST coverage across the repository (every registered MUST has a test)"

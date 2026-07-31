@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { VerificationLevel } from '@servanda/types';
 import { VERIFICATION_LEVEL_LABELS } from '@servanda/types';
 import type { VerifiedIdentity } from '../../src/index.js';
 import {
   DomainAnchorResolver,
+  LEVEL_RANK,
   bindingLevel,
   shortKey,
   signBindingProof,
@@ -191,5 +193,91 @@ describe('M-12: the level is always available, and a name never rises above its 
         }
       }
     }
+  });
+});
+
+/**
+ * The `verification-levels.json` oracle, replayed.
+ *
+ * This family had been vendored, counted by gate G0, and read by nothing — the same silence that
+ * hid the §6.7 addressing family. G0 now fails when a vector file no test names, which is what
+ * surfaced it.
+ *
+ * Worth recording: `ladder.ts` carries a comment marking the position of `ext` in the order as a
+ * DECISION rather than a spec rule, because §1.6 ranked `ext` against nothing. The suite now
+ * states `0 < 1 < ext < 2 < 3` with the same reasoning almost word for word — self-assertion must
+ * not outrank a third party staking its own key. The local reading became the rule.
+ */
+describe('M-12: the ladder as the conformance suite states it', () => {
+  const VECTORS = 'vendor/vectors/node-surface/verification-levels.json';
+
+  interface LevelCase {
+    name: string;
+    evidence: {
+      priorConfirmedEdge: boolean;
+      bindingProof: boolean;
+      attestation: boolean;
+      domainAnchored: boolean;
+      attestedDisplayName: string | null;
+    };
+    expected: { level: string; display_name: string | null; name_bearing: boolean };
+  }
+  const suite = JSON.parse(readFileSync(VECTORS, 'utf8')) as {
+    level_rank: Record<string, number>;
+    name_bearing_levels: string[];
+    cases: LevelCase[];
+  };
+
+  /** The oracle's abstract evidence, expressed as the verdicts this package's grader consumes. */
+  function graded(e: LevelCase['evidence']): VerifiedIdentity {
+    const att = e.attestation
+      ? verifyAttestation(
+          attestation(e.attestedDisplayName === null ? {} : { display_name: e.attestedDisplayName }),
+          { now: at(T.before) },
+        )
+      : null;
+    return bindingLevel({
+      subject: MARIA.id,
+      priorConfirmedEdges: e.priorConfirmedEdge ? 1 : 0,
+      attestation: att,
+      anchor: e.domainAnchored ? { ok: true, domain: 'acme.example', anchor: anchorDocument() as never } : null,
+      bindingProof: e.bindingProof
+        ? { ok: true, proof: { channel_url: 'https://example.com/maria' } as never, reason: null, detail: null }
+        : null,
+    });
+  }
+
+  it('replays every case the oracle states', () => {
+    expect(suite.cases).toHaveLength(10);
+  });
+
+  it('reaches the oracle’s level and name on every case', () => {
+    for (const c of suite.cases) {
+      const id = graded(c.evidence);
+      expect(id.level, c.name).toBe(c.expected.level);
+      expect(id.displayName, c.name).toBe(c.expected.display_name);
+      expect(id.hasName, c.name).toBe(c.expected.name_bearing);
+    }
+  });
+
+  it('withholds a name that IS in the evidence, at every level that does not carry it', () => {
+    // The three negative cases are the whole of M-12 on this layer: a display name sitting right
+    // there in the surrounding data, and a level that has not earned it. A grader that read the
+    // name from wherever it could find it would pass every positive case above.
+    const negatives = suite.cases.filter((c) => c.evidence.attestedDisplayName !== null && !c.expected.name_bearing);
+    expect(negatives.length).toBeGreaterThanOrEqual(3);
+    for (const c of negatives) {
+      const id = graded(c.evidence);
+      expect(id.displayName, c.name).toBeNull();
+      expect(id.render.isKey, c.name).toBe(true);
+      expect(id.render.name, c.name).not.toContain('Maria');
+    }
+  });
+
+  it('ranks the levels exactly as the oracle does', () => {
+    for (const [level, rank] of Object.entries(suite.level_rank)) {
+      expect(LEVEL_RANK[level as VerificationLevel], level).toBe(rank);
+    }
+    expect(suite.name_bearing_levels).toEqual(['2', '3']);
   });
 });

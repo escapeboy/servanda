@@ -81,7 +81,7 @@ Solo use is complete use.
 | `@servanda/types` | Every spec object as a zod schema + TS type; the §7 tool contract; §8's MUST list as data |
 | `@servanda/crypto` | RFC 8785 JCS, SHA-256, Ed25519, SLIP-0010 `m/7391'`, BIP-39, XChaCha20-Poly1305, X25519 blind courier |
 | `@servanda/vault` | Encrypted git-backed sovereign store; commitment / expectation / edge stores; retention decay |
-| `@servanda/node` | Edge state machine (§4.3) and the five MCP tools (§7) |
+| `@servanda/node` | Edge state machine (§4.3) and the six MCP tools (§7) |
 | `@servanda/identity` | §1 verification: attestation, revocation boundary, domain anchor, the binding-proof ladder, rotation |
 | `@servanda/federation` | §6: git and hub transports, reconciliation, edge recovery, anti-spam, blind courier |
 | `@servanda/adapters` | Verification adapters: evidence bundles for §4.4 closure, and what makes an edge unverifiable (M-8) |
@@ -101,7 +101,7 @@ The vectors in `vendor/vectors/` are the oracle, vendored from the protocol repo
 `vendor/vectors/.SOURCE_COMMIT`. They are read-only here. **A failing vector is never fixed by
 editing the vector.**
 
-The 19 negative transition vectors matter more than the positive ones. A verifier that accepts a
+The 21 negative transition vectors matter more than the positive ones. A verifier that accepts a
 `confirmed` assertion signed by the owner rather than the counterparty has silently discarded the
 entire confirm-first guarantee — and would still pass every positive test.
 
@@ -129,7 +129,7 @@ pnpm gates      # Every gate, in stage order
 | GE | Clients | Brief < 100 ms; keyboard-only; zero protocol vocabulary in user-facing strings |
 | G3 | Integration | All six scenarios, end to end |
 
-`gates/must-coverage.sh` separately proves every M-1..M-16 has a named test. A MUST with no test
+`gates/must-coverage.sh` separately proves every §8 MUST has a named test. A MUST with no test
 is a rule nothing enforces.
 
 ## Development
@@ -149,8 +149,8 @@ upstream, in the protocol repo).
 
 The spec is a draft, and drafts contradict themselves. The rule here is: **never resolve a spec
 ambiguity silently.** Implement the narrowest reading, comment it at the code site, and file it
-upstream. Twenty-five such issues are open against servanda-protocol; the vectors' README documents
-the interpretations the generator had to make.
+upstream. Five remain open against servanda-protocol — twenty-two were closed by its v0.1-pre
+resolutions — and the vectors' README documents the interpretations the generator had to make.
 
 Anything resembling a design change goes to a protocol issue, never into this code.
 
