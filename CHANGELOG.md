@@ -38,6 +38,11 @@ changes bytes on disk or the shape of a tool's answer, so a vault or a client bu
 - **Envelope bounds and the `clipped` marker** (upstream #18, M-19). Bounds are applied once, at
   the seal, in octets, cutting on Unicode scalar boundaries. An envelope that had to be cut says
   so; `clipped` is `true` or absent, never `false`.
+- **§6.7 store-and-forward.** `deliverViaInbox` walks a persona's declared hubs in the order they
+  declared, stops at the first that accepts, and refuses to route at all on a record it has not
+  verified or one that has expired. Every hub failing returns an outcome rather than throwing:
+  §6.7 makes delivery an optimization and reconciliation the guarantee, and a caller forced to
+  catch would be pushed toward treating a hub as durable.
 - **M-17 and M-18** — §6.7 addressing. `verifyInboxRecord` rejects a record signed by anything but
   the persona it names, and says whether the signer was merely wrong or was somebody else's key;
   `hubsFor` returns the declared order untouched and returns nothing once the record has expired.

@@ -6,7 +6,7 @@
 #      positive chains accepted with the expected final state;
 #   2. the node answers all six §7 MCP tools with networking DISABLED — proved in a child
 #      process whose network primitives throw, with controls showing the trap is armed;
-#   3. every M-1..M-16 has a named behavioural test in the layer that owns it.
+#   3. every MUST this layer owns has a named behavioural test here.
 #
 # A stage is done only when its gate passes. This script is the definition of done for GA.
 set -euo pipefail
@@ -49,7 +49,12 @@ node packages/node/test/support/prove-no-network.mjs
 echo
 echo "==> GA/3: one named test file per MUST"
 missing=0
-for i in $(seq -w 1 16); do
+# ENUMERATED, not a range. `seq 1 16` is the same construction that had must-coverage.sh
+# reporting 16/16 while M-20 went unchecked: a count cannot notice a MUST it was never told
+# about, and §8's ids stopped being contiguous the moment M-17..M-21 landed in the order the
+# spec resolved them. The federation MUSTs (M-17, M-18) are listed in gates/gf-federation.sh and
+# the envelope one (M-19) in packages/envelope, because placement follows ownership.
+for i in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 20 21; do
   f="packages/node/test/musts/M-${i}.test.ts"
   if [ ! -f "${f}" ]; then
     echo "  FAIL M-${i} ${f} does not exist" >&2

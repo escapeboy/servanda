@@ -1,5 +1,7 @@
 import { canonicalBytes, verifyObject } from '@servanda/crypto';
+import type { WireMessage } from '@servanda/types';
 import { InboxRecord } from '@servanda/types';
+import type { Transport } from './transport.js';
 
 /**
  * §6.7 addressing — where a persona says its mail should go, and who is allowed to say it.
@@ -106,4 +108,66 @@ export function shouldRepublish(record: InboxRecord, now: string): boolean {
 export function inboxRecordCanonical(record: InboxRecord): string {
   const { sig: _sig, ...rest } = record;
   return new TextDecoder().decode(canonicalBytes(rest));
+}
+
+export interface DeliveryAttempt {
+  hub: string;
+  error: string;
+}
+
+export interface DeliveryOutcome {
+  /** The hub that accepted it, or null — see below on why that is not an error. */
+  delivered: string | null;
+  attempts: DeliveryAttempt[];
+  /** Set when nothing was attempted at all: an unverified or expired record routes nowhere. */
+  refused: InboxRejectionReason | 'record-expired' | null;
+}
+
+/**
+ * §6.7 store-and-forward: deliver to the persona's declared hubs, in the order they declared.
+ *
+ * **A failure here is not an error, and that is the design.** §6.7: "Delivery is optimization;
+ * reconciliation is the guarantee. Loss of any queued message is healed by the next §6.4 recon
+ * exchange between the parties." So this returns an outcome rather than throwing: a caller that
+ * had to catch an exception would be pushed toward treating delivery as a durability claim, and
+ * a hub is not durable — it queues with a TTL and may drop.
+ *
+ * Three §6.7 MUSTs live in the ordering:
+ *
+ *  - hubs are tried in the DECLARED order, never reordered by latency or past success. The order
+ *    is the persona's own statement about where it wants its mail.
+ *  - an expired record routes nowhere. Honouring it would deliver to an address its owner has
+ *    abandoned.
+ *  - an unverified record routes nowhere either — M-17. Routing on a record this node has not
+ *    checked is exactly the hub-moves-its-users attack, one layer up.
+ */
+export async function deliverViaInbox(opts: {
+  record: unknown;
+  now: string;
+  recipient: string;
+  message: WireMessage;
+  /** A sender bound to one hub URL. Injected, so nothing here decides how to reach a network. */
+  clientFor: (baseUrl: string) => Pick<Transport, 'send'>;
+}): Promise<DeliveryOutcome> {
+  const verdict = verifyInboxRecord(opts.record);
+  if (!verdict.accepted) {
+    return { delivered: null, attempts: [], refused: verdict.rejection_reason };
+  }
+  const record = InboxRecord.parse(opts.record);
+
+  const hubs = hubsFor(record, opts.now);
+  if (hubs.length === 0) {
+    return { delivered: null, attempts: [], refused: 'record-expired' };
+  }
+
+  const attempts: DeliveryAttempt[] = [];
+  for (const hub of hubs) {
+    try {
+      await opts.clientFor(hub).send(opts.recipient, opts.message);
+      return { delivered: hub, attempts, refused: null };
+    } catch (error) {
+      attempts.push({ hub, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { delivered: null, attempts, refused: null };
 }

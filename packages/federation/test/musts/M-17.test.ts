@@ -4,7 +4,9 @@ import { withSignature } from '@servanda/crypto';
 import { InboxRecord } from '@servanda/types';
 import {
   INBOX_RECORD_LIFETIME_DAYS,
+  deliverViaInbox,
   hubsFor,
+  signMessage,
   inboxRecordCanonical,
   shouldRepublish,
   verifyInboxRecord,
@@ -145,5 +147,101 @@ describe('§6.7: what a verified record then authorizes', () => {
     // The point of the half-life: a refreshed record is in circulation while the old one is
     // still routable, so there is no window in which a persona is unaddressable.
     expect(hubsFor(record(), day(16))).toHaveLength(2);
+  });
+});
+
+/**
+ * §6.7 store-and-forward, which is where a verified record finally does something.
+ *
+ * The failure mode being guarded is not "delivery failed" — §6.7 says plainly that delivery is
+ * optimization and reconciliation is the guarantee, so a dropped message is expected and healed.
+ * What must not happen is a sender quietly substituting its own judgement for the persona's:
+ * reordering the hubs by latency, routing on a record it never verified, or honouring one whose
+ * owner has moved on.
+ */
+describe('§6.7: delivering to declared hubs, in the declared order', () => {
+  const ISSUED = '2026-07-25T09:00:00Z';
+  const DAY = (n: number) => new Date(Date.parse(ISSUED) + n * 86_400_000).toISOString();
+  const HUBS = ['https://first.example', 'https://second.example', 'https://third.example'];
+
+  const signedRecord = (by: { personaId: string; privateKey: string }, persona = alice.personaId) =>
+    withSignature(
+      { v: 'servanda/0.1' as const, type: 'inbox' as const, persona, hubs: HUBS, issued_at: ISSUED },
+      by.privateKey,
+    );
+
+  const message = () =>
+    signMessage('propose', { hello: 'world' }, alice.personaId, ISSUED, alice.privateKey);
+
+  /** Records what was tried, in order, and fails whichever hubs the caller names. */
+  function courier(failing: readonly string[]) {
+    const tried: string[] = [];
+    return {
+      tried,
+      clientFor: (baseUrl: string) => ({
+        async send() {
+          tried.push(baseUrl);
+          if (failing.includes(baseUrl)) throw new Error(`hub refused delivery: HTTP 503`);
+        },
+      }),
+    };
+  }
+
+  it('stops at the first hub that accepts, and tries no other', async () => {
+    const c = courier([]);
+    const out = await deliverViaInbox({
+      record: signedRecord(alice), now: DAY(1), recipient: bob.personaId, message: message(), clientFor: c.clientFor,
+    });
+    expect(out).toEqual({ delivered: HUBS[0], attempts: [], refused: null });
+    expect(c.tried).toEqual([HUBS[0]]);
+  });
+
+  it('walks the list in the declared order when a hub is down', async () => {
+    const c = courier([HUBS[0]!, HUBS[1]!]);
+    const out = await deliverViaInbox({
+      record: signedRecord(alice), now: DAY(1), recipient: bob.personaId, message: message(), clientFor: c.clientFor,
+    });
+    expect(c.tried).toEqual(HUBS);
+    expect(out.delivered).toBe(HUBS[2]);
+    expect(out.attempts.map((a) => a.hub)).toEqual([HUBS[0], HUBS[1]]);
+  });
+
+  it('every hub failing is an outcome, not an exception', async () => {
+    // §6.7: "Delivery is optimization; reconciliation is the guarantee." A caller forced to catch
+    // would be pushed toward treating a hub as durable, and a hub queues with a TTL and may drop.
+    const c = courier(HUBS);
+    const out = await deliverViaInbox({
+      record: signedRecord(alice), now: DAY(1), recipient: bob.personaId, message: message(), clientFor: c.clientFor,
+    });
+    expect(out.delivered).toBeNull();
+    expect(out.refused).toBeNull();
+    expect(out.attempts).toHaveLength(3);
+  });
+
+  it('routes nowhere on a record it has not verified — M-17, one layer up', async () => {
+    const c = courier([]);
+    const out = await deliverViaInbox({
+      record: signedRecord(bob), now: DAY(1), recipient: bob.personaId, message: message(), clientFor: c.clientFor,
+    });
+    // `invalid-signature`, not `signer-is-not-the-persona`: routing passes no candidate keys,
+    // because which key signed is a diagnostic and refusing does not depend on naming it. The
+    // sender needs one fact — it was not the persona's — and it has that.
+    expect(out.refused).toBe('invalid-signature');
+    // Nothing was attempted at all. A sender that tried the attacker's hub and only then noticed
+    // has already delivered to it.
+    expect(c.tried).toEqual([]);
+  });
+
+  it('routes nowhere on an expired record', async () => {
+    const c = courier([]);
+    const out = await deliverViaInbox({
+      record: signedRecord(alice),
+      now: DAY(INBOX_RECORD_LIFETIME_DAYS + 1),
+      recipient: bob.personaId,
+      message: message(),
+      clientFor: c.clientFor,
+    });
+    expect(out.refused).toBe('record-expired');
+    expect(c.tried).toEqual([]);
   });
 });
