@@ -7,6 +7,44 @@ All notable changes to this project are documented here. The format follows
 Version numbers below 1.0.0 carry no compatibility promise. This one carries an explicit
 incompatibility promise — see *Scheduled break* below.
 
+## [Unreleased]
+
+The four spec resolutions that landed upstream as `servanda-protocol#28`. Every one of them
+changes bytes on disk or the shape of a tool's answer, so a vault or a client built against
+0.1.0-pre will not read what this produces.
+
+### Changed — breaking
+
+- **Domain separation on every identifier** (upstream #8, #16). `commitment_hash`, `edge_id` and
+  the §2 envelope `id` are each hashed over `<tag> || 0x00 || <canonical form>`. Signing preimages
+  are deliberately NOT tagged. Every identifier a 0.1.0-pre vault holds is different under this.
+- **`acceptance_window` has no default** (upstream #5). An edge with `closure_policy:
+  'on-acceptance'` and no window, or a window without that policy, is malformed: it rejects every
+  assertion with `malformed-edge-acceptance-window`. The old implied P5D is gone — inventing a
+  window is inventing consent.
+- **`brief().primary_action` is a typed act, not a label** (upstream #20, M-21). `{act, tool,
+  args}` replaces `{label, tool, args}`; a client maps the act to its own wording. Slots that
+  offer nothing carry `null`.
+
+### Added
+
+- **`act`, the sixth §7 tool** (upstream #19, M-20). The only tool that signs an assertion:
+  `done` and `release`. Before it, a promise could be recorded through §7 and never closed
+  through it. `supersede`, `delegate` and `ping` are advertised bound to nothing — honest, where
+  binding them to a tool that signs nothing would tell a person they had acted.
+- **`open_loops` view `pending`** (upstream #27). The extraction-confirmation queue is readable
+  at last; `confirm` takes an id and nothing used to hand one out.
+- **Envelope bounds and the `clipped` marker** (upstream #18, M-19). Bounds are applied once, at
+  the seal, in octets, cutting on Unicode scalar boundaries. An envelope that had to be cut says
+  so; `clipped` is `true` or absent, never `false`.
+
+### Fixed
+
+- `gates/must-coverage.sh` built its id list as `Array.from({length: 16})` and reported 16/16
+  while M-20 went unchecked. It reads `MUST_IDS` now.
+- Five gates captured that script's output with `|| true`, so a MUST with no test would have
+  passed them.
+
 ## [0.1.0-pre] — 2026-07-30
 
 First public release. The reference implementation of the Servanda protocol, tracking spec
@@ -65,4 +103,5 @@ promise you need in a year.
 - Hosted operation, HPKE transport, threshold group signing, and formal verification of the
   transition table are out of scope for this implementation — not merely unimplemented.
 
+[Unreleased]: https://github.com/escapeboy/servanda/compare/v0.1.0-pre...main
 [0.1.0-pre]: https://github.com/escapeboy/servanda/releases/tag/v0.1.0-pre
