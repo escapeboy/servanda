@@ -61,7 +61,7 @@ export const ConfirmOutput = z.object({
 export type ConfirmOutput = z.infer<typeof ConfirmOutput>;
 
 /** §7 open_loops */
-export const OpenLoopsView = z.enum(['owe', 'waiting', 'closed', 'all']);
+export const OpenLoopsView = z.enum(['owe', 'waiting', 'closed', 'pending', 'all']);
 export type OpenLoopsView = z.infer<typeof OpenLoopsView>;
 
 export const OpenLoopAction = z.enum(['done', 'release', 'supersede', 'delegate', 'ping']);
@@ -135,6 +135,20 @@ export const ActOutput = z.object({
 });
 export type ActOutput = z.infer<typeof ActOutput>;
 
+/**
+ * §7 — one advertised affordance: what it is, which tool signs it, and with what arguments.
+ *
+ * There is no `label`. M-21: no user-facing copy crosses the node surface, so a client maps the
+ * act to its own wording. `tool: null` means the act is real but v0 binds it to nothing — the
+ * client may show it and MUST NOT invent a binding.
+ */
+export const ItemAction = z.object({
+  act: Act,
+  tool: z.enum(['act', 'confirm']).nullable(),
+  args: z.record(z.unknown()),
+});
+export type ItemAction = z.infer<typeof ItemAction>;
+
 export const OpenLoopsInput = z.object({
   view: OpenLoopsView.default('all'),
   persona: z.string().nullable().default(null),
@@ -152,7 +166,7 @@ export const OpenLoopItem = z.object({
   age_days: z.number().nonnegative(),
   due: Rfc3339.nullable(),
   state: z.union([EffectiveState, z.enum(['vault-local', 'open', 'closed'])]),
-  actions: z.array(OpenLoopAction),
+  actions: z.array(ItemAction),
 });
 export type OpenLoopItem = z.infer<typeof OpenLoopItem>;
 
@@ -167,13 +181,21 @@ export const BriefInput = z.object({
 export type BriefInput = z.infer<typeof BriefInput>;
 
 export const BriefSlot = z.object({
+  /**
+   * M-21: a person's own recorded words are CONTENT, not copy — the headline is the commitment's
+   * intent as they wrote it, rendered verbatim. That is why this field survives while
+   * `primary_action.label` did not: one carries what someone said, the other told the client how
+   * to word its own button.
+   */
   headline: z.string(),
   item_id: z.string(),
-  primary_action: z.object({
-    label: z.string(),
-    tool: z.string(),
-    args: z.record(z.unknown()),
-  }),
+  /**
+   * M-21: no display wording crosses the surface. This was `{label, tool, args}` and the `label`
+   * invited clients to render a string that arrived over a connection (upstream #20). It is the
+   * same `{act, tool, args}` shape `open_loops` advertises, so a client has one mapping from act
+   * to its own copy and not two.
+   */
+  primary_action: ItemAction.nullable(),
   /** M-5 audit trail: which persona's pipeline produced this slot's content. */
   persona: PersonaId.optional(),
 });

@@ -138,7 +138,7 @@ describe('the terminal is operable by keys alone', () => {
   });
 });
 
-describe('the terminal reaches the register through the same five tools', () => {
+describe('the terminal reaches the register through the same six tools', () => {
   it('confirms through §7 confirm', async () => {
     const fixture = makeFixture(6, NOW);
     const client = new FixtureNodeClient(fixture);
@@ -152,13 +152,16 @@ describe('the terminal reaches the register through the same five tools', () => 
     expect(client.confirmed).toEqual([{ id: 'pending-0', decision: 'confirm' }]);
   });
 
-  it('reports an action §7 has no tool for rather than inventing one', async () => {
+  it('reports an act v0 binds to no tool rather than inventing one', async () => {
+    // This used to assert `done` was unmapped, which was true while §7 named a tool for none of
+    // its five actions. `done` reaches the `act` tool now (upstream #19), so the case that still
+    // exercises the rule is one of the acts v0 genuinely leaves unbound.
     const fixture = makeFixture(6, NOW);
     const client = new FixtureNodeClient(fixture);
     const view = await loadApp(client, { surface: 'owe', now: NOW });
     const card = view.ledger.sections.find((s) => s.id === 'owe')?.cards[0];
-    const done = card?.actions.find((a) => a.label === COPY.actions.done);
-    expect(await dispatch(client, view, done?.id ?? '')).toBe('unmapped');
+    const delegate = card?.actions.find((a) => a.label === COPY.actions.delegate);
+    expect(await dispatch(client, view, delegate?.id ?? '')).toBe('unmapped');
     expect(client.confirmed).toEqual([]);
   });
 });

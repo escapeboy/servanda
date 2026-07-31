@@ -147,14 +147,21 @@ describe('a key is not a name', () => {
 });
 
 describe('the brief is a projection of the register, not a second one', () => {
-  it("honours the node's choice of leading action without adopting its wording", async () => {
+  it("honours the node's choice of leading action, and the node ships no wording to adopt", async () => {
     const fixture = makeFixture(6, NOW);
     const brief = buildBrief(fixture.brief, { items: [...fixture.items] }, NOW);
-    const nodeLabels = fixture.brief.slots.map((s) => s.primary_action.label);
-    expect(nodeLabels).toContain('Mark as done');
+
+    // M-21, stated structurally rather than by comparison. This used to assert that the client
+    // did not reuse the node's `label`; there is no longer a label to reuse, which is a stronger
+    // guarantee than declining to copy one.
+    for (const slot of fixture.brief.slots) {
+      if (slot.primary_action === null) continue;
+      expect(Object.keys(slot.primary_action).sort()).toEqual(['act', 'args', 'tool']);
+    }
+
+    // Every word a person reads came from this client's own table.
     for (const card of brief.cards) {
       for (const action of card.actions) {
-        expect(nodeLabels).not.toContain(action.label);
         expect(Object.values(COPY.actions)).toContain(action.label);
       }
     }

@@ -89,16 +89,27 @@ export function makeFixture(size = 24, now = '2026-03-01T09:00:00Z'): FixtureSta
     const dueOffsetDays = (i % 11) - 4;
     const hasDue = i % 4 !== 3;
     const levels = ['0', '1', '2', '3', 'ext'] as const;
+    const itemId = `item-${String(i).padStart(4, '0')}`;
     items.push({
       kind: waiting ? 'expectation' : 'commitment',
-      id: `item-${String(i).padStart(4, '0')}`,
+      id: itemId,
       intent_or_expect: `${INTENTS[i % INTENTS.length]} (${i + 1})`,
       counterparty: i % 5 === 4 ? null : (NAMES[i % NAMES.length] ?? null),
       verification_level: levels[i % levels.length] ?? '0',
       age_days: (i * 3) % 40,
       due: hasDue ? new Date(nowMs + dueOffsetDays * 86_400_000).toISOString().replace(/\.\d{3}Z$/u, 'Z') : null,
       state: closed ? 'closed' : waiting ? 'open' : i % 5 === 0 ? 'proposed' : 'open',
-      actions: waiting ? ['ping', 'release'] : ['done', 'supersede', 'delegate'],
+      actions: waiting
+        ? [
+            { act: 'release' as const, tool: 'act' as const, args: { id: itemId, act: 'release' } },
+            { act: 'ping' as const, tool: null, args: {} },
+            { act: 'supersede' as const, tool: null, args: {} },
+          ]
+        : [
+            { act: 'done' as const, tool: 'act' as const, args: { id: itemId, act: 'done' } },
+            { act: 'supersede' as const, tool: null, args: {} },
+            { act: 'delegate' as const, tool: null, args: {} },
+          ],
     });
   }
 
@@ -112,7 +123,7 @@ export function makeFixture(size = 24, now = '2026-03-01T09:00:00Z'): FixtureSta
   const slots = items.slice(0, Math.min(6, items.length)).map((item) => ({
     headline: item.intent_or_expect,
     item_id: item.id,
-    primary_action: { label: 'Mark as done', tool: 'confirm', args: { id: item.id } },
+    primary_action: { act: 'done' as const, tool: 'act' as const, args: { id: item.id, act: 'done' } },
   }));
 
   return {

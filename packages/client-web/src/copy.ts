@@ -137,6 +137,7 @@ export const COPY = {
     ping: 'Ask for an update',
     confirm: 'Confirm',
     dismiss: 'Not a promise',
+    propose: 'Send it to them',
   },
 
   nav: {

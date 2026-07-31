@@ -137,7 +137,12 @@ describe('scenario 2 — cold start: value before configuration', () => {
 
     for (const slot of brief.slots) {
       expect(slot.headline.length).toBeGreaterThan(0);
-      expect(slot.primary_action.tool.length).toBeGreaterThan(0);
+      // M-21: the slot names an act, not a word. `tool` may be null for an act v0 binds to
+      // nothing — what must never appear is display wording.
+      expect(slot.primary_action === null || typeof slot.primary_action.act === 'string').toBe(true);
+      if (slot.primary_action !== null) {
+        expect(Object.keys(slot.primary_action).sort()).toEqual(['act', 'args', 'tool']);
+      }
       // Every slot must be actionable — a brief line you cannot act on is a notification.
       expect(slot.item_id.length).toBeGreaterThan(0);
     }

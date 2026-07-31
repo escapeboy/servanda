@@ -214,7 +214,12 @@ describe('scenario 1 — solo: from a spoken sentence to a brief line', () => {
 
     const slot = brief.slots[0]!;
     expect(slot.headline.toLowerCase()).toContain('tests');
-    expect(slot.primary_action.tool.length).toBeGreaterThan(0);
+    // M-21: the slot names an act, not a word. `tool` may be null for an act v0 binds to
+    // nothing — what must never appear is display wording.
+    expect(slot.primary_action === null || typeof slot.primary_action.act === 'string').toBe(true);
+    if (slot.primary_action !== null) {
+      expect(Object.keys(slot.primary_action).sort()).toEqual(['act', 'args', 'tool']);
+    }
 
     // A reflexive commitment has no counterparty to display, and the loop is one the user owes.
     const loops = install.node.openLoops({ view: 'owe', persona: null, limit: 10 });

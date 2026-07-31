@@ -23,6 +23,8 @@ export const MUSTS = {
   'M-16': 'A device key MUST NOT be sole custodian of vault content keys.',
   'M-20':
     "A node MUST NOT advertise an act the transition table does not authorize the requesting persona to sign in the item's current state, and MUST NOT bind an advertised act to a tool call that produces no assertion. A client MUST NOT invent a tool binding for an act the node reports as unbound.",
+  'M-21':
+    "No user-facing copy crosses the node surface: a node MUST NOT supply display wording for a control, and a client MUST author the wording of every affordance it renders. A person's own recorded words are content, not copy, and are rendered verbatim.",
 } as const;
 
 export type MustId = keyof typeof MUSTS;

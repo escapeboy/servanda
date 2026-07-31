@@ -92,8 +92,8 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
   let nonPartyPublishRefused: unknown;
 
   let thursdayEscalatable: string[];
-  let milaThursdaySlot: { headline: string; label: string } | null;
-  let stefanThursdaySlot: { headline: string; label: string } | null;
+  let milaThursdaySlot: { headline: string; act: string | null } | null;
+  let stefanThursdaySlot: { headline: string; act: string | null } | null;
 
   let doubleSupersedeOutcome: string | undefined;
   let stateAfterOneSupersede: string;
@@ -467,10 +467,12 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
     // initiative. (Scenario 2 proved the converse: an undated record never can.)
     expect(thursdayEscalatable).toContain(oldEdgeId);
 
-    // Mila's slot is the promise she owes. Stefan's, for the same edge, offers `Release` —
+    // Mila's slot is the promise she owes. Stefan's, for the same edge, offers `release` —
     // unilateral forgiveness (§4.3). The creditor's primary action is never "remind her".
-    expect(milaThursdaySlot?.label).toBe('Mark done');
-    expect(stefanThursdaySlot?.label).toBe('Release');
+    // These are acts, not words: which button each side is shown is a protocol fact, and the
+    // wording of it belongs to whichever client paints it (M-21).
+    expect(milaThursdaySlot?.act).toBe('done');
+    expect(stefanThursdaySlot?.act).toBe('release');
   });
 
   it('§4.5: supersession needs both parties of the old edge, and one signing twice is not two', () => {
@@ -520,7 +522,7 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
 });
 
 /** The brief slot for one edge, as that persona's own node renders it. */
-function slotFor(side: Install, id: string): { headline: string; label: string } | null {
+function slotFor(side: Install, id: string): { headline: string; act: string | null } | null {
   const slot = side.node.brief({ persona: null }).slots.find((s) => s.item_id === id);
-  return slot ? { headline: slot.headline, label: slot.primary_action.label } : null;
+  return slot ? { headline: slot.headline, act: slot.primary_action?.act ?? null } : null;
 }

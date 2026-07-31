@@ -89,7 +89,12 @@ describe('brief: the attention market', () => {
   it('every slot names the persona whose pipeline produced it and carries an action', () => {
     for (const slot of fx.node.brief({ persona: null }).slots) {
       expect(slot.persona).toBe(fx.personas[0]);
-      expect(slot.primary_action.tool).toBeTruthy();
+      // M-21: the slot carries an act, never wording. `tool` may be null — an act v0 binds to
+      // nothing is stated as such rather than pointed at a tool that would sign nothing.
+      expect(slot.primary_action).not.toBeUndefined();
+      if (slot.primary_action !== null) {
+        expect(Object.keys(slot.primary_action).sort()).toEqual(['act', 'args', 'tool']);
+      }
       expect(slot.item_id).toMatch(/^[0-9a-f]{64}$/);
     }
   });

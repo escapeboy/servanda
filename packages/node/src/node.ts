@@ -16,7 +16,7 @@ import type {
   Expectation,
   ExpectInput,
   ExpectOutput,
-  OpenLoopAction,
+  ItemAction,
   OpenLoopItem,
   OpenLoopsInput,
   OpenLoopsOutput,
@@ -26,6 +26,8 @@ import { ACT_TOOL_BINDINGS, ActRejectionReason, PROTOCOL_VERSION } from '@servan
 import { DEFAULT_ACCEPTANCE_WINDOW } from '@servanda/types';
 import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
 import { verifyAssertionChain, type ChainVerification } from './transitions.js';
+import { actionsFor } from './actions.js';
+import { addDuration } from './duration.js';
 import { mayAutoEscalate } from './escalation.js';
 import { rank } from './ranking.js';
 
@@ -445,6 +447,23 @@ export class ServandaNode {
   // ── edge state ──────────────────────────────────────────────────────────────────────────
 
   /** The effective state of an edge from its stored chain (§4.2: latest valid assertion). */
+  /**
+   * Has the acceptance window run out for this edge, as of `now`?
+   *
+   * Only `pending-acceptance` has a window to run, and only then does the owner gain `done`. The
+   * clock is passed in rather than read here so `actionsFor` stays deterministic — the vectors
+   * supply `window_elapsed` as an input for exactly this reason.
+   */
+  private acceptanceWindowElapsed(persona: string, edge: Edge, now: Date): boolean {
+    if (edge.closure_policy !== 'on-acceptance' || edge.acceptance_window == null) return false;
+    const chain = this.vault.getAssertions(persona, edge.edge_id);
+    // §4.4: under on-acceptance the owner's `closed` assertion does not close — it opens the
+    // window. That assertion's instant is when the clock started.
+    const openedAt = chain.find((a) => a.state === 'closed' && a.by === edge.owner)?.asserted_at ?? null;
+    if (openedAt === null) return false;
+    return now.getTime() >= addDuration(new Date(Date.parse(openedAt)), edge.acceptance_window).getTime();
+  }
+
   edgeState(persona: string, edge_id: string): ChainVerification {
     const edge = this.vault.getEdge(persona, edge_id);
     if (!edge) throw new NodeError(`no such edge: ${edge_id}`);
@@ -565,6 +584,7 @@ export class ServandaNode {
       if (view === 'owe' && !(isOwner && live)) continue;
       if (view === 'waiting' && !(!isOwner && live)) continue;
       if (view === 'closed' && live) continue;
+      if (view === 'pending') continue; // the confirm queue is not an edge view
 
       const commitment = this.vault.getCommitment(persona, edge.commitment_hash);
       out.push({
@@ -578,13 +598,18 @@ export class ServandaNode {
         age_days: ageDays(edge.proposed_at, now),
         due: edge.due,
         state,
-        actions: edgeActions(state, isOwner),
+        actions: actionsFor({
+          state,
+          role: isOwner ? 'owner' : 'owed_to',
+          edgeId: id,
+          windowElapsed: this.acceptanceWindowElapsed(persona, edge, now),
+        }),
       });
     }
 
     for (const { hash, commitment } of this.vault.listCommitments(persona)) {
       if (edgeCommitments.has(hash)) continue; // already surfaced as an edge
-      if (view === 'waiting' || view === 'closed') continue;
+      if (view === 'waiting' || view === 'closed' || view === 'pending') continue;
       out.push({
         kind: 'commitment',
         id: hash,
@@ -594,12 +619,41 @@ export class ServandaNode {
         age_days: ageDays(commitment.created_at, now),
         due: commitment.due,
         state: 'vault-local',
-        actions: ['done', 'supersede'],
+        // A vault-local commitment has no edge and no counterparty signature, so nothing here
+        // signs anything. `propose` is the act that would change that, and v0 binds it to no
+        // tool — said plainly rather than pointed at `commit` as though it were the same thing.
+        actions: [{ act: 'propose', tool: null, args: {} }],
       });
     }
 
+    // §7 `view: "pending"` — the extraction-confirmation queue, readable at last.
+    //
+    // The queue was writable through `confirm` and invisible through the surface: `confirm` takes
+    // an id and nothing handed one out, so a client could act on a pending item only if it had
+    // learned the id some other way. Upstream #27. `dismiss` is bound here alongside `confirm`
+    // because a queue you can only say yes to is not a queue.
+    if (view === 'pending' || view === 'all') {
+      for (const pending of this.vault.listPending(persona)) {
+        const candidate = pending.candidate as { intent?: string; owed_to?: string | null; due?: string | null };
+        out.push({
+          kind: 'commitment',
+          id: pending.id,
+          intent_or_expect: candidate.intent ?? NO_LOCAL_PLAINTEXT,
+          counterparty: candidate.owed_to ?? null,
+          verification_level: this.verificationLevel(persona, candidate.owed_to ?? null),
+          age_days: ageDays(pending.queued_at, now),
+          due: candidate.due ?? null,
+          state: 'vault-local',
+          actions: [
+            { act: 'confirm', tool: 'confirm', args: { id: pending.id, decision: 'confirm' } },
+            { act: 'dismiss', tool: 'confirm', args: { id: pending.id, decision: 'dismiss' } },
+          ],
+        });
+      }
+    }
+
     for (const { id, expectation } of this.vault.listExpectations(persona)) {
-      if (view === 'owe') continue;
+      if (view === 'owe' || view === 'pending') continue;
       if (view === 'waiting' && expectation.state !== 'open') continue;
       if (view === 'closed' && expectation.state !== 'closed') continue;
       out.push({
@@ -611,7 +665,7 @@ export class ServandaNode {
         age_days: ageDays(expectation.since, now),
         due: null,
         state: expectation.state,
-        actions: expectation.state === 'open' ? ['ping'] : [],
+        actions: expectation.state === 'open' ? [{ act: 'ping', tool: null, args: {} }] : [],
       });
     }
 
@@ -668,11 +722,17 @@ export class ServandaNode {
       return {
         headline,
         item_id: key.id,
-        primary_action: isOwner
-          ? { label: 'Mark done', tool: 'confirm', args: { id: key.id, decision: 'confirm' } }
-          : state === 'proposed'
-            ? { label: 'Confirm', tool: 'confirm', args: { id: key.id, decision: 'confirm' } }
-            : { label: 'Release', tool: 'confirm', args: { id: key.id, decision: 'dismiss' } },
+        // The same act vocabulary open_loops advertises, so a client has one act→copy mapping.
+        // The old shape said `label: 'Mark done'` pointed at `confirm` — wording supplied by the
+        // node (M-21), aimed at a tool that would not have marked anything done (M-20).
+        primary_action: primaryActionOf(
+          actionsFor({
+            state,
+            role: isOwner ? 'owner' : 'owed_to',
+            edgeId: key.id,
+            windowElapsed: this.acceptanceWindowElapsed(persona, edge, this.now()),
+          }),
+        ),
         persona,
       };
     }
@@ -682,11 +742,9 @@ export class ServandaNode {
       return {
         headline: commitment.intent,
         item_id: key.id,
-        primary_action: {
-          label: 'Propose to counterparty',
-          tool: 'commit',
-          args: { intent: commitment.intent, owed_to: commitment.owed_to, propose: true },
-        },
+        // v0 binds `propose` to no tool. Saying so beats pointing at `commit`, which would
+        // create a second commitment rather than propose this one.
+        primary_action: { act: 'propose', tool: null, args: {} },
         persona,
       };
     }
@@ -695,11 +753,7 @@ export class ServandaNode {
     return {
       headline: expectation.expect,
       item_id: key.id,
-      primary_action: {
-        label: 'Ping',
-        tool: 'expect',
-        args: { expect: expectation.expect, from: expectation.from },
-      },
+      primary_action: { act: 'ping', tool: null, args: {} },
       persona,
     };
   }
@@ -726,11 +780,13 @@ function ageDays(since: string, now: Date): number {
   return Math.max(0, (now.getTime() - Date.parse(since)) / 86_400_000);
 }
 
-function edgeActions(state: EffectiveState, isOwner: boolean): OpenLoopAction[] {
-  if (state === 'proposed') return isOwner ? ['ping'] : [];
-  if (state === 'open' || state === 'pending-acceptance') {
-    return isOwner ? ['done', 'supersede', 'delegate'] : ['release', 'ping', 'supersede'];
-  }
-  if (state === 'disputed') return ['supersede'];
-  return [];
+/**
+ * The primary affordance for a brief slot: the one act that signs, if there is one.
+ *
+ * `actionsFor` returns them in the order §7 advertises; the first with a tool is the one a person
+ * would reach for. When nothing signs — a proposed edge from the owner's side, a terminal item —
+ * the slot says so with `null` rather than offering a control that does nothing.
+ */
+function primaryActionOf(actions: ItemAction[]): ItemAction | null {
+  return actions.find((a) => a.tool !== null) ?? null;
 }

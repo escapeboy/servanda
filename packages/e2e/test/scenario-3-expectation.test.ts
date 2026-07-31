@@ -240,11 +240,16 @@ describe('scenario 3 — expectation: the freelancer and the silent client', () 
     // The register is structural. The only action is `ping` — something the holder may choose,
     // never something the node does. There is no due date to be late against, and re-reading the
     // brief produces the same single line rather than an accumulating one.
-    expect(day9Loops.items[0]!.actions).toEqual(['ping']);
+    expect(day9Loops.items[0]!.actions).toEqual([{ act: 'ping', tool: null, args: {} }]);
     expect(day9Loops.items[0]!.due).toBeNull();
-    expect(day9Brief.slots.find((s) => s.item_id === expectationId)!.primary_action.label).toBe(
-      'Ping',
-    );
+    // The one affordance is `ping`, and v0 binds it to no tool — the freelancer is offered a
+    // nudge they must send themselves, not a button that silently does nothing. Asserted as an
+    // act because the word "Ping" belongs to whichever client paints it (M-21).
+    expect(day9Brief.slots.find((s) => s.item_id === expectationId)!.primary_action).toEqual({
+      act: 'ping',
+      tool: null,
+      args: {},
+    });
     expect(JSON.stringify(day9BriefAgain.slots)).toBe(JSON.stringify(day9Brief.slots));
     expect(day9Brief.slots.filter((s) => s.item_id === expectationId)).toHaveLength(1);
   });

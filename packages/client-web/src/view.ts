@@ -1,7 +1,7 @@
 import type {
   BriefOutput,
   NodeToolName,
-  OpenLoopAction,
+  ItemAction,
   OpenLoopItem,
   OpenLoopsOutput,
   VerificationLevel,
@@ -34,7 +34,7 @@ export interface PartyView {
 export type ActionDispatch =
   | { readonly kind: 'tool'; readonly tool: NodeToolName; readonly args: Record<string, unknown> }
   | { readonly kind: 'needs-input'; readonly tool: NodeToolName; readonly needs: 'date' }
-  | { readonly kind: 'unmapped'; readonly action: OpenLoopAction }
+  | { readonly kind: 'unmapped'; readonly action: ItemAction['act'] }
   /**
    * One party agreeing, for themselves alone, that the words of a promise may be shown on
    * its proof page. Deliberately not a tool call and deliberately not a setting: it is a
@@ -176,23 +176,23 @@ export function consequenceFor(
 }
 
 /**
- * §7 offers five item actions but names tools for only some of them. `confirm` covers
- * accept, dismiss and revise-the-date; `done`, `release`, `delegate` and `ping` have no §7
- * tool at all — §7 says additional tools MAY be exposed, and these evidently need them.
+ * The node now says which tool signs an act and with what arguments (§7 `{act, tool, args}`),
+ * so the client no longer guesses. `tool: null` means v0 binds the act to nothing — the client
+ * may show it and MUST NOT invent a binding (M-20), which is what `unmapped` records.
  *
- * SPEC GAP (narrowest reading): rather than invent tool names, the client emits a typed,
- * unmapped intent for those four and leaves the binding to whoever wires the surface up.
- * Reported in the stream report.
+ * The gap this used to describe is closed: `done` and `release` reach the `act` tool now.
  */
-export function dispatchFor(action: OpenLoopAction): ActionDispatch {
-  if (action === 'supersede') return { kind: 'needs-input', tool: 'confirm', needs: 'date' };
-  return { kind: 'unmapped', action };
+export function dispatchFor(action: ItemAction): ActionDispatch {
+  if (action.tool === null) return { kind: 'unmapped', action: action.act };
+  if (action.act === 'supersede') return { kind: 'needs-input', tool: action.tool, needs: 'date' };
+  return { kind: 'tool', tool: action.tool, args: action.args };
 }
 
 function actionsFor(item: OpenLoopItem): ActionView[] {
   return item.actions.map((action, index) => ({
-    id: `${item.id}:${action}`,
-    label: COPY.actions[action],
+    id: `${item.id}:${action.act}`,
+    // M-21, the client half: the wording is ours. The node sent an act, never a label.
+    label: COPY.actions[action.act],
     primary: index === 0,
     dispatch: dispatchFor(action),
   }));
@@ -266,7 +266,9 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
     if (wait) waiting++;
     else owe++;
     const card = cardFor(item, now, wait);
-    const led = leadWith(card, slot.primary_action.tool);
+    // A slot whose primary action is null has nothing that signs — lead with whatever the card
+    // already offers rather than promoting a control that does nothing.
+    const led = slot.primary_action === null ? card.actions : leadWith(card, slot.primary_action.tool);
     cards.push({ ...card, what: slot.headline, actions: led });
   }
 
@@ -283,7 +285,7 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
 }
 
 /** Honour the node's choice of leading action without adopting its wording. */
-function leadWith(card: CardView, tool: string): readonly ActionView[] {
+function leadWith(card: CardView, tool: string | null): readonly ActionView[] {
   const index = card.actions.findIndex(
     (a) =>
       (a.dispatch.kind === 'tool' || a.dispatch.kind === 'needs-input') && a.dispatch.tool === tool,
