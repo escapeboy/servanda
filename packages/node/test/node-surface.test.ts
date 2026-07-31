@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   BriefOutput,
@@ -53,7 +54,7 @@ describe('§7 node surface: exactly six tools, exactly the spec’s shapes', () 
   });
 
   it('open_loops returns the §7 output shape for every view', () => {
-    for (const view of ['owe', 'waiting', 'closed', 'all']) {
+    for (const view of ['owe', 'waiting', 'closed', 'pending', 'all']) {
       const out = callTool(fx.node, 'open_loops', { view, limit: 10 });
       expect(() => OpenLoopsOutput.parse(out)).not.toThrow();
       expect((out as { items: unknown[] }).items.length).toBeLessThanOrEqual(10);
@@ -65,7 +66,7 @@ describe('§7 node surface: exactly six tools, exactly the spec’s shapes', () 
     expect(() => BriefOutput.parse(out)).not.toThrow();
   });
 
-  it('rejects a tool that is not one of the five', () => {
+  it('rejects a tool that is not one of the six', () => {
     expect(() => callTool(fx.node, 'publish', {})).toThrow(/no such tool/);
   });
 });
@@ -75,7 +76,15 @@ describe('§7 over MCP stdio', () => {
     const server = new McpServer(fx.node);
 
     const init = server.handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} });
-    expect((init?.result as { serverInfo: { name: string } }).serverInfo.name).toBe('servanda-node');
+    const serverInfo = (init?.result as { serverInfo: { name: string; version: string } }).serverInfo;
+    expect(serverInfo.name).toBe('servanda-node');
+
+    // The version a client is told, pinned to the version that shipped. Only `name` was checked
+    // before, so `SERVER_INFO.version` could sit a release behind forever and every test would
+    // still pass — a node announcing 0.1.0-pre while running 0.2.0-pre misleads exactly the
+    // client that asked.
+    const manifest = JSON.parse(readFileSync('packages/node/package.json', 'utf8')) as { version: string };
+    expect(serverInfo.version).toBe(manifest.version);
 
     // A notification carries no id and MUST NOT be answered.
     expect(server.handle({ jsonrpc: '2.0', method: 'notifications/initialized' })).toBeNull();

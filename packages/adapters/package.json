@@ -1,6 +1,6 @@
 {
   "name": "@servanda/adapters",
-  "version": "0.1.0-pre",
+  "version": "0.2.0-pre",
   "description": "Servanda verification adapters: read-only, offline observers that produce the §4.4 evidence bundle whose hash an owner cites when closing an edge",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

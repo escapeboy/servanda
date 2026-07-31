@@ -2,7 +2,7 @@
 
 ## Status of this release
 
-**v0.1.0-pre is a pre-release. The cryptography has not been externally reviewed.**
+**Every 0.x tag is a pre-release. The cryptography has not been externally reviewed.**
 
 Two things are specifically unreviewed, both tracked upstream as
 [servanda-protocol#7](https://github.com/escapeboy/servanda-protocol/issues/7):

@@ -7,16 +7,18 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status: v0.1.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
+> **Status: v0.2.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
 > the implementation that proves it runs.
 >
-> This is a pre-release, and two things follow from that. **The cryptography has not been externally
-> reviewed** ([#7](https://github.com/escapeboy/servanda-protocol/issues/7)) — see
-> [SECURITY.md](SECURITY.md). And **a break is already scheduled**: upstream
+> **The break v0.1.0-pre scheduled has been taken.** Upstream
 > [#8](https://github.com/escapeboy/servanda-protocol/issues/8) and
-> [#16](https://github.com/escapeboy/servanda-protocol/issues/16) add domain separation to every
-> identifier preimage, which changes every `commitment_hash`, every `edge_id` and every envelope
-> `id`. **Vaults created at this tag will not migrate** — see [CHANGELOG.md](CHANGELOG.md).
+> [#16](https://github.com/escapeboy/servanda-protocol/issues/16) added domain separation to every
+> identifier preimage, so every `commitment_hash`, every `edge_id` and every envelope `id` differs
+> from what 0.1.0-pre produced. **A vault created at v0.1.0-pre does not migrate** — see
+> [CHANGELOG.md](CHANGELOG.md).
+>
+> This is still a pre-release: **the cryptography has not been externally reviewed**
+> ([#7](https://github.com/escapeboy/servanda-protocol/issues/7)) — see [SECURITY.md](SECURITY.md).
 >
 > Read it, run it, file issues against it. Do not yet keep in it a promise you need in a year.
 

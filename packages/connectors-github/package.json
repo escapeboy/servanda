@@ -1,6 +1,6 @@
 {
   "name": "@servanda/connectors-github",
-  "version": "0.1.0-pre",
+  "version": "0.2.0-pre",
   "description": "Servanda connector: local-clone repo archaeology and GitHub/CI webhook events to §2 signal envelopes",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

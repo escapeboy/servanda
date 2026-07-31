@@ -4,10 +4,11 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Version numbers below 1.0.0 carry no compatibility promise. This one carries an explicit
-incompatibility promise — see *Scheduled break* below.
+Version numbers below 1.0.0 carry no compatibility promise. 0.1.0-pre carried an explicit
+*incompatibility* promise — the scheduled identifier break — and 0.2.0-pre is where it was taken.
+A vault created at 0.1.0-pre does not migrate.
 
-## [Unreleased]
+## [0.2.0-pre] — 2026-07-31
 
 The four spec resolutions that landed upstream as `servanda-protocol#28`. Every one of them
 changes bytes on disk or the shape of a tool's answer, so a vault or a client built against
@@ -37,7 +38,6 @@ changes bytes on disk or the shape of a tool's answer, so a vault or a client bu
 - **Envelope bounds and the `clipped` marker** (upstream #18, M-19). Bounds are applied once, at
   the seal, in octets, cutting on Unicode scalar boundaries. An envelope that had to be cut says
   so; `clipped` is `true` or absent, never `false`.
-
 - **M-17 and M-18** — §6.7 addressing. `verifyInboxRecord` rejects a record signed by anything but
   the persona it names, and says whether the signer was merely wrong or was somebody else's key;
   `hubsFor` returns the declared order untouched and returns nothing once the record has expired.
@@ -117,5 +117,5 @@ promise you need in a year.
 - Hosted operation, HPKE transport, threshold group signing, and formal verification of the
   transition table are out of scope for this implementation — not merely unimplemented.
 
-[Unreleased]: https://github.com/escapeboy/servanda/compare/v0.1.0-pre...main
+[0.2.0-pre]: https://github.com/escapeboy/servanda/releases/tag/v0.2.0-pre
 [0.1.0-pre]: https://github.com/escapeboy/servanda/releases/tag/v0.1.0-pre
