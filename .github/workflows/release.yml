@@ -6,6 +6,14 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # Dispatch runs the OIDC probe and PUBLISHES NOTHING.
+  #
+  # It has to live in this file rather than in a workflow of its own, and that is the lesson of
+  # the run that taught it: npm's trusted-publisher configuration names a specific workflow
+  # FILENAME, so a probe dispatched from `oidc-check.yml` was refused by all eighteen packages for
+  # a reason that had nothing to do with whether the release path works. The credential is scoped
+  # to the workflow; the check for it has to run inside the same one.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +24,7 @@ jobs:
   version:
     name: Tag matches the workspace version
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v7
       - run: |
@@ -45,6 +54,7 @@ jobs:
   gates:
     name: All gates
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v7
       # No `version:` here — package.json's `packageManager` field pins pnpm, and
@@ -64,6 +74,7 @@ jobs:
   full-suite:
     name: Full test suite
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -78,6 +89,13 @@ jobs:
   publish:
     name: Publish to npm
     needs: [version, gates, full-suite]
+    # On a tag: every gate must have passed. On a dispatch: those jobs are skipped by design, so
+    # `always()` is what lets this one run at all — and the publish STEP is still gated on the
+    # event, so a dispatch can never reach the registry.
+    if: >-
+      always() && (github.event_name == 'workflow_dispatch' ||
+      (needs.version.result == 'success' && needs.gates.result == 'success'
+       && needs['full-suite'].result == 'success'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,8 +139,8 @@ jobs:
 
       # Every package is proved able to publish over OIDC BEFORE any of them is published, and the
       # tarball count is asserted in the same step. See gates/oidc-probe.sh for why a dry run is a
-      # real proof and why no token may be present while it runs. `.github/workflows/oidc-check.yml`
-      # runs the identical script on demand, so the answer never requires spending a version.
+      # real proof and why no token may be present while it runs. On `workflow_dispatch` this is
+      # the last step that runs, so the answer costs a workflow run rather than a version.
       - name: Every package can publish over OIDC (no token in this step)
         run: bash gates/oidc-probe.sh "$RUNNER_TEMP/tarballs" 18
 
@@ -140,6 +158,7 @@ jobs:
       # its own: belt and braces on the one outcome this workflow exists to prevent, a release
       # with no attestation.
       - name: Publish to npm
+        if: github.event_name == 'push'
         run: |
           shopt -s nullglob
           for t in "$RUNNER_TEMP"/tarballs/*.tgz; do

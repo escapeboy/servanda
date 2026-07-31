@@ -52,20 +52,27 @@ if [ "${#tarballs[@]}" -ne "${EXPECTED}" ]; then
   exit 1
 fi
 
+log="$(mktemp)"
 failed=0
 for t in "${tarballs[@]}"; do
   name="$(basename "$t")"
   # `--tag latest` explicitly: every version here carries a `-pre` identifier, and npm 11 refuses
   # to publish a prerelease under the default tag. The check fires before the OIDC call, so
   # without this the probe would fail for a reason that has nothing to do with OIDC.
-  if npm publish "$t" --access public --tag latest --dry-run --loglevel verbose 2>&1 \
-       | grep -q 'oidc Successfully retrieved and set token'; then
+  npm publish "$t" --access public --tag latest --dry-run --loglevel verbose >"$log" 2>&1 || true
+  if grep -q 'oidc Successfully retrieved and set token' "$log"; then
     echo "  ok   ${name}"
   else
     echo "  FAIL ${name} — no OIDC token exchange" >&2
+    # WHY it failed, not merely that it did. npm reports the cause at verbose under the `oidc`
+    # prefix — wrong workflow filename, missing id-token permission, no publisher configured —
+    # and a probe that swallowed it would leave the operator with a red tick and no next step.
+    # The first version of this script did exactly that, and cost a run to learn nothing.
+    grep -E '(^|\s)(verbose|silly|warn|error)\s+oidc\b' "$log" | sed 's/^/         /' >&2 || true
     failed=$((failed + 1))
   fi
 done
+rm -f "$log"
 
 if [ "${failed}" -gt 0 ]; then
   echo >&2
