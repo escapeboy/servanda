@@ -18,19 +18,26 @@ parameters (§1.7, §9.3).
 recipientX = edwardsToMontgomeryPub(recipient_persona_id)     // Ed25519 pk -> Montgomery u
 (esk, epk) = X25519.keygen()
 shared     = X25519(esk, recipientX)
-key        = HKDF-SHA256(ikm = shared,
+key        = HKDF-SHA256(ikm  = shared,
                          salt = epk ‖ recipientX,
-                         info = "servanda/0.1 blind-courier v0",
-                         L = 32)
-sealed     = XChaCha20-Poly1305(key, random 24-byte nonce).encrypt(JCS(wire message))
+                         info = "servanda/0.1 blind-courier v1" ‖ 0x00 ‖ recipient_persona_id,
+                         L    = 32)
+sealed     = XChaCha20-Poly1305(key, random 24-byte nonce, aad).encrypt(JCS(wire message))
 ```
+
+The `info` binding of `recipient_persona_id` and the `aad` are **the fixes for F-2 and F-4**, made
+after this review. Before them, `info` was the bare label `…v0` and no AAD was passed anywhere.
+The hub transport supplies `aad = JCS({v, type, recipient, sent_at})` — the envelope fields a
+courier must read and must not be able to change.
 
 The recipient converts its Ed25519 **private** key with `edwardsToMontgomeryPriv` and repeats.
 
 Vault side, `packages/crypto/src/content-key.ts`: a random 256-bit content key, wrapped
 independently per device key and per passphrase; the passphrase KEK is
 `Argon2id(m = 65536 KiB, t = 3, p = 1, dkLen = 32)` over a fresh 16-byte random salt, with the
-salt and parameters stored beside the wrap.
+salt and parameters stored beside the wrap. Device wraps use
+`HKDF-SHA256(device key, info = "servanda/0.1 device-wrap v1")` with a 32-byte floor on the input
+— **the fix for F-5**; the device key previously went to the AEAD unstretched and unchecked.
 
 ## Checked empirically — clean
 
@@ -46,6 +53,26 @@ Run against `@noble/curves` as vendored. Method matters here: these were exercis
 (1) is the finding that matters most, because getting it wrong is catastrophic and silent-ish:
 using the 32-byte seed directly as an X25519 scalar is the classic error in this conversion. It is
 not present.
+
+## Status of each finding
+
+Updated after acting on them. **F-1 is not fixed and cannot be fixed here** — see below.
+
+| | Finding | State |
+|---|---|---|
+| F-1 | Ed25519/X25519 key reuse is not settled by inspection | **OPEN — needs the reviewer.** Not fixable in code without redesigning the key hierarchy |
+| F-2 | The map is 2-to-1, so the seal bound a y-coordinate, not an identity | **fixed** — `persona_id` folded into the HKDF `info`; upstream #30 |
+| F-3 | No sender authentication below the signature, no recipient binding above it | **upstream #31** — §6.2's message shape is normative, so this is not ours to change |
+| F-4 | Outer envelope fields unauthenticated; no replay window | **fixed (the AAD half)** — `recipient` and `sent_at` are bound as associated data. The replay stance stays a protocol question |
+| F-5 | Device keys used directly as AEAD keys | **fixed** — HKDF with a domain-separation label, plus a 32-byte floor |
+| F-6 | `p = 1` and the word "minimum" | **upstream #32** — the values are not in dispute, the wording is |
+| F-7 | Spec does not state the parameters concretely | **upstream #32**, folded in |
+
+Where the line fell: §6.3 specifies the DH and the AEAD and says **nothing** about the KDF between
+them, and §1.7/§9.3 say a device key wraps the content key without saying how. Those silences are
+the implementation's to fill, so F-2, F-4 and F-5 were fixed here. §6.2's message shape and §9.3's
+parameter wording are normative text, so F-3 and F-6 went upstream — per this repository's own
+rule that a design change belongs in a protocol issue and never in this code.
 
 ## Findings for the reviewer
 
@@ -143,11 +170,19 @@ not something a cryptographer needs to rule on.
    a hub is assumed hostile-but-honest-ish (blind courier, M-11) and that plaintext never appears
    in wire objects (M-7).
 
-## Suggested order
+## What is left for the reviewer
 
-F-1 first: it is the only item that can invalidate the design rather than the wording, and every
-other finding is cheap to fix once it is settled. F-2 and F-5 are one-line changes if accepted.
-F-3 is the one that deserves argument rather than a patch.
+**F-1, and only F-1.** Everything else has either been fixed or filed.
+
+It is worth being blunt about why it could not be handled like the others. F-1 is not a defect
+with a patch; it is a question about whether a construction is sound. Answering it in code would
+mean giving personas a separate DH key pair — abandoning the birational map, changing the key
+hierarchy in §1.7, and doing it on the strength of an editor's unease rather than a finding. That
+trades an unreviewed assumption for an unreviewed redesign.
+
+So the honest state is: no defect was found in the key reuse, and no defect being found is not the
+same as there being none. That distinction is the entire reason §00 says this gate cannot be
+discharged by the editors.
 
 ## Last Updated
 

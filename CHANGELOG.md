@@ -8,6 +8,40 @@ Version numbers below 1.0.0 carry no compatibility promise. 0.1.0-pre carried an
 *incompatibility* promise — the scheduled identifier break — and 0.2.0-pre is where it was taken.
 A vault created at 0.1.0-pre does not migrate.
 
+## [Unreleased]
+
+### Changed — breaking
+
+Three fixes from the pre-review of the upstream cryptographic gate
+([#7](https://github.com/escapeboy/servanda-protocol/issues/7)), written up in
+[docs/crypto-review-packet.md](docs/crypto-review-packet.md). All three change derived keys, so a
+0.2.0-pre vault does not open and a 0.2.0-pre sealed payload does not decrypt.
+
+- **The blind-courier seal binds the persona, not a y-coordinate.** The Ed25519 → Montgomery map
+  is 2-to-1: `u = (1 + y)/(1 − y)` uses only the y-coordinate, so a `persona_id` and its negation
+  are distinct identifiers sharing one X25519 key. Deriving from that key alone bound a
+  y-coordinate while §6.3 claimed the payload was "encrypted to the recipient persona key". The
+  full `persona_id` is now folded into the HKDF `info`, which costs nothing and makes the claim
+  true. §6.3 specifies no key schedule at all — filed upstream as
+  [#30](https://github.com/escapeboy/servanda-protocol/issues/30).
+- **The hub envelope's readable fields are now immutable.** `recipient` and `sent_at` sit outside
+  the ciphertext because a courier needs them, and outside meant unauthenticated — a hub could
+  rewrite `sent_at` on anything it held. They are bound as AEAD associated data: still readable,
+  no longer editable.
+- **Device keys are derived, not used raw.** `wrapForDevice` passed the caller's bytes straight to
+  the AEAD, which was sound only if every caller supplied 32 uniformly random bytes and nothing
+  said so. One HKDF with a domain-separation label, plus a 32-byte floor that refuses short input
+  rather than stretching it.
+
+Two further findings were protocol text rather than code and went upstream:
+[#31](https://github.com/escapeboy/servanda-protocol/issues/31) (a wire message names no
+recipient, so a signature binds who sent it and not who it was for) and
+[#32](https://github.com/escapeboy/servanda-protocol/issues/32) (§9.3's "minimum" reads as three
+independently tunable floors).
+
+**The gate itself is not discharged.** Whether one key pair may both sign and do Diffie-Hellman is
+the actual subject of #7, and no amount of reading settles it.
+
 ## [0.2.0-pre] — 2026-07-31
 
 The four spec resolutions that landed upstream as `servanda-protocol#28`. Every one of them

@@ -24,6 +24,27 @@ export class HubTransportError extends Error {
   override name = 'HubTransportError';
 }
 
+/**
+ * The envelope fields the ciphertext is bound to.
+ *
+ * `recipient` and `sent_at` travel OUTSIDE the sealed blob — a hub has to read the first to route
+ * and the second to expire a queue entry. Outside meant unauthenticated: a courier could rewrite
+ * `sent_at` on anything it held and no recipient could tell. Binding them as AEAD associated data
+ * leaves them readable and makes them immutable, which is the property §6.3 actually wants from a
+ * blind courier — see nothing, change nothing.
+ *
+ * Exported because it is part of the envelope's contract, not an internal of the client: anything
+ * that opens a sealed blob has to reproduce these bytes exactly.
+ */
+export function hubEnvelopeAad(fields: { recipient: string; sent_at: string }): Uint8Array {
+  return canonicalBytes({
+    v: PROTOCOL_VERSION,
+    type: 'hub_envelope',
+    recipient: fields.recipient,
+    sent_at: fields.sent_at,
+  });
+}
+
 export interface HubClientOptions {
   baseUrl: string;
   persona: string;
@@ -51,12 +72,17 @@ export class HubClient implements Transport {
 
   /** §6.3: seal the whole message to the recipient, then hand the relay the envelope. */
   sealFor(recipient: string, message: WireMessage): HubEnvelope {
+    const sent_at = this.clock().toISOString();
     return {
       v: PROTOCOL_VERSION,
       type: 'hub_envelope',
       recipient,
-      sealed: sealToPersona(recipient, canonicalBytes(message as unknown as Record<string, unknown>)),
-      sent_at: this.clock().toISOString(),
+      sealed: sealToPersona(
+        recipient,
+        canonicalBytes(message as unknown as Record<string, unknown>),
+        hubEnvelopeAad({ recipient, sent_at }),
+      ),
+      sent_at,
     };
   }
 
@@ -120,7 +146,11 @@ export class HubClient implements Transport {
   private open(raw: unknown): WireMessage | null {
     const envelope = raw as HubEnvelope;
     try {
-      const plaintext = openSealed(this.privateKey, envelope.sealed);
+      const plaintext = openSealed(
+        this.privateKey,
+        envelope.sealed,
+        hubEnvelopeAad(envelope),
+      );
       return verifyMessage(JSON.parse(Buffer.from(plaintext).toString('utf8')));
     } catch {
       return null;

@@ -1,5 +1,7 @@
 import { xchacha20poly1305 } from '@noble/ciphers/chacha';
 import { argon2id } from '@noble/hashes/argon2';
+import { hkdf } from '@noble/hashes/hkdf';
+import { sha256 } from '@noble/hashes/sha2';
 import { randomBytes } from '@noble/hashes/utils';
 import { fromHex, toHex, utf8 } from './hash.js';
 
@@ -12,8 +14,51 @@ import { fromHex, toHex, utf8 } from './hash.js';
  * a keyset without a passphrase wrap.
  */
 
-/** §9.3: Argon2id m=64MiB, t=3, p=1 minimum. */
+/**
+ * §9.3: "Argon2id (m=64MiB, t=3, p=1 minimum) for passphrase keys."
+ *
+ * The three move TOGETHER. §9.3's word "minimum" reads as though each is independently tunable,
+ * and it is not: `m`, `t` and `p` describe one analysed point, and lowering any of them while
+ * claiming to meet the minimum is how a parameter set gets quietly weakened. RFC 9106's second
+ * recommended option is the same `t = 3, m = 64 MiB` with `p = 4`; `p` bounds the parallelism an
+ * ATTACKER is assumed to have, so `p = 1` is not the weaker choice, and this sits above the
+ * common OWASP floor (m = 19 MiB, t = 2, p = 1) on every axis.
+ *
+ * Every wrap stores the values it was made with (see `WrappedKey.kdf`), so raising them later
+ * does not strand an existing vault — a wrap is opened with its own parameters, not with these.
+ * The wording is filed upstream; the values are not in dispute.
+ */
 export const ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 } as const;
+
+/**
+ * Device-key wraps derive a key rather than using the device key as one.
+ *
+ * §1.7 and §9.3 say a device key wraps the content key and do not say how, so this is ours to
+ * decide. Passing the caller's bytes straight to the AEAD — which is what this did — is sound
+ * only if every caller supplies 32 uniformly random bytes, and nothing in the type system, the
+ * schema or the vault said so. One HKDF removes the assumption: any accepted input becomes a
+ * uniform 32-byte key, and the label keeps device wrapping domain-separated from every other use
+ * of the same bytes.
+ */
+const DEVICE_WRAP_LABEL = utf8('servanda/0.1 device-wrap v1');
+export const DEVICE_KEY_MIN_BYTES = 32;
+
+export class WeakDeviceKey extends Error {
+  override name = 'WeakDeviceKey';
+}
+
+function deviceWrapKey(deviceKeyHex: string): Uint8Array {
+  const raw = fromHex(deviceKeyHex);
+  // A KDF spreads entropy; it cannot create it. Short input is refused rather than stretched,
+  // because a 16-byte device key that produces a 32-byte AEAD key looks exactly as strong as a
+  // real one from the outside.
+  if (raw.length < DEVICE_KEY_MIN_BYTES) {
+    throw new WeakDeviceKey(
+      `a device key must be at least ${DEVICE_KEY_MIN_BYTES} bytes; got ${raw.length}`,
+    );
+  }
+  return hkdf(sha256, raw, undefined, DEVICE_WRAP_LABEL, 32);
+}
 
 export const CONTENT_KEY_BYTES = 32;
 export const XCHACHA_NONCE_BYTES = 24;
@@ -86,7 +131,7 @@ export function wrapForDevice(
   deviceKeyHex: string,
   label: string,
 ): WrappedKey {
-  const { nonce, ciphertext } = wrapWith(fromHex(deviceKeyHex), contentKey);
+  const { nonce, ciphertext } = wrapWith(deviceWrapKey(deviceKeyHex), contentKey);
   return { kind: 'device', label, nonce, ciphertext };
 }
 
@@ -140,9 +185,10 @@ export function unwrapWithDevice(keyset: ContentKeySet, deviceKeyHex: string, la
   const candidates = keyset.wraps.filter(
     (w) => w.kind === 'device' && (label === undefined || w.label === label),
   );
+  const kek = deviceWrapKey(deviceKeyHex);
   for (const wrap of candidates) {
     try {
-      return unwrapWith(fromHex(deviceKeyHex), wrap);
+      return unwrapWith(kek, wrap);
     } catch {
       // not this device's wrap
     }

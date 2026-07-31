@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { openSealed } from '@servanda/crypto';
 import { HUB_VISIBLE_FIELDS, MemoryHub } from '../../src/hub.js';
-import { HubClient, hubFetch } from '../../src/hub-transport.js';
+import { HubClient, hubEnvelopeAad, hubFetch } from '../../src/hub-transport.js';
 import { RecoveryResponder, signChallenge } from '../../src/recovery.js';
 import { makePair, persona, type Pair } from '../support/fixture.js';
 
@@ -68,13 +68,35 @@ describe('M-7: plaintext never appears in a wire object', () => {
   it('the ciphertext really is the message — the recipient key opens it', async () => {
     // Positive control. Without this, "the hub sees no plaintext" would also be satisfied by a
     // transport that sent nothing at all.
-    const sealed = hub.visibleState()[0]!.envelope.sealed;
-    const opened = JSON.parse(Buffer.from(openSealed(pair.b.privateKey, sealed)).toString('utf8'));
+    const envelope = hub.visibleState()[0]!.envelope;
+    // The AAD is part of the envelope's contract, not the client's internals: `recipient` and
+    // `sent_at` are readable by the hub and bound by the tag, so anything opening the blob has to
+    // reproduce them. A reader that skipped them would be accepting fields a courier could edit.
+    const opened = JSON.parse(
+      Buffer.from(openSealed(pair.b.privateKey, envelope.sealed, hubEnvelopeAad(envelope))).toString('utf8'),
+    );
     expect(opened.type).toBe('propose');
     expect(opened.payload.edge.edge_id).toBe(edgeId);
     // …and even opened, it carries hashes, not the commitment text (M-7 proper).
     expect(JSON.stringify(opened)).not.toContain(INTENT);
     expect(opened.payload.edge.commitment_hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('§6.3: a courier may READ the outer fields and MUST NOT be able to change them', () => {
+    // `recipient` and `sent_at` are outside the ciphertext because a hub needs them — to route,
+    // and to expire a queue entry. Outside used to mean unauthenticated: a hostile courier could
+    // rewrite `sent_at` on anything it held and the recipient would open the message and believe
+    // it. Binding them as associated data keeps them readable and makes them immutable.
+    const envelope = hub.visibleState()[0]!.envelope;
+    const rewritten = { ...envelope, sent_at: '2020-01-01T00:00:00Z' };
+
+    expect(() =>
+      openSealed(pair.b.privateKey, rewritten.sealed, hubEnvelopeAad(rewritten)),
+    ).toThrow();
+    // The control: with the fields as sent, the very same blob opens.
+    expect(() =>
+      openSealed(pair.b.privateKey, envelope.sealed, hubEnvelopeAad(envelope)),
+    ).not.toThrow();
   });
 
   it('a hub MUST NOT accept an envelope carrying anything else (a leak the sender offers)', () => {
