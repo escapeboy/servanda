@@ -102,22 +102,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r run build
 
-      # The version that made OIDC unreachable was never checked, so its absence looked exactly
-      # like its presence. It is checked now, before anything is packed: below 11.5.1 the release
-      # stops rather than quietly falling back to the token it is supposed to be retiring.
-      - name: npm is new enough for trusted publishing
-        run: |
-          npm_version="$(npm --version)"
-          echo "npm ${npm_version} on node $(node --version)"
-          node -e '
-            const [have, want] = [process.argv[1], "11.5.1"].map((v) => v.split(".").map(Number));
-            const cmp = have[0] - want[0] || have[1] - want[1] || have[2] - want[2];
-            if (cmp < 0) {
-              console.error(`npm ${process.argv[1]} cannot use trusted publishing; 11.5.1+ is required.`);
-              process.exit(1);
-            }
-          ' "$npm_version"
-
       # Pack with pnpm, upload with npm — pnpm's own documented split, and here it is load-bearing
       # twice over.
       #
@@ -135,33 +119,33 @@ jobs:
           pnpm --filter './packages/*' --filter '!@servanda/e2e'
           pack --pack-destination "$RUNNER_TEMP/tarballs"
 
-      # Both credentials are offered, and that is the migration, not indecision: with npm 11.5.1+
-      # the CLI attempts the OIDC exchange first and falls back to the token. A package with a
-      # trusted publisher configured is published without any long-lived secret; one that still
-      # lacks it publishes on the token instead of failing the release.
+      # Every package is proved able to publish over OIDC BEFORE any of them is published, and the
+      # tarball count is asserted in the same step. See gates/oidc-probe.sh for why a dry run is a
+      # real proof and why no token may be present while it runs. `.github/workflows/oidc-check.yml`
+      # runs the identical script on demand, so the answer never requires spending a version.
+      - name: Every package can publish over OIDC (no token in this step)
+        run: bash gates/oidc-probe.sh "$RUNNER_TEMP/tarballs" 18
+
+      # `--tag latest`, explicitly, and it is not cosmetic. Every version here carries a `-pre`
+      # prerelease identifier, and npm 11 REFUSES to publish a prerelease under the default tag:
+      # "You must specify a tag using --tag when publishing a prerelease version." npm 10 had no
+      # such check, which is why v0.1.0-pre and v0.2.0-pre went out as `latest` without one — the
+      # move to npm 11 would have failed the release here otherwise.
       #
-      # That fallback is also why the npm-version check above has to exist. On npm 10 there is no
-      # exchange to attempt, so every package took the token path and the run looked identical to
-      # one that had not: same output, same provenance, same green tick. A silent fallback is only
-      # safe when the thing being fallen back FROM is known to have been tried.
+      # `latest` rather than `pre` because it is true: every published version is a pre-release,
+      # so the newest one IS what `npm install @servanda/node` should give. A `pre` dist-tag would
+      # freeze `latest` at whatever shipped last and quietly strand the README's install line.
       #
       # `NPM_CONFIG_PROVENANCE` stays set even though trusted publishing generates provenance on
-      # its own: on the token path nothing would generate it, and a release without an attestation
-      # is the one outcome this workflow exists to prevent.
+      # its own: belt and braces on the one outcome this workflow exists to prevent, a release
+      # with no attestation.
       - name: Publish to npm
         run: |
           shopt -s nullglob
-          tarballs=("$RUNNER_TEMP"/tarballs/*.tgz)
-          if [ ${#tarballs[@]} -ne 18 ]; then
-            echo "expected 18 tarballs, found ${#tarballs[@]}" >&2
-            printf '%s\n' "${tarballs[@]}" >&2
-            exit 1
-          fi
-          for t in "${tarballs[@]}"; do
+          for t in "$RUNNER_TEMP"/tarballs/*.tgz; do
             echo "::group::publish $(basename "$t")"
-            npm publish "$t" --access public
+            npm publish "$t" --access public --tag latest
             echo "::endgroup::"
           done
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
