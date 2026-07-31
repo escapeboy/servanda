@@ -14,11 +14,36 @@ The tag contains no `0x00`, so it is self-delimiting.
 | `edge_id` | `servanda/0.1:edge_id` | `packages/crypto/src/identity-hash.ts:47` (`edgeId`) |
 | envelope `id` | `servanda/0.1:envelope_id` | `packages/envelope/src` sealing path; shape declared at `packages/types/src/envelope.ts:37` |
 
-**`packages/crypto/src/sign.ts:20` must not change.** The spec states that signing preimages are
-*not* domain-tagged — a signature is already bound to its object by that object's own `type` and
-`v` members, which are inside the canonical form. Tagging there would break every signature vector
-for no gain. This is the easiest mistake to make while doing the other three, so it gets its own
-sentence here and its own negative test.
+**`packages/crypto/src/sign.ts` must not be *tagged* — but it does change.** Two separate things,
+and an earlier draft of this document conflated them:
+
+- **No domain tag in the signing preimage.** The spec states this explicitly: a signature is
+  already bound to its object by that object's own `type` and `v` members, inside the canonical
+  form. Tagging there would break every signature vector for no gain. It is the easiest mistake to
+  make while doing the other three, so it has its own negative test.
+- **`unsigned()` must strip `sig_*`, not just `sig`.** PR #28 defines the §0 signing preimage as
+  `sha256(JCS(O))` where `O` is the object minus **every member named `sig` or beginning with
+  `sig_`**. `packages/crypto/src/sign.ts:14` strips only `sig`:
+
+  ```ts
+  const { sig: _sig, ...rest } = obj as T & { sig?: unknown };
+  ```
+
+  `packages/identity/src/rotation.ts:10` already documents the consequence — "the universal signing
+  rule excludes only a field literally named `sig`, so a `sig_old` has no [preimage]" — which is
+  exactly what upstream #17 was filed about. Multi-signature objects (`sig_A`/`sig_B`,
+  `sig_old`/`sig_new`) currently hash their own signatures into their preimage.
+
+### Consequences beyond the three identifiers
+
+| Site | Change |
+|---|---|
+| `packages/crypto/src/sign.ts:14` | `unsigned()` strips `sig` **and** any `sig_*` |
+| `packages/identity/src/rotation.ts` | The rotation statement becomes `{v, type, old, new, rotated_at, sig}`. The whole `acceptLegacySigOld` path and the `legacy-sig-old-encoding-unverifiable` reason exist only because #17 was open; the spec now mandates one form, so the legacy branch becomes a plain rejection |
+| Persona linking (§1.6) | `{v, type, personas, sig_A, sig_B}`, both over `sha256(JCS({v, type, personas}))`, `sig_A` against `personas[0]`; **a link whose two signature members are byte-identical MUST be rejected** — a new negative case |
+
+These are wire-shape changes, not identifier changes. They break separately from domain separation
+and need their own tests.
 
 `edge_id` derives from `commitment_hash`, so the change composes: a tagged commitment hash feeds a
 separately tagged edge id. Both change; neither cancels the other.
