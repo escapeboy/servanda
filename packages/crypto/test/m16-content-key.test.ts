@@ -109,14 +109,35 @@ describe('§6.3 blind courier', () => {
   const alice = derivePersona(seed, 0);
   const bob = derivePersona(seed, 1);
 
-  it('seals to a persona key and only that persona can open it', () => {
-    const sealed = sealToPersona(bob.personaId, utf8('{"type":"propose"}'));
-    expect(new TextDecoder().decode(openSealed(bob.privateKey, sealed))).toBe('{"type":"propose"}');
-    expect(() => openSealed(alice.privateKey, sealed)).toThrow();
+  it('seals to a persona’s own X25519 key and only that persona can open it', () => {
+    const sealed = sealToPersona(bob.personaId, bob.dhPublicKey, utf8('{"type":"propose"}'));
+    expect(
+      new TextDecoder().decode(openSealed(bob.dhPrivateKey, bob.personaId, sealed)),
+    ).toBe('{"type":"propose"}');
+    expect(() => openSealed(alice.dhPrivateKey, alice.personaId, sealed)).toThrow();
+  });
+
+  it('the signing key is no longer a key agreement key, and cannot be used as one', () => {
+    // The whole point of upstream #7's removal: a persona's Ed25519 key and its X25519 key are
+    // now independent, so neither can stand in for the other. Before, the second assertion here
+    // would have succeeded — the signing key WAS the key agreement key, one map away.
+    expect(bob.dhPrivateKey).not.toBe(bob.privateKey);
+    expect(bob.dhPublicKey).not.toBe(bob.personaId);
+    const sealed = sealToPersona(bob.personaId, bob.dhPublicKey, utf8('x'));
+    expect(() => openSealed(bob.privateKey, bob.personaId, sealed)).toThrow();
+  });
+
+  it('derives the DH key from the same seed, at a hardened path of its own', () => {
+    // ADR-0014: the 24 words restore everything a persona is. A DH key that had to be re-agreed
+    // with a counterparty after recovery would be a key the phrase does not actually restore.
+    expect(bob.dhPath).toBe(`${bob.path}/1'`);
+    expect(derivePersona(seed, 1).dhPrivateKey).toBe(bob.dhPrivateKey);
+    // Hardened, so one persona's published key says nothing about its siblings (§1.2).
+    expect(alice.dhPublicKey).not.toBe(bob.dhPublicKey);
   });
 
   it('exposes nothing but an ephemeral key, nonce and ciphertext to the hub', () => {
-    const sealed = sealToPersona(bob.personaId, utf8('confidential intent text'));
+    const sealed = sealToPersona(bob.personaId, bob.dhPublicKey, utf8('confidential intent text'));
     expect(Object.keys(sealed).sort()).toEqual(['ciphertext', 'epk', 'nonce', 'v']);
     expect(JSON.stringify(sealed)).not.toContain('confidential');
     // The sender's persona is not derivable from the envelope: the sender key is ephemeral.
@@ -124,8 +145,8 @@ describe('§6.3 blind courier', () => {
   });
 
   it('produces a distinct ciphertext per send (no deterministic linkage)', () => {
-    const a = sealToPersona(bob.personaId, utf8('same message'));
-    const b = sealToPersona(bob.personaId, utf8('same message'));
+    const a = sealToPersona(bob.personaId, bob.dhPublicKey, utf8('same message'));
+    const b = sealToPersona(bob.personaId, bob.dhPublicKey, utf8('same message'));
     expect(a.ciphertext).not.toBe(b.ciphertext);
     expect(a.epk).not.toBe(b.epk);
   });

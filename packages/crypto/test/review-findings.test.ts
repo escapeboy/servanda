@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ed25519, edwardsToMontgomeryPub } from '@noble/curves/ed25519';
 import { randomBytes } from '@noble/hashes/utils';
@@ -5,6 +6,7 @@ import {
   DEVICE_KEY_MIN_BYTES,
   UnsealableRecipient,
   WeakDeviceKey,
+  derivePersona,
   generateContentKey,
   openSealed,
   sealToPersona,
@@ -30,15 +32,15 @@ import {
  */
 
 const persona = () => {
-  const priv = randomBytes(32);
-  return { priv: toHex(priv), id: toHex(ed25519.getPublicKey(priv)) };
+  const p = derivePersona(randomBytes(64), 0);
+  return { priv: p.privateKey, id: p.personaId, dhPriv: p.dhPrivateKey, dhPub: p.dhPublicKey };
 };
 
-describe('F-2: the seal binds an identity, not a y-coordinate', () => {
-  it('a persona and its negation still share an X25519 key', () => {
-    // The finding itself, restated so a future change to the map is caught here. The birational
-    // map is 2-to-1 and that has not changed; what changed is that the key schedule no longer
-    // depends on it alone.
+describe('F-2: the birational map is gone from the sealing path entirely', () => {
+  it('the map is still 2-to-1 — it simply no longer decides anything', () => {
+    // The finding as originally recorded, kept because it is the reason the map left. A persona
+    // and its negation are distinct identifiers over one Montgomery u; deriving a sealing key
+    // from that u bound a y-coordinate rather than an identity.
     const alice = persona();
     const sibling = toHex(ed25519.Point.fromBytes(Uint8Array.from(Buffer.from(alice.id, 'hex'))).negate().toBytes());
     expect(sibling).not.toBe(alice.id);
@@ -47,25 +49,23 @@ describe('F-2: the seal binds an identity, not a y-coordinate', () => {
     );
   });
 
-  it('but a payload sealed to one does not open under the other', () => {
-    // Before the persona_id entered `info`, these two derived the SAME key: a ciphertext sealed
-    // "to Alice" was equally sealed to a persona_id Alice never chose. Now the derivation differs,
-    // so the AEAD tag refuses.
-    const alice = persona();
-    const sibling = toHex(ed25519.Point.fromBytes(Uint8Array.from(Buffer.from(alice.id, 'hex'))).negate().toBytes());
-    const sealed = sealToPersona(alice.id, new TextEncoder().encode('for alice only'));
-
-    expect(new TextDecoder().decode(openSealed(alice.priv, sealed))).toBe('for alice only');
-    // Re-derive as the sibling would: same X25519 key material, different `info`.
-    const asSibling = sealToPersona(sibling, new TextEncoder().encode('for alice only'));
-    expect(asSibling.ciphertext).not.toBe(sealed.ciphertext);
-    expect(() => openSealed(alice.priv, asSibling)).toThrow();
+  it('nothing in the shipped sealing module can convert a signing key', () => {
+    // The structural form, and the strongest statement available: F-2 was first fixed by binding
+    // the persona_id into `info`, which made the claim true while leaving the map in place.
+    // Removing the map is what makes the finding unreachable rather than compensated for.
+    const source = readFileSync('packages/crypto/dist/transport.js', 'utf8');
+    for (const gone of [/edwardsToMontgomeryPub/, /edwardsToMontgomeryPriv/]) {
+      expect(source, `transport.js must not reference ${gone}`).not.toMatch(gone);
+    }
+    // A scanner that cannot fire proves nothing.
+    expect('edwardsToMontgomeryPub(x)').toMatch(/edwardsToMontgomeryPub/);
   });
 
-  it('refuses a degenerate recipient by name rather than three layers down', () => {
-    // The all-zero persona_id is on the curve (y = 0), so the map accepts it and returns u = 1;
-    // only the DH refused, with a message naming nothing.
-    expect(() => sealToPersona('00'.repeat(32), new Uint8Array([1]))).toThrow(UnsealableRecipient);
+  it('refuses a degenerate recipient key by name rather than three layers down', () => {
+    const alice = persona();
+    expect(() => sealToPersona(alice.id, '00'.repeat(32), new Uint8Array([1]))).toThrow(
+      UnsealableRecipient,
+    );
   });
 });
 
@@ -74,12 +74,12 @@ describe('F-4: the envelope fields a courier can read, it cannot change', () => 
     const alice = persona();
     const aad = new TextEncoder().encode('{"recipient":"a","sent_at":"2026-07-31T00:00:00Z"}');
     const tampered = new TextEncoder().encode('{"recipient":"a","sent_at":"2020-01-01T00:00:00Z"}');
-    const sealed = sealToPersona(alice.id, new TextEncoder().encode('payload'), aad);
+    const sealed = sealToPersona(alice.id, alice.dhPub, new TextEncoder().encode('payload'), aad);
 
-    expect(new TextDecoder().decode(openSealed(alice.priv, sealed, aad))).toBe('payload');
-    expect(() => openSealed(alice.priv, sealed, tampered)).toThrow();
+    expect(new TextDecoder().decode(openSealed(alice.dhPriv, alice.id, sealed, aad))).toBe('payload');
+    expect(() => openSealed(alice.dhPriv, alice.id, sealed, tampered)).toThrow();
     // And omitting it entirely is not a way around it.
-    expect(() => openSealed(alice.priv, sealed)).toThrow();
+    expect(() => openSealed(alice.dhPriv, alice.id, sealed)).toThrow();
   });
 });
 

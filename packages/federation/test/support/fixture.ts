@@ -1,9 +1,12 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { derivePersona, mnemonicToSeed } from '@servanda/crypto';
+import { derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import type { DerivedPersona } from '@servanda/crypto';
 import { ServandaNode } from '@servanda/node';
+import { PROTOCOL_VERSION, InboxRecord } from '@servanda/types';
 import { Vault, type PersonaRecord } from '@servanda/vault';
+import { dhKeyFrom } from '../../src/addressing.js';
 import { FederatedNode } from '../../src/federated-node.js';
 import { GitTransport } from '../../src/git-transport.js';
 import type { ProposalBudget } from '../../src/antispam.js';
@@ -29,7 +32,46 @@ export const TEST_PASSPHRASE = 'correct horse battery staple';
 
 const seed = mnemonicToSeed(TEST_MNEMONIC);
 
-export function persona(index: number): { personaId: string; privateKey: string } {
+/**
+ * A §6.7 inbox record for a persona, signed by it, carrying its X25519 key.
+ *
+ * Tests resolve sealing keys through this rather than through a bare map, because the map would
+ * skip the only thing that makes a published key trustworthy: M-17's rule that a record verifies
+ * against the persona it names. A fixture that hands out keys directly would pass while the
+ * production path was broken.
+ */
+export function inboxRecordFor(
+  p: { personaId: string; privateKey: string; dhPublicKey: string },
+  opts: { hubs?: string[]; issued_at?: string } = {},
+): InboxRecord {
+  return InboxRecord.parse(
+    withSignature(
+      {
+        v: PROTOCOL_VERSION,
+        type: 'inbox' as const,
+        persona: p.personaId,
+        hubs: opts.hubs ?? ['https://hub.example'],
+        dh_key: p.dhPublicKey,
+        issued_at: opts.issued_at ?? '2026-07-25T09:00:00Z',
+      },
+      p.privateKey,
+    ),
+  );
+}
+
+/** Resolve a sealing key the way a node would: from signed records, at a fixed instant. */
+export function dhDirectory(
+  people: readonly { personaId: string; privateKey: string; dhPublicKey: string }[],
+  now = '2026-07-25T09:00:00Z',
+): (recipient: string) => string | null {
+  const records = new Map(people.map((p) => [p.personaId, inboxRecordFor(p)]));
+  return (recipient) => {
+    const record = records.get(recipient);
+    return record ? dhKeyFrom(record, now) : null;
+  };
+}
+
+export function persona(index: number): DerivedPersona {
   return derivePersona(seed, index);
 }
 

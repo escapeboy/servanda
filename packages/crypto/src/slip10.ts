@@ -1,6 +1,6 @@
 import { hmac } from '@noble/hashes/hmac';
 import { sha512 } from '@noble/hashes/sha2';
-import { ed25519 } from '@noble/curves/ed25519';
+import { ed25519, x25519 } from '@noble/curves/ed25519';
 import { concatBytes, toHex, utf8 } from './hash.js';
 
 /**
@@ -28,6 +28,10 @@ export interface DerivedPersona {
   publicKey: string;
   /** §1.2: persona_id = hex(pubkey). */
   personaId: string;
+  /** §6.3 key agreement — a key of its own, never the signing key mapped. See `dhPath`. */
+  dhPath: string;
+  dhPrivateKey: string;
+  dhPublicKey: string;
 }
 
 const ED25519_CURVE_KEY = utf8('ed25519 seed');
@@ -77,11 +81,36 @@ export function personaPath(personaIndex: number): string {
   return `m/${SERVANDA_PURPOSE}'/${personaIndex}'`;
 }
 
+/**
+ * The X25519 key a persona receives sealed payloads on: `m/7391'/{n}'/1'`.
+ *
+ * A key of its own rather than the signing key run through the birational map. Upstream #7 asks
+ * whether one key pair may safely both sign and perform Diffie-Hellman; a separate key does not
+ * answer that question, it removes it — and standard primitives used in standard ways need no
+ * novel analysis.
+ *
+ * HARDENED, and that is not decoration. §1.2 makes personas from one seed unlinkable to anyone
+ * without it; a non-hardened child would let a published DH key be walked back toward its parent,
+ * so the very act of becoming reachable would link a persona to its siblings.
+ *
+ * `/1'` leaves `/0'` unused, for a future subkey class that is not key agreement.
+ */
+export function personaDhPath(personaIndex: number): string {
+  return `${personaPath(personaIndex)}/1'`;
+}
+
 /** Derive persona `personaIndex` from a seed at `m/7391'/{personaIndex}'`. */
 export function derivePersona(seed: Uint8Array, personaIndex: number): DerivedPersona {
   const path = personaPath(personaIndex);
   const key = derivePath(seed, path);
   const publicKey = ed25519.getPublicKey(key.privateKey);
+
+  // Derived here rather than on demand so ADR-0014 holds without qualification: the 24 words
+  // restore everything a persona is, encryption included, with nothing left to re-agree with a
+  // counterparty afterwards.
+  const dhPath = personaDhPath(personaIndex);
+  const dhPrivateKey = derivePath(seed, dhPath).privateKey;
+
   return {
     personaIndex,
     path,
@@ -89,5 +118,8 @@ export function derivePersona(seed: Uint8Array, personaIndex: number): DerivedPe
     privateKey: toHex(key.privateKey),
     publicKey: toHex(publicKey),
     personaId: toHex(publicKey),
+    dhPath,
+    dhPrivateKey: toHex(dhPrivateKey),
+    dhPublicKey: toHex(x25519.getPublicKey(dhPrivateKey)),
   };
 }

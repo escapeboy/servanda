@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { withSignature } from '@servanda/crypto';
 import { InboxRecord } from '@servanda/types';
+import { MemoryHub } from '../../src/hub.js';
+import { HubClient, NoRecipientKey, hubFetch } from '../../src/hub-transport.js';
 import {
   INBOX_RECORD_LIFETIME_DAYS,
   deliverViaInbox,
+  dhKeyFrom,
   hubsFor,
   signMessage,
   inboxRecordCanonical,
@@ -243,5 +246,79 @@ describe('§6.7: delivering to declared hubs, in the declared order', () => {
     });
     expect(out.refused).toBe('record-expired');
     expect(c.tried).toEqual([]);
+  });
+});
+
+/**
+ * §6.3 sealing keys, and the rule that a published key is worth nothing unverified.
+ *
+ * This is where M-17 stops being about addressing and starts being about confidentiality. A hub
+ * that could publish an inbox record could publish a `dh_key` it holds the private half of — and
+ * then read everything sent to that persona. Same attack as `invalid-signed-by-hub`, one layer
+ * along: not moving someone's mail, reading it.
+ *
+ * Upstream #33 proposes the field; until it is merged the vendored vectors predate it, so a record
+ * without one still parses and still verifies over exactly the canonical form the oracle pins.
+ * What it cannot do is receive anything.
+ */
+describe('§6.3: a sealing key is only usable from a record that verifies', () => {
+  const ISSUED = '2026-07-25T09:00:00Z';
+  const DAY = (n: number) => new Date(Date.parse(ISSUED) + n * 86_400_000).toISOString();
+
+  const record = (by: { privateKey: string }, over: Record<string, unknown> = {}) =>
+    withSignature(
+      {
+        v: 'servanda/0.1' as const,
+        type: 'inbox' as const,
+        persona: alice.personaId,
+        hubs: ['https://hub.example'],
+        dh_key: alice.dhPublicKey,
+        issued_at: ISSUED,
+        ...over,
+      },
+      by.privateKey,
+    );
+
+  it('hands back the key from a record the persona signed', () => {
+    expect(dhKeyFrom(record(alice), DAY(1))).toBe(alice.dhPublicKey);
+  });
+
+  it('hands back nothing from a record a hub signed', () => {
+    // The attack in full: bob publishes a record naming alice and carrying a key bob controls.
+    const hijack = record(bob, { dh_key: bob.dhPublicKey });
+    expect(dhKeyFrom(hijack, DAY(1))).toBeNull();
+  });
+
+  it('hands back nothing once the record has expired', () => {
+    // Expiry governs where a persona wants its mail; a key from a record its owner let lapse is
+    // no better an answer than a hub they have left.
+    expect(dhKeyFrom(record(alice), DAY(INBOX_RECORD_LIFETIME_DAYS + 1))).toBeNull();
+  });
+
+  it('hands back nothing from a record that predates the field', () => {
+    const { dh_key: _omitted, ...withoutKey } = record(alice);
+    const resigned = withSignature(withoutKey, alice.privateKey);
+    // It still VERIFIES — the oracle's four cases have no dh_key and must keep passing.
+    expect(verifyInboxRecord(resigned).accepted).toBe(true);
+    // It is simply not sealable-to.
+    expect(dhKeyFrom(resigned, DAY(1))).toBeNull();
+  });
+
+  it('a node with no key for the recipient refuses to send rather than falling back', () => {
+    // R5. There is no path from a persona_id to a sealing key any more, so this is not a check
+    // someone remembered to write — it is the only thing the transport can do.
+    const hub = new MemoryHub({ now: () => new Date(DAY(1)) });
+    const client = new HubClient({
+      baseUrl: 'https://hub.example',
+      persona: alice.personaId,
+      privateKey: alice.privateKey,
+      dhPrivateKey: alice.dhPrivateKey,
+      fetch: hubFetch(hub),
+      resolveDhKey: () => null,
+      now: () => new Date(DAY(1)),
+    });
+    expect(() => client.sealFor(bob.personaId, signMessage('propose', {}, alice.personaId, ISSUED, alice.privateKey)))
+      .toThrow(NoRecipientKey);
+    expect(hub.visibleState()).toHaveLength(0);
   });
 });

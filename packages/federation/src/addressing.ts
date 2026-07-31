@@ -110,6 +110,26 @@ export function inboxRecordCanonical(record: InboxRecord): string {
   return new TextDecoder().decode(canonicalBytes(rest));
 }
 
+/**
+ * The X25519 key a sender may seal to, or null.
+ *
+ * This is the join between M-17 and §6.3, and it is one function on purpose. A DH key is only
+ * usable if the record carrying it verifies against the persona it names — otherwise a hub that
+ * could publish a record could also publish a key it holds the private half of, and read
+ * everything addressed to that persona. That is the same attack M-17 exists to stop, one layer
+ * along: not moving someone's mail, but reading it.
+ *
+ * An expired record yields nothing either. Expiry governs where a persona wants its mail; a key
+ * from a record its owner has let lapse is no better an answer than a hub they have left.
+ */
+export function dhKeyFrom(record: unknown, now: string): string | null {
+  const verdict = verifyInboxRecord(record);
+  if (!verdict.accepted) return null;
+  const parsed = InboxRecord.parse(record);
+  if (hubsFor(parsed, now).length === 0) return null;
+  return parsed.dh_key ?? null;
+}
+
 export interface DeliveryAttempt {
   hub: string;
   error: string;

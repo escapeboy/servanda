@@ -45,12 +45,30 @@ export function hubEnvelopeAad(fields: { recipient: string; sent_at: string }): 
   });
 }
 
+export class NoRecipientKey extends HubTransportError {
+  override name = 'NoRecipientKey';
+}
+
 export interface HubClientOptions {
   baseUrl: string;
   persona: string;
-  /** Needed to open sealed inbound payloads and to sign the inbox challenge. */
+  /** Signs the §6.1 inbox challenge. Ed25519; no longer used for key agreement. */
   privateKey: string;
+  /** §6.3 — opens sealed inbound payloads. The persona's own X25519 key, `m/7391'/{n}'/1'`. */
+  dhPrivateKey: string;
   fetch: FetchLike;
+  /**
+   * Where the recipient's X25519 key comes from, and the reason it is INJECTED.
+   *
+   * A sealing key must be one somebody authenticated — here, a §6.7 inbox record whose signature
+   * verifies against the persona it names (M-17). This class deliberately cannot look one up on
+   * its own: resolution is a policy decision about whom to believe, and a transport that could
+   * invent an answer is a transport that could be talked into the wrong one.
+   *
+   * Returning `null` refuses the send. There is no fallback (R5) — nothing here can turn a
+   * persona_id into a key, which is what removes the old construction rather than deprecating it.
+   */
+  resolveDhKey: (persona: string) => string | null;
   now?: () => Date;
 }
 
@@ -59,19 +77,32 @@ export class HubClient implements Transport {
   private readonly baseUrl: string;
   readonly persona: string;
   private readonly privateKey: string;
+  private readonly dhPrivateKey: string;
   private readonly http: FetchLike;
+  private readonly resolveDhKey: (persona: string) => string | null;
   private readonly clock: () => Date;
 
   constructor(opts: HubClientOptions) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '');
     this.persona = opts.persona;
     this.privateKey = opts.privateKey;
+    this.dhPrivateKey = opts.dhPrivateKey;
     this.http = opts.fetch;
+    this.resolveDhKey = opts.resolveDhKey;
     this.clock = opts.now ?? (() => new Date());
   }
 
   /** §6.3: seal the whole message to the recipient, then hand the relay the envelope. */
   sealFor(recipient: string, message: WireMessage): HubEnvelope {
+    const dhKey = this.resolveDhKey(recipient);
+    if (dhKey === null) {
+      // Refusing is the correct outcome, not a degraded one. §6.7 makes delivery an optimization
+      // and reconciliation the guarantee, so an undeliverable message costs a round of recon —
+      // whereas sealing to a key nobody authenticated costs the confidentiality §6.3 exists for.
+      throw new NoRecipientKey(
+        `no authenticated X25519 key for ${recipient.slice(0, 16)}…; refusing to seal (§6.3)`,
+      );
+    }
     const sent_at = this.clock().toISOString();
     return {
       v: PROTOCOL_VERSION,
@@ -79,6 +110,7 @@ export class HubClient implements Transport {
       recipient,
       sealed: sealToPersona(
         recipient,
+        dhKey,
         canonicalBytes(message as unknown as Record<string, unknown>),
         hubEnvelopeAad({ recipient, sent_at }),
       ),
@@ -147,7 +179,8 @@ export class HubClient implements Transport {
     const envelope = raw as HubEnvelope;
     try {
       const plaintext = openSealed(
-        this.privateKey,
+        this.dhPrivateKey,
+        this.persona,
         envelope.sealed,
         hubEnvelopeAad(envelope),
       );

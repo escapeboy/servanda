@@ -39,8 +39,24 @@ recipient, so a signature binds who sent it and not who it was for) and
 [#32](https://github.com/escapeboy/servanda-protocol/issues/32) (§9.3's "minimum" reads as three
 independently tunable floors).
 
+- **Personas have their own X25519 key** (`m/7391'/{n}'/1'`), and the Ed25519 → X25519 birational
+  map is gone from the sealing path. This does not answer #7's key-reuse question; it removes it.
+  Standard primitives used in standard ways need no novel analysis, and the issue names this way
+  out itself. Proposed upstream as
+  [#33](https://github.com/escapeboy/servanda-protocol/issues/33).
+
+  The key rides in the §6.7 inbox record, which is already signed, already guarded by M-17, and
+  already required to reach a persona over a hub — so it adds no published statement an observer
+  could compare, which §1.2's unlinkability would not have survived. Only the hub transport seals
+  (git confidentiality *is* repository access), so a persona federating over git, or not at all
+  (M-10), needs no DH key and publishes nothing. Rotation comes free with the record's 30-day life.
+
+  `sealToPersona` now takes the recipient's key and cannot compute one, so the fallback to the old
+  construction is not a mistake to avoid — it is unreachable. `HubClient` refuses to send when no
+  verified key resolves.
+
 **The gate itself is not discharged.** Whether one key pair may both sign and do Diffie-Hellman is
-the actual subject of #7, and no amount of reading settles it.
+the actual subject of #7 — but it is no longer a question this implementation depends on.
 
 ## [0.2.0-pre] — 2026-07-31
 

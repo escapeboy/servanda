@@ -91,6 +91,29 @@ export const InboxRecord = z.object({
   type: z.literal('inbox'),
   persona: PersonaId,
   hubs: z.array(z.string().min(1)),
+  /**
+   * §6.3 key agreement — the persona's X25519 public key, hex.
+   *
+   * It rides HERE rather than in a statement of its own, and the reason is §1.2. Personas from
+   * one seed are unlinkable to anyone without the seed; a second published record would be a
+   * second thing an observer could compare. A persona reachable over a hub must already publish
+   * this one, so a field on it adds no correlation handle that reachability did not already cost.
+   *
+   * It is authenticated by the rule that already guards this record: M-17 says only the persona
+   * key may alter it, so a DH key arriving inside a record whose signature verifies against the
+   * persona it names is bound to that persona already.
+   *
+   * Rotation comes free with the record's 30-day life: publish a new one, and senders stop using
+   * the old key when the old record expires.
+   *
+   * OPTIONAL, and only because upstream #33 is a proposal rather than merged text. The four
+   * vendored `addressing/inbox-records.json` cases predate it, and a vector is never edited to
+   * suit an implementation — so a record without the field still parses and still verifies over
+   * exactly the canonical form the oracle pins. What it cannot do is receive anything: sealing
+   * requires the key, so a record lacking one is simply not sealable-to. Required in effect,
+   * optional in schema, until the spec catches up.
+   */
+  dh_key: z.string().regex(/^[0-9a-f]{64}$/).optional(),
   issued_at: Rfc3339,
   sig: SignatureHex,
 });

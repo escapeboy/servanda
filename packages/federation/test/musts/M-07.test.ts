@@ -3,7 +3,7 @@ import { openSealed } from '@servanda/crypto';
 import { HUB_VISIBLE_FIELDS, MemoryHub } from '../../src/hub.js';
 import { HubClient, hubEnvelopeAad, hubFetch } from '../../src/hub-transport.js';
 import { RecoveryResponder, signChallenge } from '../../src/recovery.js';
-import { makePair, persona, type Pair } from '../support/fixture.js';
+import { dhDirectory, makePair, persona, type Pair } from '../support/fixture.js';
 
 /**
  * M-7 — "Signatures cover hashes, never plaintext; plaintext never appears in wire objects."
@@ -21,6 +21,10 @@ const keys = new Map([
   [persona(0).personaId, persona(0).privateKey],
   [persona(1).personaId, persona(1).privateKey],
 ]);
+const dhKeys = new Map([
+  [persona(0).personaId, persona(0).dhPrivateKey],
+  [persona(1).personaId, persona(1).dhPrivateKey],
+]);
 
 let pair: Pair;
 let edgeId: string;
@@ -32,7 +36,9 @@ beforeAll(async () => {
         baseUrl: 'https://hub.example/',
         persona: personaId,
         privateKey: keys.get(personaId)!,
+        dhPrivateKey: dhKeys.get(personaId)!,
         fetch: hubFetch(hub),
+        resolveDhKey: dhDirectory([persona(0), persona(1)]),
         now: () => new Date('2026-07-25T09:00:00.000Z'),
       }),
   });
@@ -73,7 +79,9 @@ describe('M-7: plaintext never appears in a wire object', () => {
     // `sent_at` are readable by the hub and bound by the tag, so anything opening the blob has to
     // reproduce them. A reader that skipped them would be accepting fields a courier could edit.
     const opened = JSON.parse(
-      Buffer.from(openSealed(pair.b.privateKey, envelope.sealed, hubEnvelopeAad(envelope))).toString('utf8'),
+      Buffer.from(
+        openSealed(persona(1).dhPrivateKey, pair.b.personaId, envelope.sealed, hubEnvelopeAad(envelope)),
+      ).toString('utf8'),
     );
     expect(opened.type).toBe('propose');
     expect(opened.payload.edge.edge_id).toBe(edgeId);
@@ -91,11 +99,11 @@ describe('M-7: plaintext never appears in a wire object', () => {
     const rewritten = { ...envelope, sent_at: '2020-01-01T00:00:00Z' };
 
     expect(() =>
-      openSealed(pair.b.privateKey, rewritten.sealed, hubEnvelopeAad(rewritten)),
+      openSealed(persona(1).dhPrivateKey, pair.b.personaId, rewritten.sealed, hubEnvelopeAad(rewritten)),
     ).toThrow();
     // The control: with the fields as sent, the very same blob opens.
     expect(() =>
-      openSealed(pair.b.privateKey, envelope.sealed, hubEnvelopeAad(envelope)),
+      openSealed(persona(1).dhPrivateKey, pair.b.personaId, envelope.sealed, hubEnvelopeAad(envelope)),
     ).not.toThrow();
   });
 

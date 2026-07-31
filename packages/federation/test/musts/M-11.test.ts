@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HUB_VISIBLE_FIELDS, MemoryHub } from '../../src/hub.js';
 import { HubClient, hubFetch } from '../../src/hub-transport.js';
+import type { DerivedPersona } from '@servanda/crypto';
 import { signMessage } from '../../src/messages.js';
 import { answerReconRequest } from '../../src/recon.js';
-import { makeSolo, persona, type Solo } from '../support/fixture.js';
+import { dhDirectory, makeSolo, persona, type Solo } from '../support/fixture.js';
 
 /**
  * M-11 — "No network-level reputation: nodes and hubs MUST NOT compute, store, or serve
@@ -21,12 +22,16 @@ const C = persona(2);
 
 const hub = new MemoryHub({ now: () => new Date('2026-07-25T09:00:00.000Z') });
 
-function clientFor(p: { personaId: string; privateKey: string }): HubClient {
+const directory = dhDirectory([A, B, C]);
+
+function clientFor(p: DerivedPersona): HubClient {
   return new HubClient({
     baseUrl: 'https://hub.example',
     persona: p.personaId,
     privateKey: p.privateKey,
+    dhPrivateKey: p.dhPrivateKey,
     fetch: hubFetch(hub),
+    resolveDhKey: directory,
     now: () => new Date('2026-07-25T09:00:00.000Z'),
   });
 }

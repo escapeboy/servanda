@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { MemoryHub } from '../src/hub.js';
 import { HubClient, HubTransportError, hubFetch } from '../src/hub-transport.js';
 import { signMessage } from '../src/messages.js';
-import { persona } from './support/fixture.js';
+import { dhDirectory, persona } from './support/fixture.js';
+import type { DerivedPersona } from '@servanda/crypto';
 
 /**
  * §6.1 hub transport: `POST /servanda/v0/deliver`, `GET /servanda/v0/inbox?persona=…`
@@ -15,15 +16,18 @@ import { persona } from './support/fixture.js';
 const A = persona(0);
 const B = persona(1);
 const NOW = () => new Date('2026-07-25T09:00:00.000Z');
+const directory = dhDirectory([A, B]);
 
 function stack(opts: { ttlDays?: number } = {}) {
   const hub = new MemoryHub({ now: NOW, ...opts });
-  const client = (p: { personaId: string; privateKey: string }) =>
+  const client = (p: DerivedPersona) =>
     new HubClient({
       baseUrl: 'https://hub.example',
       persona: p.personaId,
       privateKey: p.privateKey,
+      dhPrivateKey: p.dhPrivateKey,
       fetch: hubFetch(hub),
+      resolveDhKey: directory,
       now: NOW,
     });
   return { hub, client };
@@ -57,7 +61,9 @@ describe('§6.1 hub transport', () => {
       baseUrl: 'https://hub.example',
       persona: B.personaId,
       privateKey: A.privateKey,
+      dhPrivateKey: A.dhPrivateKey,
       fetch: hubFetch(hub),
+      resolveDhKey: directory,
       now: NOW,
     });
     await expect(impostor.receive(B.personaId)).rejects.toThrow(HubTransportError);
@@ -102,7 +108,9 @@ describe('§6.1 hub transport', () => {
       baseUrl: 'https://hub.example',
       persona: A.personaId,
       privateKey: A.privateKey,
+      dhPrivateKey: A.dhPrivateKey,
       fetch: hubFetch(hub),
+      resolveDhKey: directory,
       now: NOW,
     });
     await client.send(B.personaId, note(A));
