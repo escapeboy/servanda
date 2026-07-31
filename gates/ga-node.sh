@@ -2,9 +2,9 @@
 # GATE GA — Vault + node.
 #
 # "Done" means all three of:
-#   1. all 19 negative transition vectors rejected with the exact expected reason, and all 7
+#   1. all 21 negative transition vectors rejected with the exact expected reason, and all 7
 #      positive chains accepted with the expected final state;
-#   2. the node answers all five §7 MCP tools with networking DISABLED — proved in a child
+#   2. the node answers all six §7 MCP tools with networking DISABLED — proved in a child
 #      process whose network primitives throw, with controls showing the trap is armed;
 #   3. every M-1..M-16 has a named behavioural test in the layer that owns it.
 #
@@ -26,7 +26,7 @@ done
 node --input-type=module -e '
 import { readFileSync } from "node:fs";
 const dir = process.env.SERVANDA_VECTORS ?? "vendor/vectors";
-const expected = { "transitions/valid.json": 7, "transitions/invalid.json": 19 };
+const expected = { "transitions/valid.json": 7, "transitions/invalid.json": 21 };
 let bad = 0;
 for (const [file, n] of Object.entries(expected)) {
   const got = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")).cases.length;
@@ -43,7 +43,7 @@ echo "==> GA/1: transition-table conformance (26 cases, exact reason strings)"
 npx vitest run packages/node/test/transitions-vectors.test.ts --reporter=dot
 
 echo
-echo "==> GA/2: the node answers all five §7 tools with networking disabled"
+echo "==> GA/2: the node answers all six §7 tools with networking disabled"
 node packages/node/test/support/prove-no-network.mjs
 
 echo

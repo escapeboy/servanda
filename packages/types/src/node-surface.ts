@@ -4,10 +4,13 @@ import { EffectiveState } from './edge.js';
 
 /**
  * §7 Node surface — the normative MCP contract. Clients are interchangeable above it.
- * These five tools are the minimum for the "conforming node" claim (§8).
+ * These six tools are the minimum for the "conforming node" claim (§8).
+ *
+ * `act` is the sixth and the only one that signs an assertion. Before it existed a promise could
+ * be recorded through this contract and never closed through it — the gap upstream #19 named.
  */
 
-export const NODE_TOOL_NAMES = ['commit', 'expect', 'confirm', 'open_loops', 'brief'] as const;
+export const NODE_TOOL_NAMES = ['commit', 'expect', 'confirm', 'open_loops', 'brief', 'act'] as const;
 export type NodeToolName = (typeof NODE_TOOL_NAMES)[number];
 
 /** §7 commit */
@@ -63,6 +66,74 @@ export type OpenLoopsView = z.infer<typeof OpenLoopsView>;
 
 export const OpenLoopAction = z.enum(['done', 'release', 'supersede', 'delegate', 'ping']);
 export type OpenLoopAction = z.infer<typeof OpenLoopAction>;
+
+/**
+ * §7 — the shared act vocabulary, and which tool (if any) each act is bound to.
+ *
+ * Only `done` and `release` reach the `act` tool. `confirm` and `dismiss` belong to `confirm`.
+ * The remaining four are advertised on items but bind to no tool in v0: a client may show them,
+ * and a node MUST NOT accept them through `act`.
+ *
+ * That asymmetry is the point of upstream #19. `open_loops` used to advertise five actions and
+ * name a tool for none of them, so `release` — the one unilateral act in the protocol — appeared
+ * on every waiting item with no way to sign it. Binding an act to nothing at all is honest;
+ * binding it to something that produces no assertion tells a person they forgave a debt the
+ * counterparty never heard about.
+ */
+export const ACT_TOOL_BINDINGS = {
+  done: 'act',
+  release: 'act',
+  supersede: null,
+  delegate: null,
+  ping: null,
+  confirm: 'confirm',
+  dismiss: 'confirm',
+  propose: null,
+} as const satisfies Record<string, 'act' | 'confirm' | null>;
+
+export const Act = z.enum(
+  Object.keys(ACT_TOOL_BINDINGS) as [keyof typeof ACT_TOOL_BINDINGS, ...(keyof typeof ACT_TOOL_BINDINGS)[]],
+);
+export type Act = z.infer<typeof Act>;
+
+/** The acts `act` itself will sign. Derived, so the binding table stays the single source. */
+export const ACT_TOOL_ACTS = Object.entries(ACT_TOOL_BINDINGS)
+  .filter(([, tool]) => tool === 'act')
+  .map(([act]) => act) as ('done' | 'release')[];
+
+/** §7 act — the only tool that signs an assertion. */
+export const ActInput = z.object({
+  id: z.string().min(1),
+  act: Act,
+  /** Required for `done`, MUST be null for `release`. */
+  evidence_hash: Sha256Hex.nullable().default(null),
+});
+export type ActInput = z.infer<typeof ActInput>;
+
+/**
+ * Why an `act` call was refused. Three of these are the §4.3 chain vocabulary reused verbatim —
+ * the transition table is the single authority and `act` defers to it rather than re-deciding.
+ * The four new ones are §7-surface conditions the chain never sees, because a refused call signs
+ * nothing and therefore leaves no assertion to reject.
+ */
+export const ActRejectionReason = z.enum([
+  'not-a-party',
+  'wrong-role-for-act',
+  'act-not-bound-to-a-tool',
+  'evidence-hash-must-be-null',
+  'evidence-hash-required',
+  'acceptance-window-not-elapsed',
+  'illegal-source-state',
+]);
+export type ActRejectionReason = z.infer<typeof ActRejectionReason>;
+
+export const ActOutput = z.object({
+  accepted: z.boolean(),
+  rejection_reason: ActRejectionReason.nullable(),
+  /** The state signed, when accepted. */
+  asserts: z.enum(['closed', 'released']).nullable(),
+});
+export type ActOutput = z.infer<typeof ActOutput>;
 
 export const OpenLoopsInput = z.object({
   view: OpenLoopsView.default('all'),

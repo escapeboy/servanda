@@ -1,4 +1,6 @@
 import {
+  ACT_TOOL_ACTS,
+  ActInput,
   BriefInput,
   CommitInput,
   ConfirmInput,
@@ -10,8 +12,8 @@ import {
 import { assertNoForeignOwner, type ServandaNode } from './node.js';
 
 /**
- * §7 — the five tools, exactly. "Additional tools MAY be exposed; these five are the minimum
- * for the 'conforming node' claim (§8)." This module exposes exactly the five.
+ * §7 — the six tools, exactly. "Additional tools MAY be exposed; these six are the minimum
+ * for the 'conforming node' claim (§8)." This module exposes exactly the six.
  *
  * The JSON Schemas below are hand-written from the §7 contract rather than generated, so that
  * what a client sees is the spec's shape and not zod's rendering of it.
@@ -104,6 +106,23 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'act',
+    description:
+      'Sign the act that closes a loop. `done` is the owner’s and records delivery; ' +
+      '`release` is the counterparty’s and gives up the claim. Every other act on an item ' +
+      'belongs to another tool or to no tool at all, and is refused here by name.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        act: { type: 'string', enum: ACT_TOOL_ACTS },
+        evidence_hash: { type: ['string', 'null'] },
+      },
+      required: ['id', 'act'],
+      additionalProperties: false,
+    },
+  },
 ];
 
 export class UnknownToolError extends Error {
@@ -127,6 +146,8 @@ export function callTool(node: ServandaNode, name: string, args: unknown): unkno
       return node.openLoops(OpenLoopsInput.parse(input));
     case 'brief':
       return node.brief(BriefInput.parse(input));
+    case 'act':
+      return node.act(ActInput.parse(input));
     default:
       throw new UnknownToolError(`no such tool: ${name}. §7 defines exactly ${NODE_TOOL_NAMES.join(', ')}`);
   }

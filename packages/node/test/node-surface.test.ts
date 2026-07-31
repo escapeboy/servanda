@@ -17,10 +17,10 @@ beforeAll(() => {
 });
 afterAll(() => fx.cleanup());
 
-describe('§7 node surface: exactly five tools, exactly the spec’s shapes', () => {
-  it('exposes precisely the five tools §8 requires for the conforming-node claim', () => {
+describe('§7 node surface: exactly six tools, exactly the spec’s shapes', () => {
+  it('exposes precisely the six tools §8 requires for the conforming-node claim', () => {
     expect(TOOL_DEFINITIONS.map((t) => t.name).sort()).toEqual([...NODE_TOOL_NAMES].sort());
-    expect(TOOL_DEFINITIONS).toHaveLength(5);
+    expect(TOOL_DEFINITIONS).toHaveLength(6);
   });
 
   it('commit returns the §7 output shape', () => {

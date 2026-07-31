@@ -49,7 +49,7 @@ describe('M-10: L0–L1 functions with no network, server, or second participant
     expect(out).toMatchObject({ edge_id: null, state: 'vault-local' });
   });
 
-  it('all five §7 tools answer offline', () => {
+  it('all six §7 tools answer offline', () => {
     const edgeId = fx.node.commit({
       intent: 'confirmable',
       owed_to: fx.personas[1]!,
@@ -69,7 +69,7 @@ describe('M-10: L0–L1 functions with no network, server, or second participant
     expect(fx.node.brief({ persona: null }).slots.length).toBeGreaterThan(0);
   });
 
-  it('the shipped node answers all five tools with network primitives disabled', () => {
+  it('the shipped node answers all six tools with network primitives disabled', () => {
     // The prover exits non-zero on any failed control; this is its verdict, not a re-assertion.
     const out = execFileSync(process.execPath, [PROVER], { encoding: 'utf8' });
     expect(out).toContain('GA/no-network: PASS');

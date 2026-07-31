@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GATE GA, requirement 2: "The node answers all five MCP tools with networking disabled —
+ * GATE GA, requirement 2: "The node answers all six MCP tools with networking disabled —
  * PROVE it, don't assert it."
  *
  * Two independent proofs, both of which must pass:
@@ -11,7 +11,7 @@
  *     must die with NETWORK_ACCESS_DENIED) and one negative control confirms the denial comes
  *     from the trap rather than from an absent network (the same fetch WITHOUT the preload must
  *     fail with a connection error, not NETWORK_ACCESS_DENIED). Only then is the real node
- *     spawned and driven through initialize + tools/list + all five tools over stdio.
+ *     spawned and driven through initialize + tools/list + all six tools over stdio.
  *
  *  B. STATIC. The shipped module graph (@servanda/node, /vault, /crypto, /types) is scanned
  *     for any import of a network module or use of fetch/XHR. Nothing may match. This closes
@@ -107,9 +107,10 @@ const REQUESTS = [
   { id: 5, method: 'tools/call', params: { name: 'open_loops', arguments: { view: 'all' } } },
   { id: 6, method: 'tools/call', params: { name: 'brief', arguments: { persona: null } } },
   { id: 7, method: 'tools/call', params: { name: 'confirm', arguments: { id: 'deadbeef', decision: 'dismiss' } } },
+  { id: 8, method: 'tools/call', params: { name: 'act', arguments: { id: 'deadbeef', act: 'done', evidence_hash: null } } },
 ];
 
-log('==> GA/no-network A3: the node answers all five §7 tools with networking denied');
+log('==> GA/no-network A3: the node answers all six §7 tools with networking denied');
 
 const child = spawn(process.execPath, ['--require', PRELOAD, ENTRY], {
   env: {
@@ -157,8 +158,9 @@ check(init?.result?.serverInfo?.name === 'servanda-node', 'initialize answered')
 const tools = responses.get(2);
 const toolNames = (tools?.result?.tools ?? []).map((t) => t.name).sort();
 check(
-  JSON.stringify(toolNames) === JSON.stringify(['brief', 'commit', 'confirm', 'expect', 'open_loops']),
-  'tools/list returns exactly the five §7 tools',
+  JSON.stringify(toolNames) ===
+    JSON.stringify(['act', 'brief', 'commit', 'confirm', 'expect', 'open_loops']),
+  'tools/list returns exactly the six §7 tools',
   toolNames.join(','),
 );
 
@@ -170,6 +172,10 @@ for (const [id, tool, wantError] of [
   // `confirm` on an unknown id must REFUSE — an answered refusal is still an answer, and it
   // proves the tool ran rather than being silently absent.
   [7, 'confirm', true],
+  // `act` likewise: an unknown id throws, which is an answer. The point of driving it here is
+  // that the sixth tool must work over the real wire with networking denied like the other five
+  // — a tool that only ever runs through the library is not a tool a client can reach.
+  [8, 'act', true],
 ]) {
   const r = responses.get(id);
   const isError = r?.result?.isError === true;
@@ -225,4 +231,4 @@ if (failures > 0) {
   log(`GA/no-network: FAIL (${failures} check(s) failed)`);
   process.exit(1);
 }
-log(`GA/no-network: PASS — trap armed, ${scanned} shipped modules scanned, five tools answered offline`);
+log(`GA/no-network: PASS — trap armed, ${scanned} shipped modules scanned, six tools answered offline`);

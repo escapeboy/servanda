@@ -10,8 +10,21 @@ cd "$(dirname "$0")/.."
 node --input-type=module -e '
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
-const IDS = Array.from({ length: 16 }, (_, i) => `M-${i + 1}`);
+// The ids come from the MUSTS table itself, never from a count. A hardcoded `length: 16` was
+// here until M-20 arrived and the gate did not notice: it reported 16/16 while a registered MUST
+// went unchecked, which is precisely the "absent and passing look the same" failure this gate
+// exists to prevent. The ids are also no longer contiguous — M-17..M-21 land in the order the
+// spec resolves them — so any construction that counts rather than reads is wrong by shape.
+const { MUST_IDS } = await import(
+  pathToFileURL(join(process.cwd(), "packages/types/dist/musts.js")).href
+);
+const IDS = [...MUST_IDS];
+if (IDS.length === 0) {
+  console.error("FAIL: MUST_IDS is empty — is @servanda/types built?");
+  process.exit(1);
+}
 
 function walk(dir, out = []) {
   let entries;

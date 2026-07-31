@@ -7,6 +7,8 @@ import type {
   Commitment,
   CommitInput,
   CommitOutput,
+  ActInput,
+  ActOutput,
   ConfirmInput,
   ConfirmOutput,
   Edge,
@@ -20,7 +22,7 @@ import type {
   OpenLoopsOutput,
   VerificationLevel,
 } from '@servanda/types';
-import { PROTOCOL_VERSION } from '@servanda/types';
+import { ACT_TOOL_BINDINGS, ActRejectionReason, PROTOCOL_VERSION } from '@servanda/types';
 import { DEFAULT_ACCEPTANCE_WINDOW } from '@servanda/types';
 import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
 import { verifyAssertionChain, type ChainVerification } from './transitions.js';
@@ -353,6 +355,70 @@ export class ServandaNode {
     }
     this.vault.appendAssertion(persona, assertion);
     return { state: 'confirmed' };
+  }
+
+  /**
+   * §7 `act` — the sixth tool, and the only one that signs an assertion.
+   *
+   * `done` is the owner's act and asserts `closed`; `release` is the counterparty's and asserts
+   * `released`. Nothing else reaches this tool: the four advertised-but-unbound acts and the two
+   * that belong to `confirm` are refused by name, so a client that offers them learns here rather
+   * than by watching an assertion silently fail to appear.
+   *
+   * State legality is NOT decided here. The candidate assertion is signed, run through
+   * `verifyAssertionChain`, and only appended if the table accepts it — the same self-distrust
+   * `confirm` practises, and the reason `illegal-source-state` and `acceptance-window-not-elapsed`
+   * need no second implementation. A refused call appends nothing, so the chain keeps no trace of
+   * it (§7: a rejected call leaves no trace).
+   */
+  act(input: ActInput): ActOutput {
+    const refuse = (reason: ActRejectionReason): ActOutput => ({
+      accepted: false,
+      rejection_reason: reason,
+      asserts: null,
+    });
+
+    const located = this.locate(input.id);
+    if (located === null) throw new NodeError(`no such id in this vault: ${input.id}`);
+    const persona = located.persona;
+
+    const edge = this.vault.getEdge(persona, input.id);
+    if (!edge) throw new NodeError(`no such edge: ${input.id}`);
+
+    // M-3: a non-party has no standing at all, whatever they asked for.
+    if (edge.owner !== persona && edge.owed_to !== persona) return refuse('not-a-party');
+
+    if (ACT_TOOL_BINDINGS[input.act] !== 'act') return refuse('act-not-bound-to-a-tool');
+
+    // `release` is the protocol's one unilateral act and it belongs to the party owed. Accepting
+    // it from the owner would let a debtor forgive their own debt.
+    const requiredRole = input.act === 'done' ? edge.owner : edge.owed_to;
+    if (persona !== requiredRole) return refuse('wrong-role-for-act');
+
+    if (input.act === 'release' && input.evidence_hash !== null) {
+      // Releasing is giving up a claim, not evidencing delivery. Evidence here would record a
+      // closure that never happened as though it had been performed.
+      return refuse('evidence-hash-must-be-null');
+    }
+
+    const asserts = input.act === 'done' ? 'closed' : 'released';
+    const assertion = this.signAssertion(
+      persona,
+      edge.edge_id,
+      asserts,
+      this.now().toISOString(),
+      input.evidence_hash,
+    );
+
+    const chain = [...this.vault.getAssertions(persona, edge.edge_id), assertion];
+    const verification = verifyAssertionChain(edge, chain);
+    const last = verification.outcomes[verification.outcomes.length - 1];
+    if (!last || !last.accepted) {
+      return refuse(ActRejectionReason.parse(last?.rejection_reason ?? 'illegal-source-state'));
+    }
+
+    this.vault.appendAssertion(persona, assertion);
+    return { accepted: true, rejection_reason: null, asserts };
   }
 
   /**

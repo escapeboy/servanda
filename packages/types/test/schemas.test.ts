@@ -179,10 +179,10 @@ describe('schemas reject what the spec forbids', () => {
 });
 
 describe('§8 constitution surface', () => {
-  it('enumerates all sixteen MUSTs', () => {
-    expect(MUST_IDS).toHaveLength(16);
+  it('enumerates every MUST the spec has resolved', () => {
+    expect(MUST_IDS).toHaveLength(17);
     expect(MUST_IDS[0]).toBe('M-1');
-    expect(MUST_IDS.at(-1)).toBe('M-16');
+    expect(MUST_IDS.at(-1)).toBe('M-20');
     for (const id of MUST_IDS) expect(MUSTS[id].length).toBeGreaterThan(20);
   });
 
