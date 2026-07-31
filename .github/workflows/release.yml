@@ -85,13 +85,38 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
+      # Node 24, not 22, and this job alone. Trusted publishing needs npm >= 11.5.1; Node 22 ships
+      # npm 10.9, which has no OIDC support whatsoever. Both v0.1.0-pre and v0.2.0-pre published
+      # on the token for that reason, while eighteen configured trusted publishers sat unused and
+      # nothing said so — the publish succeeded, provenance was attested, and the log named no
+      # credential. Node 24 ships npm 11.16.
+      #
+      # `package-manager-cache: false` rather than `cache: pnpm`: this job holds `id-token: write`,
+      # and setup-node's own guidance is to disable dependency caching in jobs with elevated
+      # privileges, where a poisoned cache entry would be restored into a context that can sign.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
-          cache: pnpm
+          node-version: 24
+          package-manager-cache: false
           registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r run build
+
+      # The version that made OIDC unreachable was never checked, so its absence looked exactly
+      # like its presence. It is checked now, before anything is packed: below 11.5.1 the release
+      # stops rather than quietly falling back to the token it is supposed to be retiring.
+      - name: npm is new enough for trusted publishing
+        run: |
+          npm_version="$(npm --version)"
+          echo "npm ${npm_version} on node $(node --version)"
+          node -e '
+            const [have, want] = [process.argv[1], "11.5.1"].map((v) => v.split(".").map(Number));
+            const cmp = have[0] - want[0] || have[1] - want[1] || have[2] - want[2];
+            if (cmp < 0) {
+              console.error(`npm ${process.argv[1]} cannot use trusted publishing; 11.5.1+ is required.`);
+              process.exit(1);
+            }
+          ' "$npm_version"
 
       # Pack with pnpm, upload with npm — pnpm's own documented split, and here it is load-bearing
       # twice over.
@@ -110,11 +135,15 @@ jobs:
           pnpm --filter './packages/*' --filter '!@servanda/e2e'
           pack --pack-destination "$RUNNER_TEMP/tarballs"
 
-      # Both credentials are offered, and that is the migration, not indecision: the npm CLI tries
-      # OIDC first and falls back to the token. A package with a trusted publisher configured is
-      # published without any long-lived secret; one that still lacks it publishes on the token
-      # instead of failing the release. So the eighteen packages can be migrated one at a time
-      # without a flag day, and the token is deleted once the last one is done.
+      # Both credentials are offered, and that is the migration, not indecision: with npm 11.5.1+
+      # the CLI attempts the OIDC exchange first and falls back to the token. A package with a
+      # trusted publisher configured is published without any long-lived secret; one that still
+      # lacks it publishes on the token instead of failing the release.
+      #
+      # That fallback is also why the npm-version check above has to exist. On npm 10 there is no
+      # exchange to attempt, so every package took the token path and the run looked identical to
+      # one that had not: same output, same provenance, same green tick. A silent fallback is only
+      # safe when the thing being fallen back FROM is known to have been tried.
       #
       # `NPM_CONFIG_PROVENANCE` stays set even though trusted publishing generates provenance on
       # its own: on the token path nothing would generate it, and a release without an attestation
