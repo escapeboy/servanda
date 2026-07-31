@@ -94,6 +94,28 @@ if (!FORBIDDEN.some((re) => re.test("withSignature(o, k)"))) {
 console.log(`    ${FILE}: 0 signing primitives, scanner verified against a known violation`);
 '
 
+# §6.3, on the SHIPPED module. A persona now has its own X25519 key, so nothing in the sealing
+# path may convert a signing key into one — that is what makes upstream #7 unreachable here
+# rather than merely compensated for. The unit suite asserts the same over source, because gate
+# G0 runs it without building; this is the half that sees what actually ships.
+echo "==> GF/6: §6.3 — the shipped sealing module cannot convert a signing key"
+node --input-type=module -e '
+import { readFileSync } from "node:fs";
+const FILE = "packages/crypto/dist/transport.js";
+const FORBIDDEN = [/edwardsToMontgomeryPub/, /edwardsToMontgomeryPriv/];
+const text = readFileSync(FILE, "utf8");
+const hits = FORBIDDEN.filter((re) => re.test(text));
+if (hits.length > 0) {
+  console.error(`FAIL: ${FILE} still reaches for the birational map: ${hits.join(", ")}`);
+  process.exit(1);
+}
+if (!FORBIDDEN.some((re) => re.test("edwardsToMontgomeryPub(x)"))) {
+  console.error("FAIL: the scanner does not detect a known violation");
+  process.exit(1);
+}
+console.log(`    ${FILE}: 0 birational-map conversions, scanner verified against a known violation`);
+'
+
 echo
 echo "==> GF/5: MUST coverage across the repository (every registered MUST has a test)"
 bash gates/must-coverage.sh

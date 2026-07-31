@@ -18,9 +18,24 @@ export class VaultGitError extends Error {
   override name = 'VaultGitError';
 }
 
+/**
+ * `gc.auto=0`, and it is not a performance tweak.
+ *
+ * git forks a DETACHED background `gc --auto` after commits, which keeps writing into
+ * `.git/objects` after the synchronous command has returned. For a vault that is the wrong
+ * behaviour on its own terms — a library-managed store should not mutate itself while its owner
+ * believes it is idle — and it is also what made teardown flaky on CI: `rmSync` raced the
+ * background process and threw `ENOTEMPTY: rmdir '.git/objects'` from `afterAll`, failing a whole
+ * test file in which every assertion had passed.
+ *
+ * Retries were the first remedy and they treated the symptom; this removes the process that
+ * races. A vault is small and append-only, so nothing here needs collecting behind our back.
+ */
+const GIT_CONFIG = ['-c', 'gc.auto=0'];
+
 function git(dir: string, args: string[]): string {
   try {
-    return execFileSync('git', args, {
+    return execFileSync('git', [...GIT_CONFIG, ...args], {
       cwd: dir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

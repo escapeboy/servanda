@@ -49,11 +49,15 @@ describe('F-2: the birational map is gone from the sealing path entirely', () =>
     );
   });
 
-  it('nothing in the shipped sealing module can convert a signing key', () => {
+  it('nothing in the sealing module can convert a signing key', () => {
     // The structural form, and the strongest statement available: F-2 was first fixed by binding
     // the persona_id into `info`, which made the claim true while leaving the map in place.
     // Removing the map is what makes the finding unreachable rather than compensated for.
-    const source = readFileSync('packages/crypto/dist/transport.js', 'utf8');
+    //
+    // SOURCE, not dist: gate G0 runs this suite without building, so a dist read passed locally
+    // and failed in CI with ENOENT. The shipped artefact is scanned too — by gate GF, which does
+    // build — so the claim is made in both places by whichever is available.
+    const source = readFileSync('packages/crypto/src/transport.ts', 'utf8');
     for (const gone of [/edwardsToMontgomeryPub/, /edwardsToMontgomeryPriv/]) {
       expect(source, `transport.js must not reference ${gone}`).not.toMatch(gone);
     }

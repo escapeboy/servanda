@@ -46,7 +46,14 @@ export class GitTransportError extends Error {
 
 function git(dir: string, args: string[]): string {
   try {
-    return execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    // `gc.auto=0` for the same reason the vault sets it: git forks a detached background
+    // `gc --auto` after commits, which keeps writing to `.git/objects` after the synchronous
+    // call returns. See packages/vault/src/git.ts.
+    return execFileSync('git', ['-c', 'gc.auto=0', ...args], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   } catch (err) {
     const e = err as { stderr?: string; message?: string };
     throw new GitTransportError(`git ${args.join(' ')} failed in ${dir}: ${e.stderr ?? e.message}`);
