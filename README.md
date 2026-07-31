@@ -163,9 +163,10 @@ away:
 
 **§2 says connectors are MCP servers implementing `emit_envelope`. These are not.** The connectors
 here are libraries plus a hook script; nothing in the repository defines an `emit_envelope` tool.
-No gate catches this, for two reasons worth naming: no MUST binds §2's connector surface, and there
-is no conformance vector family for the node surface at all (upstream #25), so nothing outside this
-repository pins §7 or §2's tool contracts either.
+No gate catches this, and the reason has narrowed: no MUST binds §2's connector surface. The
+second reason this paragraph used to give — that no conformance vector family pinned any tool
+contract — stopped being true when upstream #25 closed and `vendor/vectors/node-surface/` landed.
+§7 is pinned by 35 cases now; §2's connector surface still is not.
 
 Which side is wrong is a protocol question, not an implementation one — a connector that is a
 library composes into a node without a second process, which may be the better design, or may be a
