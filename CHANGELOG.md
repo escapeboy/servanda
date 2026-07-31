@@ -4,56 +4,73 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Version numbers below 1.0.0 carry no compatibility promise. 0.1.0-pre carried an explicit
-*incompatibility* promise — the scheduled identifier break — and 0.2.0-pre is where it was taken.
-A vault created at 0.1.0-pre does not migrate.
+Version numbers below 1.0.0 carry no compatibility promise, and these releases have used it: every
+one so far changes derived keys. A vault does not migrate across any of them.
 
-## [Unreleased]
+## [0.3.0-pre] — 2026-07-31
+
+Everything here comes out of pre-reviewing the upstream cryptographic gate
+([#7](https://github.com/escapeboy/servanda-protocol/issues/7)), written up in
+[docs/crypto-review-packet.md](docs/crypto-review-packet.md). Every change alters a derived key, so
+a 0.2.0-pre vault does not open and a 0.2.0-pre sealed payload does not decrypt.
 
 ### Changed — breaking
 
-Three fixes from the pre-review of the upstream cryptographic gate
-([#7](https://github.com/escapeboy/servanda-protocol/issues/7)), written up in
-[docs/crypto-review-packet.md](docs/crypto-review-packet.md). All three change derived keys, so a
-0.2.0-pre vault does not open and a 0.2.0-pre sealed payload does not decrypt.
-
-- **The blind-courier seal binds the persona, not a y-coordinate.** The Ed25519 → Montgomery map
-  is 2-to-1: `u = (1 + y)/(1 − y)` uses only the y-coordinate, so a `persona_id` and its negation
-  are distinct identifiers sharing one X25519 key. Deriving from that key alone bound a
-  y-coordinate while §6.3 claimed the payload was "encrypted to the recipient persona key". The
-  full `persona_id` is now folded into the HKDF `info`, which costs nothing and makes the claim
-  true. §6.3 specifies no key schedule at all — filed upstream as
-  [#30](https://github.com/escapeboy/servanda-protocol/issues/30).
-- **The hub envelope's readable fields are now immutable.** `recipient` and `sent_at` sit outside
-  the ciphertext because a courier needs them, and outside meant unauthenticated — a hub could
-  rewrite `sent_at` on anything it held. They are bound as AEAD associated data: still readable,
-  no longer editable.
-- **Device keys are derived, not used raw.** `wrapForDevice` passed the caller's bytes straight to
-  the AEAD, which was sound only if every caller supplied 32 uniformly random bytes and nothing
-  said so. One HKDF with a domain-separation label, plus a 32-byte floor that refuses short input
-  rather than stretching it.
-
-Two further findings were protocol text rather than code and went upstream:
-[#31](https://github.com/escapeboy/servanda-protocol/issues/31) (a wire message names no
-recipient, so a signature binds who sent it and not who it was for) and
-[#32](https://github.com/escapeboy/servanda-protocol/issues/32) (§9.3's "minimum" reads as three
-independently tunable floors).
-
 - **Personas have their own X25519 key** (`m/7391'/{n}'/1'`), and the Ed25519 → X25519 birational
-  map is gone from the sealing path. This does not answer #7's key-reuse question; it removes it.
-  Standard primitives used in standard ways need no novel analysis, and the issue names this way
-  out itself. Proposed upstream as
+  map is gone from the sealing path entirely. This does not answer #7's key-reuse question — it
+  removes it. Standard primitives used in standard ways need no novel analysis, and the issue
+  names this way out itself. Proposed upstream as
   [#33](https://github.com/escapeboy/servanda-protocol/issues/33).
 
-  The key rides in the §6.7 inbox record, which is already signed, already guarded by M-17, and
-  already required to reach a persona over a hub — so it adds no published statement an observer
-  could compare, which §1.2's unlinkability would not have survived. Only the hub transport seals
-  (git confidentiality *is* repository access), so a persona federating over git, or not at all
-  (M-10), needs no DH key and publishes nothing. Rotation comes free with the record's 30-day life.
+  The key rides in the §6.7 inbox record: already signed, already guarded by M-17, and already
+  required to reach a persona over a hub — so it adds no published statement an observer could
+  compare, which §1.2's unlinkability would not have survived. Only the hub transport seals (git
+  confidentiality *is* repository access), so a persona federating over git, or not at all (M-10),
+  needs no DH key and publishes nothing. Rotation comes free with the record's 30-day life.
 
-  `sealToPersona` now takes the recipient's key and cannot compute one, so the fallback to the old
-  construction is not a mistake to avoid — it is unreachable. `HubClient` refuses to send when no
-  verified key resolves.
+  `sealToPersona` takes the recipient's key and cannot compute one, so the fallback to the old
+  construction is not a mistake to avoid — it is unreachable, and gate GF proves it over the
+  shipped module. `HubClient` refuses to send when no verified key resolves: refusing costs a
+  round of reconciliation, which §6.7 already guarantees, while sealing to an unauthenticated key
+  costs the confidentiality §6.3 exists for.
+
+  `dh_key` is optional in the schema only because #33 is a proposal rather than merged text. The
+  vendored addressing vectors predate it and are never edited to suit an implementation, so a
+  record without the field still parses and still verifies over exactly the canonical form the
+  oracle pins. It simply cannot receive anything.
+
+- **The blind-courier seal binds the persona, not a y-coordinate.** The birational map is 2-to-1:
+  `u = (1 + y)/(1 − y)` uses only the y-coordinate, so a `persona_id` and its negation are distinct
+  identifiers sharing one X25519 key. The full `persona_id` is folded into the HKDF `info`. This
+  landed before the key separation above and still matters: it ties a ciphertext to *who* it was
+  for, rather than to whichever key that identity currently advertises. §6.3 specifies no key
+  schedule at all — [#30](https://github.com/escapeboy/servanda-protocol/issues/30).
+
+- **The hub envelope's readable fields are now immutable.** `recipient` and `sent_at` sit outside
+  the ciphertext because a courier needs them, and outside meant unauthenticated — a hub could
+  rewrite `sent_at` on anything it held. Bound as AEAD associated data: still readable, no longer
+  editable.
+
+- **Device keys are derived, not used raw.** `wrapForDevice` passed the caller's bytes straight to
+  the AEAD, sound only if every caller supplied 32 uniformly random bytes and nothing said so. One
+  HKDF with a domain-separation label, plus a 32-byte floor that refuses short input rather than
+  stretching it — a KDF spreads entropy and cannot create it.
+
+### Fixed
+
+- **The vault no longer lets git rewrite it in the background.** git forks a detached
+  `gc --auto` after commits, which keeps writing into `.git/objects` after the synchronous command
+  returns. `gc.auto=0` on the vault's and the federation transport's invocations. It surfaced as a
+  flaky teardown, but it is the right fix on its own terms: a library-managed store should not
+  rewrite itself while its owner believes it is idle.
+
+### Filed upstream rather than fixed here
+
+Two findings were protocol text, not code: [#31](https://github.com/escapeboy/servanda-protocol/issues/31)
+(a wire message names no recipient, so a signature binds who sent it and not who it was for) and
+[#32](https://github.com/escapeboy/servanda-protocol/issues/32) (§9.3's "minimum" reads as three
+independently tunable floors). §6.2's message shape and §9.3's wording are normative, so changing
+them here would have been a design change in the wrong repository.
 
 **The gate itself is not discharged.** Whether one key pair may both sign and do Diffie-Hellman is
 the actual subject of #7 — but it is no longer a question this implementation depends on.
@@ -180,5 +197,6 @@ promise you need in a year.
 - Hosted operation, HPKE transport, threshold group signing, and formal verification of the
   transition table are out of scope for this implementation — not merely unimplemented.
 
+[0.3.0-pre]: https://github.com/escapeboy/servanda/releases/tag/v0.3.0-pre
 [0.2.0-pre]: https://github.com/escapeboy/servanda/releases/tag/v0.2.0-pre
 [0.1.0-pre]: https://github.com/escapeboy/servanda/releases/tag/v0.1.0-pre

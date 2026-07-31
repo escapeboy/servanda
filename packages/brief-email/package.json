@@ -1,6 +1,6 @@
 {
   "name": "@servanda/brief-email",
-  "version": "0.2.0-pre",
+  "version": "0.3.0-pre",
   "description": "Servanda brief as a push projection: the same brief the app shows, as an email",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

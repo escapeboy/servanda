@@ -7,18 +7,18 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status: v0.2.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
+> **Status: v0.3.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
 > the implementation that proves it runs.
 >
-> **The break v0.1.0-pre scheduled has been taken.** Upstream
-> [#8](https://github.com/escapeboy/servanda-protocol/issues/8) and
-> [#16](https://github.com/escapeboy/servanda-protocol/issues/16) added domain separation to every
-> identifier preimage, so every `commitment_hash`, every `edge_id` and every envelope `id` differs
-> from what 0.1.0-pre produced. **A vault created at v0.1.0-pre does not migrate** — see
-> [CHANGELOG.md](CHANGELOG.md).
+> **A vault does not migrate across any 0.x release so far.** 0.2.0-pre took the scheduled
+> domain-separation break; 0.3.0-pre gave personas their own X25519 key. Each changes keys or
+> identifiers a previous vault holds — see [CHANGELOG.md](CHANGELOG.md).
 >
-> This is still a pre-release: **the cryptography has not been externally reviewed**
+> **The cryptography has not been externally reviewed**
 > ([#7](https://github.com/escapeboy/servanda-protocol/issues/7)) — see [SECURITY.md](SECURITY.md).
+> What has changed is that #7's hardest question no longer applies here: a persona signs with one
+> key and performs key agreement with another, so the key-reuse the issue asks about is not a thing
+> this implementation does. That narrows the review; it does not replace it.
 >
 > Read it, run it, file issues against it. Do not yet keep in it a promise you need in a year.
 
@@ -81,7 +81,7 @@ Solo use is complete use.
 | Package | What it does |
 |---|---|
 | `@servanda/types` | Every spec object as a zod schema + TS type; the §7 tool contract; §8's MUST list as data |
-| `@servanda/crypto` | RFC 8785 JCS, SHA-256, Ed25519, SLIP-0010 `m/7391'`, BIP-39, XChaCha20-Poly1305, X25519 blind courier |
+| `@servanda/crypto` | RFC 8785 JCS, SHA-256, Ed25519, SLIP-0010 `m/7391'`, BIP-39, XChaCha20-Poly1305, X25519 blind courier on a key of its own |
 | `@servanda/vault` | Encrypted git-backed sovereign store; commitment / expectation / edge stores; retention decay |
 | `@servanda/node` | Edge state machine (§4.3) and the six MCP tools (§7) |
 | `@servanda/identity` | §1 verification: attestation, revocation boundary, domain anchor, the binding-proof ladder, rotation |
@@ -151,8 +151,9 @@ upstream, in the protocol repo).
 
 The spec is a draft, and drafts contradict themselves. The rule here is: **never resolve a spec
 ambiguity silently.** Implement the narrowest reading, comment it at the code site, and file it
-upstream. Five remain open against servanda-protocol — twenty-two were closed by its v0.1-pre
-resolutions — and the vectors' README documents the interpretations the generator had to make.
+upstream. Nine are open against servanda-protocol — twenty-two were closed by its v0.1-pre
+resolutions, and four of the nine were filed from here while pre-reviewing the cryptographic gate
+— and the vectors' README documents the interpretations the generator had to make.
 
 Anything resembling a design change goes to a protocol issue, never into this code.
 

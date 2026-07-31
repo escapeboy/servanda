@@ -1,6 +1,6 @@
 {
   "name": "@servanda/connectors-email",
-  "version": "0.2.0-pre",
+  "version": "0.3.0-pre",
   "description": "Servanda connector: IMAP mail, sent-mail archaeology and BCC/forward capture to §2 signal envelopes",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",
