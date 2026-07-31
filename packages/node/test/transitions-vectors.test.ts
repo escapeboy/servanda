@@ -7,7 +7,7 @@ import { verifyAssertionChain } from '../src/transitions.js';
 /**
  * The conformance oracle. §4.3: "Any assertion violating this table is invalid and MUST be
  * discarded by conforming nodes." M-14 restates it, and vendor/vectors/README.md explains why
- * the 19 NEGATIVE cases are the ones that matter: a verifier that accepts an owner's
+ * the 21 NEGATIVE cases are the ones that matter: a verifier that accepts an owner's
  * self-confirmation still passes every positive test.
  *
  * Reason strings are asserted exactly. They are part of the contract with the suite, not
@@ -61,9 +61,9 @@ describe('§4.3 transition table — valid chains (7 vectors)', () => {
   }
 });
 
-describe('M-14: assertions violating the transition table are discarded (19 vectors)', () => {
+describe('M-14: assertions violating the transition table are discarded (21 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(invalidCases).toHaveLength(19);
+    expect(invalidCases).toHaveLength(21);
   });
 
   for (const c of invalidCases) {
@@ -103,6 +103,7 @@ describe('M-14: assertions violating the transition table are discarded (19 vect
       'illegal-source-state',
       'implicit-transition-not-assertable',
       'invalid-signature',
+      'malformed-edge-acceptance-window',
       'signer-not-a-party',
       'terminal-state-reached',
       'wrong-signer-for-transition',

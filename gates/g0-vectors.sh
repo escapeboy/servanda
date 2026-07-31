@@ -19,6 +19,12 @@ fi
 
 # Every vector file must be present. A silently-missing file would let the suite "pass" while
 # testing nothing — the failure mode the conformance suite exists to prevent.
+#
+# This list IS a coverage surface, exactly like the hand-written package list in
+# connectors-email's no-network audit: a family that lands upstream and is never added here is a
+# family nothing checks, and the gate still reports green. It went from six entries to eleven when
+# §6.7 addressing and the §7 node-surface families arrived — the addressing ones had already been
+# upstream for days without being noticed missing.
 required=(
   canonicalization/jcs.json
   hashing/commitment-hash.json
@@ -26,6 +32,11 @@ required=(
   derivation/persona-keys.json
   transitions/valid.json
   transitions/invalid.json
+  addressing/inbox-records.json
+  addressing/oob-bootstrap.json
+  node-surface/actions.json
+  node-surface/act-tool.json
+  node-surface/verification-levels.json
 )
 for f in "${required[@]}"; do
   if [ ! -f "${VECTORS}/${f}" ]; then
@@ -44,7 +55,12 @@ const expected = {
   "hashing/commitment-hash.json": 14,
   "signatures/signatures.json": 5,
   "transitions/valid.json": 7,
-  "transitions/invalid.json": 19,
+  "transitions/invalid.json": 21,
+  "addressing/inbox-records.json": 4,
+  "addressing/oob-bootstrap.json": 2,
+  "node-surface/actions.json": 11,
+  "node-surface/act-tool.json": 14,
+  "node-surface/verification-levels.json": 10,
 };
 let bad = 0;
 for (const [file, n] of Object.entries(expected)) {

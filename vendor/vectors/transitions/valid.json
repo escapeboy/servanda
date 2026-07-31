@@ -12,8 +12,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -27,42 +27,42 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "0d4880230814fa56889e9a9454efa189fd4d7264a05db41ed103cf41fe6217562903298521f570ac9e7795c623522c6c8ef85284fe4c10015a90aff0757ad405"
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "48d456b2a2aac8b6000163b17bcbf6d121874f0edfeddd7687359db1b5db936318324645f14e90cb1c9e81c3f9d1c62d73558e6dab88c883957e591627de600e"
+          "sig": "b19058ab8cd1087b69b5eafbe0ac1697c5cca0bd13e8b709b6a7f8fb410261de3eda222ada8b5a212d32bbd98a7b54b3d360520cf03d243b9aefa9e6e420ba06"
         }
       ],
       "expected_outcomes": [
@@ -95,8 +95,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -110,42 +110,42 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "0d4880230814fa56889e9a9454efa189fd4d7264a05db41ed103cf41fe6217562903298521f570ac9e7795c623522c6c8ef85284fe4c10015a90aff0757ad405"
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-08T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "eee57e02df7bfe4b0452e7371f948d200c0656908371dea86e9856fca0e038b9e90f709d4ba6328aac68ef87d498f71a82167e1259023bdf648d1fbae83ee609"
+          "sig": "40fb9eca76f556ea48d3320f0a2b461faaf08254bcdd7364f92b07abb65cca8a723aec073d6465221e90011a60455521d9dcf9b854787350b95f03222f9c4102"
         }
       ],
       "expected_outcomes": [
@@ -178,8 +178,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -193,32 +193,32 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "0d4880230814fa56889e9a9454efa189fd4d7264a05db41ed103cf41fe6217562903298521f570ac9e7795c623522c6c8ef85284fe4c10015a90aff0757ad405"
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
         }
       ],
       "expected_outcomes": [
@@ -246,8 +246,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -261,32 +261,32 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "released",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "e053a89a0ca0645d4e307bd5cf3477c67a95c65b1b3dd5ed96e9dc81e7f3ba81a31d1f3b7c3e204a693957b6f411ff1928058475ea5cde64e9764aba2ebdda08"
+          "sig": "327dbab05e3a9afb9e1ac7f41521f40149e14137a1b80fc3749b04d3ea99731b670d800788c1aabc08cac70b7dfc9643232c55bf496148abf5fdfdbcfbada10e"
         }
       ],
       "expected_outcomes": [
@@ -314,8 +314,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -329,32 +329,32 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "expired",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "bbc39be2c134c8a7725fc18e56227632aff68b96f4207aed3ddfc74a435c709eff13dfda1b6aa5a14dd01a38a4b73a1a67a7295d11795a0e5eca60302c5ab70f"
+          "sig": "468fb3a4a2e8373b2dcc0de1e70cbd0e16f2f196ccea8edd99c251f70c305fb965e104061ba2e89ee7345f80671a1069d695f764392edf73ad88de15e2845506"
         }
       ],
       "expected_outcomes": [
@@ -382,8 +382,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -397,62 +397,62 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "0d4880230814fa56889e9a9454efa189fd4d7264a05db41ed103cf41fe6217562903298521f570ac9e7795c623522c6c8ef85284fe4c10015a90aff0757ad405"
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "disputed",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": "c9c5c840b98e0fd564d63f51753590effce04001f271792f547518bc29ba0687",
-          "sig": "aa451b84c4fc44af55878afcda3c9977fbca5d88a92fdf59c46a5ed7c3cb49873631f7dec6805b5c068517e59ed5f11e02c09a1108ad02ac9b201656c5523403"
+          "sig": "6b8e26321087385070ea837e81da5db7af5f29532a59185d339b4b83b31a5ff411ede7bddc1f1cef7e762400ec813921258257be9cffc8fe585883abc0660908"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-08T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "eee57e02df7bfe4b0452e7371f948d200c0656908371dea86e9856fca0e038b9e90f709d4ba6328aac68ef87d498f71a82167e1259023bdf648d1fbae83ee609"
+          "sig": "40fb9eca76f556ea48d3320f0a2b461faaf08254bcdd7364f92b07abb65cca8a723aec073d6465221e90011a60455521d9dcf9b854787350b95f03222f9c4102"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-08T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b18ae30c2d8e4f341ff566f7a26cbfe27c056e9d0e0624b3ba082b5604ac1e1e9c8ff651000bf01e27964e9fe8cf4735d61be761fbec87e75a4b962717dcc30e"
+          "sig": "d3fb4ac33859a8a66fe889a671e8a88f5a0659c0df40c3b07f92d26b129d9e5bc9a3e930882035bf26c2606f9cf77fc0fa17e41b7a6a3f16d4fc792bc6a94a05"
         }
       ],
       "expected_outcomes": [
@@ -495,8 +495,8 @@
       "edge": {
         "v": "servanda/0.1",
         "type": "edge",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
-        "commitment_hash": "3dc21f39aab6dfc74313cb7adb8fc6fdc09fab62113c5d5ea1561ae95c7837d0",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "proposed_at": "2026-07-25T09:00:00Z",
@@ -510,42 +510,42 @@
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "superseded",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "3aba9c22c7c4b9baa840055001b6c7129d8c1c86bf52039fc4ab20c9e51e6a3d45c647f5ae67a15292da7b914e2501548891c21dbb1fd212393dd7bdb50e1605"
+          "sig": "7ee5c960802134e035779c8397ff1f7a700deb30b1f33513014eaa7a66e2b80b85b5431cc5ac9cbe3cb5557687296936c8a6b2e10b6a1f1c5ad0471599836f01"
         },
         {
           "v": "servanda/0.1",
           "type": "assertion",
-          "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "superseded",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "ec9d3a69c0c9ff719d146aefe2516d0413a572d6206f34e5f240f8c7358f2d5b3e36f2b08c49f315d0464ab7e665237b7a702f2dca8905a1d5b174100581050b"
+          "sig": "9b75df50e58f0c5ce516c1c8e5403f8e5e55b3f651cbcbdcde61e76ba0c13c16b4e52a0fe89497f4c905655d1fb00adb8f7878ce20c62c0d74521a1cb40e7305"
         }
       ],
       "expected_outcomes": [

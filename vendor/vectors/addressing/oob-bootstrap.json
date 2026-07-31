@@ -1,0 +1,108 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/06-reconciliation-federation.md §6.7 (out-of-band bootstrap), §6.2",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "First contact with a counterparty who has no node and no inbox: a `propose` message travels as a self-contained signed payload in a URL or QR code. The recipient (or a courtesy renderer, which MUST NOT hold keys — M-18) verifies the signature offline, from the payload alone. Round-trip: decode(encode(m)) == m, and the signature still verifies.",
+  "encoding": {
+    "scheme": "base64url(JCS(message)) — RFC 4648 §5, unpadded, over the UTF-8 canonical bytes",
+    "url_form": "https://servanda.example/bootstrap#<payload>",
+    "note": "INTERPRETATION — §6.7 fixes no serialization for the URL/QR form. The payload is carried in the URL FRAGMENT so it is never sent to the renderer's server. Not normative; tracked as a repository issue."
+  },
+  "cases": [
+    {
+      "name": "propose-roundtrip",
+      "description": "Encode the signed propose, carry it in a URL fragment, decode it, and verify. `decoded_equals_original` and `edge_equals_original` are the round-trip assertions; `signature_verifies` is what makes the payload self-contained — no hub, no network, no prior contact is needed to establish that Alice signed this proposal.",
+      "sender": {
+        "label": "alice",
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "message": {
+        "v": "servanda/0.1",
+        "type": "propose",
+        "payload": {
+          "edge": {
+            "v": "servanda/0.1",
+            "type": "edge",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+            "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+            "proposed_at": "2026-07-25T09:00:00Z",
+            "due": "2026-08-01T17:00:00Z",
+            "closure_policy": "on-acceptance",
+            "acceptance_window": "P5D",
+            "blocked_by": [],
+            "supersedes": null
+          },
+          "assertion": {
+            "v": "servanda/0.1",
+            "type": "assertion",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "state": "proposed",
+            "asserted_at": "2026-07-25T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "evidence_hash": null,
+            "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          }
+        },
+        "sender": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "sent_at": "2026-07-25T09:00:00Z",
+        "sig": "d6d710c13e4a6ce0209b3d225d185f2d13eaeeae0877cc266daddce0ed26a21c7a06b31f44c77fca982b18dca53871da98ec716c13229bbbbeb8e06fda1ab80d"
+      },
+      "canonical": "{\"payload\":{\"assertion\":{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"sig\":\"9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a\",\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"},\"edge\":{\"acceptance_window\":\"P5D\",\"blocked_by\":[],\"closure_policy\":\"on-acceptance\",\"commitment_hash\":\"9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5\",\"due\":\"2026-08-01T17:00:00Z\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"owed_to\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"proposed_at\":\"2026-07-25T09:00:00Z\",\"supersedes\":null,\"type\":\"edge\",\"v\":\"servanda/0.1\"}},\"sender\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"sent_at\":\"2026-07-25T09:00:00Z\",\"sig\":\"d6d710c13e4a6ce0209b3d225d185f2d13eaeeae0877cc266daddce0ed26a21c7a06b31f44c77fca982b18dca53871da98ec716c13229bbbbeb8e06fda1ab80d\",\"type\":\"propose\",\"v\":\"servanda/0.1\"}",
+      "payload_b64url": "eyJwYXlsb2FkIjp7ImFzc2VydGlvbiI6eyJhc3NlcnRlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwiYnkiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwiZWRnZV9pZCI6IjE0MWZmYzA2NDJmZTYxMDIyNGVkZTkzMjEyYmMyNTI2ZDU3N2EyZDhlYzJhMjkwMjRhZmFkYmEwY2E1ZmZlMGEiLCJldmlkZW5jZV9oYXNoIjpudWxsLCJzaWciOiI5Y2E2OGM4ZGM0OTU0NGFmMGUzYzQ5MzQ4Y2Y3MTY1MDcyZmU2NmM2MjRjN2U4YmI5ZWU4MmQ0ZWUyMDRhOGQ1Y2YwNzY0ZWVkYmEyNGZlZDdhMDhhOTI5YzE0Yjc0OGU4NzY3MmY1MGI2MDRmMDE2OWMyMGFmMDNhYjk3NWEwYSIsInN0YXRlIjoicHJvcG9zZWQiLCJ0eXBlIjoiYXNzZXJ0aW9uIiwidiI6InNlcnZhbmRhLzAuMSJ9LCJlZGdlIjp7ImFjY2VwdGFuY2Vfd2luZG93IjoiUDVEIiwiYmxvY2tlZF9ieSI6W10sImNsb3N1cmVfcG9saWN5Ijoib24tYWNjZXB0YW5jZSIsImNvbW1pdG1lbnRfaGFzaCI6IjliMWFjNTdmYzFkNDY2MjQwZmYyOGMxMGY3MGI3NGQ1YTliZjgzNDQzMjViMzEzMDUwNDk1NWU3Y2Q1M2NlYzUiLCJkdWUiOiIyMDI2LTA4LTAxVDE3OjAwOjAwWiIsImVkZ2VfaWQiOiIxNDFmZmMwNjQyZmU2MTAyMjRlZGU5MzIxMmJjMjUyNmQ1NzdhMmQ4ZWMyYTI5MDI0YWZhZGJhMGNhNWZmZTBhIiwib3dlZF90byI6IjcyZDJiNDM2MGMxMmEzYmUwMmMzZGQ0MDkyNDEwYzE4YzE4ODcwOTg1ODkxZTdhMDk5ZDk0YTkzZTNiMzhjMGYiLCJvd25lciI6ImE4YTQ5YWY0ZTg5N2M1NWFiYWFiNjdkNDkzM2MxNDM5NWQ3YTVkMmVkZTFiNDQyMTk4MTk3MDQ2ODg2NDM1MWEiLCJwcm9wb3NlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic3VwZXJzZWRlcyI6bnVsbCwidHlwZSI6ImVkZ2UiLCJ2Ijoic2VydmFuZGEvMC4xIn19LCJzZW5kZXIiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwic2VudF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic2lnIjoiZDZkNzEwYzEzZTRhNmNlMDIwOWIzZDIyNWQxODVmMmQxM2VhZWVhZTA4NzdjYzI2NmRhZGRjZTBlZDI2YTIxYzdhMDZiMzFmNDRjNzdmY2E5ODJiMThkY2E1Mzg3MWRhOThlYzcxNmMxMzIyOWJiYmJlYjhlMDZmZGExYWI4MGQiLCJ0eXBlIjoicHJvcG9zZSIsInYiOiJzZXJ2YW5kYS8wLjEifQ",
+      "url": "https://servanda.example/bootstrap#eyJwYXlsb2FkIjp7ImFzc2VydGlvbiI6eyJhc3NlcnRlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwiYnkiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwiZWRnZV9pZCI6IjE0MWZmYzA2NDJmZTYxMDIyNGVkZTkzMjEyYmMyNTI2ZDU3N2EyZDhlYzJhMjkwMjRhZmFkYmEwY2E1ZmZlMGEiLCJldmlkZW5jZV9oYXNoIjpudWxsLCJzaWciOiI5Y2E2OGM4ZGM0OTU0NGFmMGUzYzQ5MzQ4Y2Y3MTY1MDcyZmU2NmM2MjRjN2U4YmI5ZWU4MmQ0ZWUyMDRhOGQ1Y2YwNzY0ZWVkYmEyNGZlZDdhMDhhOTI5YzE0Yjc0OGU4NzY3MmY1MGI2MDRmMDE2OWMyMGFmMDNhYjk3NWEwYSIsInN0YXRlIjoicHJvcG9zZWQiLCJ0eXBlIjoiYXNzZXJ0aW9uIiwidiI6InNlcnZhbmRhLzAuMSJ9LCJlZGdlIjp7ImFjY2VwdGFuY2Vfd2luZG93IjoiUDVEIiwiYmxvY2tlZF9ieSI6W10sImNsb3N1cmVfcG9saWN5Ijoib24tYWNjZXB0YW5jZSIsImNvbW1pdG1lbnRfaGFzaCI6IjliMWFjNTdmYzFkNDY2MjQwZmYyOGMxMGY3MGI3NGQ1YTliZjgzNDQzMjViMzEzMDUwNDk1NWU3Y2Q1M2NlYzUiLCJkdWUiOiIyMDI2LTA4LTAxVDE3OjAwOjAwWiIsImVkZ2VfaWQiOiIxNDFmZmMwNjQyZmU2MTAyMjRlZGU5MzIxMmJjMjUyNmQ1NzdhMmQ4ZWMyYTI5MDI0YWZhZGJhMGNhNWZmZTBhIiwib3dlZF90byI6IjcyZDJiNDM2MGMxMmEzYmUwMmMzZGQ0MDkyNDEwYzE4YzE4ODcwOTg1ODkxZTdhMDk5ZDk0YTkzZTNiMzhjMGYiLCJvd25lciI6ImE4YTQ5YWY0ZTg5N2M1NWFiYWFiNjdkNDkzM2MxNDM5NWQ3YTVkMmVkZTFiNDQyMTk4MTk3MDQ2ODg2NDM1MWEiLCJwcm9wb3NlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic3VwZXJzZWRlcyI6bnVsbCwidHlwZSI6ImVkZ2UiLCJ2Ijoic2VydmFuZGEvMC4xIn19LCJzZW5kZXIiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwic2VudF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic2lnIjoiZDZkNzEwYzEzZTRhNmNlMDIwOWIzZDIyNWQxODVmMmQxM2VhZWVhZTA4NzdjYzI2NmRhZGRjZTBlZDI2YTIxYzdhMDZiMzFmNDRjNzdmY2E5ODJiMThkY2E1Mzg3MWRhOThlYzcxNmMxMzIyOWJiYmJlYjhlMDZmZGExYWI4MGQiLCJ0eXBlIjoicHJvcG9zZSIsInYiOiJzZXJ2YW5kYS8wLjEifQ",
+      "decoded_equals_original": true,
+      "edge_equals_original": true,
+      "signature_verifies": true
+    },
+    {
+      "name": "tampered-payload-does-not-verify",
+      "description": "The same payload with `owed_to` swapped to a third persona and the original signature kept. It decodes cleanly — base64url and JSON say nothing about authenticity — and MUST fail signature verification. A courtesy renderer that skips this check is a phishing surface, not a renderer.",
+      "sender": {
+        "label": "alice",
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "message": {
+        "v": "servanda/0.1",
+        "type": "propose",
+        "payload": {
+          "edge": {
+            "v": "servanda/0.1",
+            "type": "edge",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+            "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "owed_to": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "proposed_at": "2026-07-25T09:00:00Z",
+            "due": "2026-08-01T17:00:00Z",
+            "closure_policy": "on-acceptance",
+            "acceptance_window": "P5D",
+            "blocked_by": [],
+            "supersedes": null
+          },
+          "assertion": {
+            "v": "servanda/0.1",
+            "type": "assertion",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "state": "proposed",
+            "asserted_at": "2026-07-25T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "evidence_hash": null,
+            "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          }
+        },
+        "sender": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "sent_at": "2026-07-25T09:00:00Z",
+        "sig": "d6d710c13e4a6ce0209b3d225d185f2d13eaeeae0877cc266daddce0ed26a21c7a06b31f44c77fca982b18dca53871da98ec716c13229bbbbeb8e06fda1ab80d"
+      },
+      "canonical": "{\"payload\":{\"assertion\":{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"sig\":\"9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a\",\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"},\"edge\":{\"acceptance_window\":\"P5D\",\"blocked_by\":[],\"closure_policy\":\"on-acceptance\",\"commitment_hash\":\"9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5\",\"due\":\"2026-08-01T17:00:00Z\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"owed_to\":\"cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9\",\"owner\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"proposed_at\":\"2026-07-25T09:00:00Z\",\"supersedes\":null,\"type\":\"edge\",\"v\":\"servanda/0.1\"}},\"sender\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"sent_at\":\"2026-07-25T09:00:00Z\",\"sig\":\"d6d710c13e4a6ce0209b3d225d185f2d13eaeeae0877cc266daddce0ed26a21c7a06b31f44c77fca982b18dca53871da98ec716c13229bbbbeb8e06fda1ab80d\",\"type\":\"propose\",\"v\":\"servanda/0.1\"}",
+      "payload_b64url": "eyJwYXlsb2FkIjp7ImFzc2VydGlvbiI6eyJhc3NlcnRlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwiYnkiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwiZWRnZV9pZCI6IjE0MWZmYzA2NDJmZTYxMDIyNGVkZTkzMjEyYmMyNTI2ZDU3N2EyZDhlYzJhMjkwMjRhZmFkYmEwY2E1ZmZlMGEiLCJldmlkZW5jZV9oYXNoIjpudWxsLCJzaWciOiI5Y2E2OGM4ZGM0OTU0NGFmMGUzYzQ5MzQ4Y2Y3MTY1MDcyZmU2NmM2MjRjN2U4YmI5ZWU4MmQ0ZWUyMDRhOGQ1Y2YwNzY0ZWVkYmEyNGZlZDdhMDhhOTI5YzE0Yjc0OGU4NzY3MmY1MGI2MDRmMDE2OWMyMGFmMDNhYjk3NWEwYSIsInN0YXRlIjoicHJvcG9zZWQiLCJ0eXBlIjoiYXNzZXJ0aW9uIiwidiI6InNlcnZhbmRhLzAuMSJ9LCJlZGdlIjp7ImFjY2VwdGFuY2Vfd2luZG93IjoiUDVEIiwiYmxvY2tlZF9ieSI6W10sImNsb3N1cmVfcG9saWN5Ijoib24tYWNjZXB0YW5jZSIsImNvbW1pdG1lbnRfaGFzaCI6IjliMWFjNTdmYzFkNDY2MjQwZmYyOGMxMGY3MGI3NGQ1YTliZjgzNDQzMjViMzEzMDUwNDk1NWU3Y2Q1M2NlYzUiLCJkdWUiOiIyMDI2LTA4LTAxVDE3OjAwOjAwWiIsImVkZ2VfaWQiOiIxNDFmZmMwNjQyZmU2MTAyMjRlZGU5MzIxMmJjMjUyNmQ1NzdhMmQ4ZWMyYTI5MDI0YWZhZGJhMGNhNWZmZTBhIiwib3dlZF90byI6ImNmMzE5YTFkMWQxZjNhNmM1MWM4ZmQ3YTY2YjhmZjc2ODU3OGRjMjkyMDdmN2IxMjRhY2Q0ODU4MDNkMzM5ZDkiLCJvd25lciI6ImE4YTQ5YWY0ZTg5N2M1NWFiYWFiNjdkNDkzM2MxNDM5NWQ3YTVkMmVkZTFiNDQyMTk4MTk3MDQ2ODg2NDM1MWEiLCJwcm9wb3NlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic3VwZXJzZWRlcyI6bnVsbCwidHlwZSI6ImVkZ2UiLCJ2Ijoic2VydmFuZGEvMC4xIn19LCJzZW5kZXIiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwic2VudF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic2lnIjoiZDZkNzEwYzEzZTRhNmNlMDIwOWIzZDIyNWQxODVmMmQxM2VhZWVhZTA4NzdjYzI2NmRhZGRjZTBlZDI2YTIxYzdhMDZiMzFmNDRjNzdmY2E5ODJiMThkY2E1Mzg3MWRhOThlYzcxNmMxMzIyOWJiYmJlYjhlMDZmZGExYWI4MGQiLCJ0eXBlIjoicHJvcG9zZSIsInYiOiJzZXJ2YW5kYS8wLjEifQ",
+      "url": "https://servanda.example/bootstrap#eyJwYXlsb2FkIjp7ImFzc2VydGlvbiI6eyJhc3NlcnRlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwiYnkiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwiZWRnZV9pZCI6IjE0MWZmYzA2NDJmZTYxMDIyNGVkZTkzMjEyYmMyNTI2ZDU3N2EyZDhlYzJhMjkwMjRhZmFkYmEwY2E1ZmZlMGEiLCJldmlkZW5jZV9oYXNoIjpudWxsLCJzaWciOiI5Y2E2OGM4ZGM0OTU0NGFmMGUzYzQ5MzQ4Y2Y3MTY1MDcyZmU2NmM2MjRjN2U4YmI5ZWU4MmQ0ZWUyMDRhOGQ1Y2YwNzY0ZWVkYmEyNGZlZDdhMDhhOTI5YzE0Yjc0OGU4NzY3MmY1MGI2MDRmMDE2OWMyMGFmMDNhYjk3NWEwYSIsInN0YXRlIjoicHJvcG9zZWQiLCJ0eXBlIjoiYXNzZXJ0aW9uIiwidiI6InNlcnZhbmRhLzAuMSJ9LCJlZGdlIjp7ImFjY2VwdGFuY2Vfd2luZG93IjoiUDVEIiwiYmxvY2tlZF9ieSI6W10sImNsb3N1cmVfcG9saWN5Ijoib24tYWNjZXB0YW5jZSIsImNvbW1pdG1lbnRfaGFzaCI6IjliMWFjNTdmYzFkNDY2MjQwZmYyOGMxMGY3MGI3NGQ1YTliZjgzNDQzMjViMzEzMDUwNDk1NWU3Y2Q1M2NlYzUiLCJkdWUiOiIyMDI2LTA4LTAxVDE3OjAwOjAwWiIsImVkZ2VfaWQiOiIxNDFmZmMwNjQyZmU2MTAyMjRlZGU5MzIxMmJjMjUyNmQ1NzdhMmQ4ZWMyYTI5MDI0YWZhZGJhMGNhNWZmZTBhIiwib3dlZF90byI6ImNmMzE5YTFkMWQxZjNhNmM1MWM4ZmQ3YTY2YjhmZjc2ODU3OGRjMjkyMDdmN2IxMjRhY2Q0ODU4MDNkMzM5ZDkiLCJvd25lciI6ImE4YTQ5YWY0ZTg5N2M1NWFiYWFiNjdkNDkzM2MxNDM5NWQ3YTVkMmVkZTFiNDQyMTk4MTk3MDQ2ODg2NDM1MWEiLCJwcm9wb3NlZF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic3VwZXJzZWRlcyI6bnVsbCwidHlwZSI6ImVkZ2UiLCJ2Ijoic2VydmFuZGEvMC4xIn19LCJzZW5kZXIiOiJhOGE0OWFmNGU4OTdjNTVhYmFhYjY3ZDQ5MzNjMTQzOTVkN2E1ZDJlZGUxYjQ0MjE5ODE5NzA0Njg4NjQzNTFhIiwic2VudF9hdCI6IjIwMjYtMDctMjVUMDk6MDA6MDBaIiwic2lnIjoiZDZkNzEwYzEzZTRhNmNlMDIwOWIzZDIyNWQxODVmMmQxM2VhZWVhZTA4NzdjYzI2NmRhZGRjZTBlZDI2YTIxYzdhMDZiMzFmNDRjNzdmY2E5ODJiMThkY2E1Mzg3MWRhOThlYzcxNmMxMzIyOWJiYmJlYjhlMDZmZGExYWI4MGQiLCJ0eXBlIjoicHJvcG9zZSIsInYiOiJzZXJ2YW5kYS8wLjEifQ",
+      "decoded_equals_original": false,
+      "edge_equals_original": false,
+      "signature_verifies": false
+    }
+  ]
+}

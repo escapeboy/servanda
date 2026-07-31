@@ -1,4 +1,4 @@
-import { hashCanonical } from '@servanda/crypto';
+import { envelopeId } from '@servanda/crypto';
 import { Envelope, UnidentifiedEnvelope } from '@servanda/types';
 
 /**
@@ -42,11 +42,14 @@ export function compact(o: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
- * §2: `id` = sha256 of the canonical form sans id. Parsing before hashing is what makes the
- * id well-defined — zod fills `refs` and strips unknown keys, so two callers that built the
+ * §2: `id` = sha256(domain tag || JCS(envelope sans id)). Parsing before hashing is what makes
+ * the id well-defined — zod fills `refs` and strips unknown keys, so two callers that built the
  * same envelope differently still hash the same bytes.
+ *
+ * The tag itself lives in `@servanda/crypto` with the other two identifier tags, so §0's single
+ * rule has a single home.
  */
 export function sealEnvelope(candidate: unknown): Envelope {
   const base = UnidentifiedEnvelope.parse(candidate);
-  return Envelope.parse({ ...base, id: hashCanonical(base) });
+  return Envelope.parse({ ...base, id: envelopeId(base) });
 }

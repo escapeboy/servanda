@@ -36,6 +36,69 @@
         "generated_by": { "type": "string" }
       }
     },
+    "act": {
+      "description": "spec/07-node-surface.md: the one closed act vocabulary, shared by open_loops[].actions and brief.slots[].primary_action.",
+      "enum": ["done", "release", "supersede", "delegate", "ping", "confirm", "dismiss", "propose"]
+    },
+    "effectiveState": {
+      "description": "The state a node computes from an assertion chain. `confirmed` folds into `open`; `pending-acceptance` models the §4.4 window and is never an assertion's `state`.",
+      "enum": [
+        "none",
+        "proposed",
+        "open",
+        "pending-acceptance",
+        "disputed",
+        "closed",
+        "released",
+        "superseded",
+        "expired"
+      ]
+    },
+    "verificationLevel": {
+      "enum": ["0", "1", "ext", "2", "3"]
+    },
+    "advertisedAction": {
+      "type": "object",
+      "required": ["act", "tool", "args"],
+      "additionalProperties": false,
+      "properties": {
+        "act": { "$ref": "#/$defs/act" },
+        "tool": { "type": ["string", "null"] },
+        "args": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "description": "§7: where `tool` is null, `args` MUST be {}.",
+          "if": { "properties": { "tool": { "type": "null" } }, "required": ["tool"] },
+          "then": { "properties": { "args": { "maxProperties": 0 } } }
+        }
+      ]
+    },
+    "viewer": {
+      "type": "object",
+      "required": ["label", "persona_id", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "persona_id": { "$ref": "#/$defs/hex64" },
+        "role": { "enum": ["owner", "owed_to", "non-party"] }
+      }
+    },
+    "actTooling": {
+      "type": "array",
+      "description": "The act -> §7 tool binding table, emitted with every node-surface file.",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["act", "tool"],
+        "additionalProperties": false,
+        "properties": {
+          "act": { "$ref": "#/$defs/act" },
+          "tool": { "type": ["string", "null"] }
+        }
+      }
+    },
     "assertionState": {
       "enum": [
         "proposed",

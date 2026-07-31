@@ -1,0 +1,188 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/01-identity.md §1.6, conformance M-12",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "The verification ladder as a total order, and the rule that a display name travels only at the levels an org attestation establishes. Each case gives an evidence set and the level plus display_name a node MUST report. The negative cases are where a name is available in the surrounding data and MUST NOT be emitted, because the achieved level does not carry it.",
+  "level_order": [
+    "0",
+    "1",
+    "ext",
+    "2",
+    "3"
+  ],
+  "level_rank": {
+    "0": 0,
+    "1": 1,
+    "2": 3,
+    "3": 4,
+    "ext": 2
+  },
+  "ordering_note": "§1.6: 0 < 1 < ext < 2 < 3. `ext` outranks continuity and is outranked by an attestation — a binding proof is the persona's own signature on a channel it controls, which is self-assertion, whereas an attestation is a third party staking its own key.",
+  "name_bearing_levels": [
+    "2",
+    "3"
+  ],
+  "cases": [
+    {
+      "name": "level-0-no-evidence",
+      "description": "No evidence of any kind. Level 0, and no name may be shown.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": false,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": null
+      },
+      "expected": {
+        "level": "0",
+        "display_name": null,
+        "name_bearing": false
+      }
+    },
+    {
+      "name": "level-1-continuity",
+      "description": "≥1 prior confirmed edge with this key. Continuity is not a name.",
+      "evidence": {
+        "priorConfirmedEdge": true,
+        "bindingProof": false,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": null
+      },
+      "expected": {
+        "level": "1",
+        "display_name": null,
+        "name_bearing": false
+      }
+    },
+    {
+      "name": "level-ext-binding-proof-only",
+      "description": "A binding proof and nothing else. `ext` outranks `1`, and carries no display name: it binds a key to a CHANNEL, never to a human.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": true,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": null
+      },
+      "expected": {
+        "level": "ext",
+        "display_name": null,
+        "name_bearing": false
+      }
+    },
+    {
+      "name": "level-ext-outranks-continuity",
+      "description": "Continuity AND a binding proof. The achieved level is the highest-ranked of them, so `ext`, not `1`.",
+      "evidence": {
+        "priorConfirmedEdge": true,
+        "bindingProof": true,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": null
+      },
+      "expected": {
+        "level": "ext",
+        "display_name": null,
+        "name_bearing": false
+      }
+    },
+    {
+      "name": "level-2-attested",
+      "description": "A valid unrevoked org attestation. This is the first level at which a display name may be rendered at all, and it comes from the attestation.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": false,
+        "attestation": true,
+        "domainAnchored": false,
+        "attestedDisplayName": "Maria Ivanova"
+      },
+      "expected": {
+        "level": "2",
+        "display_name": "Maria Ivanova",
+        "name_bearing": true
+      }
+    },
+    {
+      "name": "level-2-outranks-ext",
+      "description": "THE case the ordering decides: both a binding proof and an attestation are present. `2` wins, because self-assertion must not outrank a third party staking its own key. A verifier that ranks `ext` above `2` reports level `ext` here and suppresses a name it was entitled to show.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": true,
+        "attestation": true,
+        "domainAnchored": false,
+        "attestedDisplayName": "Maria Ivanova"
+      },
+      "expected": {
+        "level": "2",
+        "display_name": "Maria Ivanova",
+        "name_bearing": true
+      }
+    },
+    {
+      "name": "level-3-domain-verified",
+      "description": "Attestation plus a domain-anchored org root. The top of the ladder.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": false,
+        "attestation": true,
+        "domainAnchored": true,
+        "attestedDisplayName": "Maria Ivanova"
+      },
+      "expected": {
+        "level": "3",
+        "display_name": "Maria Ivanova",
+        "name_bearing": true
+      }
+    },
+    {
+      "name": "negative-name-not-shown-at-ext",
+      "description": "THE M-12 negative case. A name is present in the surrounding data — from a petname, a previous org, an address book — and the achieved level is `ext`. The name MUST NOT travel: a lower-level party does not receive a higher level's affordance, and a display name is level 2's affordance. Expected `display_name` is null.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": true,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": "Maria Ivanova"
+      },
+      "expected": {
+        "level": "ext",
+        "display_name": null,
+        "name_bearing": false
+      }
+    },
+    {
+      "name": "negative-name-not-shown-at-continuity",
+      "description": "The same negative one rung lower: months of confirmed edges with a key establish continuity, not identity. Expected `display_name` is null.",
+      "evidence": {
+        "priorConfirmedEdge": true,
+        "bindingProof": false,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": "Maria Ivanova"
+      },
+      "expected": {
+        "level": "1",
+        "display_name": null,
+        "name_bearing": false
+      }
+    },
+    {
+      "name": "negative-domain-anchor-without-attestation",
+      "description": "A domain-anchored org root but no attestation naming this persona. Level 3 requires level 2 first (§1.6), so the achieved level is `0` and no name is shown. A verifier that reads the anchor alone as level 3 promotes a stranger to the top of the ladder.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": false,
+        "attestation": false,
+        "domainAnchored": true,
+        "attestedDisplayName": "Maria Ivanova"
+      },
+      "expected": {
+        "level": "0",
+        "display_name": null,
+        "name_bearing": false
+      }
+    }
+  ]
+}

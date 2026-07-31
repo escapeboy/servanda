@@ -4,7 +4,7 @@
   "title": "commitment_hash vectors (spec §3.2)",
   "type": "object",
   "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
-  "required": ["description", "hashed_fields", "base_commitment_hash", "cases"],
+  "required": ["description", "hashed_fields", "domain_tag", "base_commitment_hash", "cases"],
   "properties": {
     "suite_version": {},
     "protocol_version": {},
@@ -20,6 +20,17 @@
       "uniqueItems": true,
       "contains": { "enum": ["intent", "owner", "owed_to", "due", "created_at"] }
     },
+    "domain_tag": {
+      "type": "object",
+      "description": "§0: the identifier preimage is tag || 0x00 || JCS(five fields).",
+      "required": ["tag", "separator", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "tag": { "const": "servanda/0.1:commitment_hash" },
+        "separator": { "const": "0x00" },
+        "note": { "type": "string" }
+      }
+    },
     "base_commitment_hash": {
       "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
     },
@@ -34,6 +45,7 @@
           "commitment",
           "hash_preimage",
           "hash_preimage_canonical",
+          "hash_preimage_hex",
           "commitment_hash",
           "same_hash_as_base"
         ],
@@ -73,6 +85,11 @@
             }
           },
           "hash_preimage_canonical": { "type": "string" },
+          "hash_preimage_hex": {
+            "type": "string",
+            "description": "The complete domain-tagged preimage as lowercase hex octets.",
+            "pattern": "^73657276616e64612f302e313a636f6d6d69746d656e745f6861736800[0-9a-f]*$"
+          },
           "commitment_hash": {
             "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
           },

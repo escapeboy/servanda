@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { hashCanonical } from '@servanda/crypto';
+import { envelopeId } from '@servanda/crypto';
 import { Envelope, UnidentifiedEnvelope } from '@servanda/types';
 import { ClaudeCodeConnector } from '../src/index.js';
 
@@ -138,10 +138,10 @@ describe('Claude Code transcripts become §2 envelopes', () => {
     );
   });
 
-  it('derives id as sha256 of the canonical form sans id', () => {
+  it('derives id as sha256 of the domain tag and the canonical form sans id', () => {
     for (const envelope of connector.fromTranscript(TRANSCRIPT, ctx)) {
       const { id, ...rest } = envelope;
-      expect(id).toBe(hashCanonical(UnidentifiedEnvelope.parse(rest)));
+      expect(id).toBe(envelopeId(UnidentifiedEnvelope.parse(rest)));
     }
   });
 

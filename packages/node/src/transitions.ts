@@ -1,7 +1,6 @@
 import { verifyObject } from '@servanda/crypto';
 import type { Assertion, AssertionOutcome, Edge, EffectiveState, RejectionReason } from '@servanda/types';
 import {
-  DEFAULT_ACCEPTANCE_WINDOW,
   NON_ASSERTABLE_STATES,
   TERMINAL_STATES,
   collectiveDecompositionValid,
@@ -64,10 +63,11 @@ interface ChainState {
 export { collectiveDecompositionValid as isCollectiveEdgeVerifiable };
 
 function windowElapsed(edge: Edge, openedAt: string, assertedAt: string): boolean {
-  // Interpretation #5: `acceptance_window` is "required iff on-acceptance; default P5D".
-  // Absent is treated as P5D rather than as "no window", which would let the owner close
-  // instantly — the exact forgery §4.4 exists to prevent.
-  const window = edge.acceptance_window ?? DEFAULT_ACCEPTANCE_WINDOW;
+  // No default. Upstream #5 resolved to the narrow reading: on an `on-acceptance` edge the window
+  // is required and non-null, so by the time control reaches here `acceptanceWindowMalformed` has
+  // already rejected the alternative. The old `?? DEFAULT_ACCEPTANCE_WINDOW` silently supplied
+  // P5D for an edge that never stated one — a term neither party signed.
+  const window = edge.acceptance_window as string;
   return Date.parse(assertedAt) >= addDuration(new Date(Date.parse(openedAt)), window).getTime();
 }
 
@@ -210,6 +210,28 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
  * Returns a per-assertion outcome (the vectors' `expected_outcomes`) and the effective state
  * after the chain (`expected_final_state`). Rejected assertions are discarded, never applied.
  */
+/**
+ * §4.1 — `acceptance_window` MUST be non-null iff `closure_policy` is `on-acceptance`, and there
+ * is no default. Both directions are malformed:
+ *
+ * - a null window on an `on-acceptance` edge would let the owner record tacit acceptance
+ *   instantly, which is the exact forgery §4.4 exists to prevent;
+ * - a window on any other policy leaves the closure rule and the closure timing disagreeing about
+ *   which policy is in force.
+ *
+ * This is checked here and not in the `Edge` schema on purpose. The parser must keep accepting the
+ * shape, because a schema that refused it could not report
+ * `malformed-edge-acceptance-window` — the rejection would be indistinguishable from malformed
+ * JSON, and the M-14 vector asserting that exact reason could not pass. Same split as
+ * `WireAssertionState` admitting `open`: syntax is the parser's job, assertability is the
+ * transition table's.
+ */
+function acceptanceWindowMalformed(edge: Edge): boolean {
+  return edge.closure_policy === 'on-acceptance'
+    ? edge.acceptance_window == null
+    : edge.acceptance_window != null;
+}
+
 export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): ChainVerification {
   const ctx: ChainState = {
     state: 'none',
@@ -218,6 +240,22 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
     dispute_closed_by: new Set(),
     resolved_at: null,
   };
+
+  // A malformed edge accepts no assertions at all — not "the offending one", every one. The edge
+  // is the object both parties signed against; if its own closure terms are incoherent there is
+  // nothing for an assertion to be valid *about*, so the chain never leaves `none`.
+  if (acceptanceWindowMalformed(edge)) {
+    return {
+      outcomes: assertions.map((_a, index) => ({
+        index,
+        accepted: false,
+        rejection_reason: 'malformed-edge-acceptance-window' as const,
+      })),
+      final_state: 'none',
+      resolved_at: null,
+      unverifiable: !collectiveDecompositionValid(edge),
+    };
+  }
 
   const outcomes: AssertionOutcome[] = assertions.map((a, index) => {
     const reason = step(edge, ctx, a);

@@ -64,7 +64,8 @@
                         "expiry-before-due",
                         "acceptance-window-not-elapsed",
                         "implicit-transition-not-assertable",
-                        "duplicate-assertion-by-same-party"
+                        "duplicate-assertion-by-same-party",
+                        "malformed-edge-acceptance-window"
                       ]
                     }
                   ]

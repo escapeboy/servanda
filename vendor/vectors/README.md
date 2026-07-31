@@ -15,6 +15,11 @@ signatures/signatures.json          5 cases   Ed25519 over sha256(JCS(obj sans s
 derivation/persona-keys.json        5 personas BIP-39 → SLIP-0010 m/7391'/{i}'
 transitions/valid.json              7 cases   sequences a node MUST accept
 transitions/invalid.json           19 cases   sequences a node MUST reject (M-14)
+addressing/inbox-records.json       4 cases   §6.7 inbox records; hub-signed record rejected (M-17)
+addressing/oob-bootstrap.json       2 cases   §6.7 URL/QR bootstrap payload, encode→decode→verify
+node-surface/actions.json          11 cases   §7 advertised acts per (state, viewer role) — M-20
+node-surface/act-tool.json         14 cases   §7 `act` calls: accepted, or refused with a reason
+node-surface/verification-levels.json 10 cases §1.6 ladder order and name gating — M-12
 schema/*.schema.json                          JSON Schemas, validated in CI
 ```
 
@@ -26,15 +31,34 @@ requires reading the generator to understand.
 - **canonicalization** — `input` is raw JSON *text* (member order and number spelling preserved on
   purpose). Parse it, canonicalize, compare to `canonical` byte for byte; `sha256` is over the
   UTF-8 bytes of `canonical`.
-- **hashing** — recompute `sha256(JCS(subset))` over the five fields named in `hashed_fields`.
-  Cases with `same_hash_as_base: true` must produce a hash *identical* to `base_commitment_hash`;
-  the rest must differ.
+- **hashing** — recompute `sha256(domain_tag.tag || 0x00 || JCS(subset))` over the five fields named
+  in `hashed_fields`. `hash_preimage_hex` is the complete preimage as octets, tag and separator
+  included, so the domain tag is checkable without reconstructing it. Cases with
+  `same_hash_as_base: true` must produce a hash *identical* to `base_commitment_hash`; the rest must
+  differ.
 - **signatures** — recompute `sha256_preimage` from `unsigned_object`, then verify `signature`
   against `signer.persona_id` (the public key). The `sig` field is excluded from its own preimage.
 - **derivation** — derive from `mnemonic` and check every field, including `chain_code`.
 - **transitions** — feed `assertions` to your verifier in order against `edge`. Each
   `expected_outcomes[i]` states whether that assertion is accepted and, if not, why.
   `expected_final_state` is the state after the whole chain.
+- **addressing/inbox-records** — verify each `record` against the key named in its own `persona`
+  field (§1.2: the persona_id *is* the public key). `known_keys` exists only so a verifier can
+  report *which* other key signed a rejected record; a verifier without it still rejects, as
+  `invalid-signature`. `hub_queue_ttl` is a fixture constant, not a test — see below.
+- **addressing/oob-bootstrap** — base64url-decode the URL fragment, parse, and verify the
+  signature against `sender.persona_id` using nothing else. `decoded_equals_original` and
+  `edge_equals_original` are the round-trip assertions.
+- **node-surface/actions** — derive the effective state from `edge` + `assertions` (the transitions
+  verifier does this), then produce the `actions` array your node would return to `viewer`.
+  It must equal `expected_actions` exactly, order included, and must contain **none** of
+  `must_not_advertise`. `window_elapsed` is an input, not a clock read.
+- **node-surface/act-tool** — make the `act` call in `call.input` as `call.caller` against that
+  edge and state. `expected.accepted` and `expected.rejection_reason` are the contract;
+  `expected.asserts` is the assertion state the node signs when it accepts.
+- **node-surface/verification-levels** — grade `evidence` to a level and a display name.
+  `level_rank` is the total order; `expected.display_name` is `null` at every level below `2`,
+  including cases where a name was available.
 
 > ⚠️ **`derivation/persona-keys.json` contains private keys.** They derive from published BIP-39
 > test mnemonics (all-zero and all-`0x7f` entropy) and are public knowledge. Never use them for
@@ -55,25 +79,77 @@ every positive test. The 19 negative cases exist so that failure is loud. They i
 - an owner recording tacit acceptance *before* the acceptance window elapsed
 - supersession double-signed by one party instead of both
 
-## Interpretations the generator had to make
+## The addressing negatives say the same thing about §6.7
 
-The spec is DRAFT v0.1-pre and under-specified in the places below. The generator picks a concrete
-behaviour so vectors can exist at all. **These choices are not normative** — each is filed as a
-repository issue, and whichever way an issue resolves, the vectors change with it.
+`addressing/inbox-records.json` carries one case that matters more than the other three: an inbox
+record naming Alice as its `persona`, listing a hub she never chose, and signed by a **hub's** key.
+§6.7 — *"Only the persona key may change its own hubs (a hub cannot 'move' its users)"* — and M-17
+make it invalid. Accepting it would let any hub silently redirect another hub's users, which is
+edge forgery moved from the ledger to the address book. The check that refuses it is one line and
+needs no registry, because the persona_id is the verifying key.
+
+`addressing/oob-bootstrap.json` pairs the round-trip with a payload whose `owed_to` was swapped
+while keeping the original signature. It base64url-decodes and JSON-parses perfectly — neither
+says anything about authenticity — and MUST fail verification. A courtesy renderer (§6.7, M-18)
+that skips that check is a phishing surface rather than a renderer: a signed payload arriving over
+an untrusted channel proves who signed it, never that the channel or the rendering page is
+trustworthy.
+
+**No time-travel test for hub TTL.** §6.7 fixes the hub queue TTL at 30 days and the inbox-record
+lifetime at the same 30 days, refreshed at half-life; the constant is recorded in `hub_queue_ttl`
+and never asserted against a clock. Generation is clockless by rule, and TTL expiry is not a
+correctness boundary anyway — §6.7 makes a lost queued message harmless, because reconciliation
+(§6.4), not delivery, is the guarantee.
+
+## The node-surface negatives are about what a person is offered
+
+`node-surface/actions.json` pins the `actions` array a node returns for a given edge, chain and
+viewer, and `must_not_advertise` names every act it must **not** offer. The sharp cases:
+
+- `release` offered to the **owner**. §4.3 gives `release` to `owed_to` alone. A node that offers it
+  to the owner is inviting an assertion the table discards — and the person believes they forgave a
+  debt that is still open against them.
+- `done` offered to the owner while the acceptance window is still running. The two
+  `pending-acceptance-owner-*` cases differ only in `window_elapsed`, which is why that flag is an
+  input rather than a clock read.
+- anything at all offered to a non-party, or on a terminal edge. Both must be an empty array.
+
+`node-surface/act-tool.json` is the other half: acts §7 declares unbound (`supersede`, `delegate`,
+`ping`, and the `confirm`-bound `dismiss`) MUST be refused by `act` rather than served something
+that looks like it worked. A node that quietly maps `release` onto a local dismissal produces
+exactly the failure M-20 exists to prevent — a control that reports success while the counterparty
+is never told.
+
+`node-surface/verification-levels.json` pins the M-12 ladder: the total order `0 < 1 < ext < 2 < 3`,
+the case where a binding proof and an attestation are both present (`2` wins — self-assertion does
+not outrank a third party staking its key), and the negatives where a display name **is** available
+in the surrounding data and MUST NOT be emitted because the achieved level does not carry it.
+
+## Interpretations, and what became normative
+
+Most of what this file used to list as generator guesses is now spec text. The v0.1-pre resolutions
+took each of them as a decision, so the table below records **what the vectors encode and where the
+spec now says it** — not what the generator assumed in the absence of an answer.
+
+| # | Question | Resolution, now normative |
+|---|---|---|
+| 1 | `\|\|` in the `edge_id` preimage | §4.1: octet concatenation, no separator, no length prefix; each value contributes its own UTF-8 encoding. Worked byte-offset example in §4.1 |
+| 2 | §4.1's preimage omits `closure_policy`, `due`, `blocked_by`, `supersedes` | §4.1: the preimage stays as it is; a node binds an `edge_id` to the **first** edge body it accepts and rejects any later body under that id whose other members differ |
+| 3 | §4.3 `confirmed → open` marked "(implicit)" | §4.3: `open` is never assertable. `confirmed` ≡ `open` as one effective state; an explicit `open` assertion is discarded under M-14 |
+| 4 | §4.4's three acts, §4.3's one row | §4.3: four rows over a **computed** `pending-acceptance`, which is never an assertion's `state` |
+| 5 | `acceptance_window` "required iff on-acceptance; default P5D" | §4.1: non-null iff `on-acceptance`, null otherwise, **no default**. An `on-acceptance` edge with a null window is malformed and accepts no assertions |
+| 6 | §4.3 `disputed → closed` "both parties" | §4.4: v0 defines no arbitration. `disputed` exits only by both parties asserting `closed`, or by supersession |
+| 7 | §4.5 supersession must reference the successor, but no field carries it | §4.5: the assertions bind the **fact** of supersession, not the successor's identity. No `supersedes_with` field was added; a verifier MUST NOT report the successor link as agreed |
+| 8 | Signing preimage stated across two sections | §0: `sha256(JCS(object minus every `sig`/`sig_*` member))`. Signing preimages are **not** domain-tagged |
+| 10 | §6.7 `hubs` array order | §6.7: the declared order **is** the priority order; a sender MUST NOT reorder it |
+| 11 | Identifier preimages had no type tag | §0: every identifier preimage begins with an ASCII domain tag and one `0x00`. This changed every `commitment_hash` and every `edge_id` — see the change note in §0 |
+
+Two things remain interpretations, and are still marked as such at the code sites:
 
 | # | Spec gap | What the vectors assume |
 |---|---|---|
-| 1 | §4.1 `edge_id = sha256(commitment_hash \|\| owner \|\| owed_to \|\| proposed_at)` — `\|\|` is undefined | Concatenation of the four values' **UTF-8 bytes**, in that order, no separator, no length prefix |
-| 2 | §4.1 preimage omits `closure_policy`, `due`, `blocked_by`, `supersedes` | Two edges differing only in closure policy **share an `edge_id`**. The suite documents the collision rather than working around it |
-| 3 | §4.3 `confirmed → open` is marked "(implicit)" with no signer | `confirmed` ≡ `open` as one effective state; an explicit `open` assertion is **rejected** |
-| 4 | §4.4 `on-acceptance` describes three acts but §4.3 has no pending state | All three are `closed` assertions: owner+evidence opens the window, `owed_to` accepts, owner may re-assert after expiry. The verifier models an internal `pending-acceptance` state |
-| 5 | §4.1 `acceptance_window` is "required iff on-acceptance; default P5D" — required *and* defaulted | Emitted explicitly as `P5D`; absent is treated as `P5D` |
-| 6 | §4.3 `disputed → closed` "both parties" | Both parties must assert `closed`; one alone does not close |
-| 7 | §4.5 supersession must reference the successor `edge_id`, but the §4.2 assertion schema has **no field able to carry it** | Verified only as "both parties asserted `superseded`". The successor link is unverifiable as specified |
-| 8 | Signing preimage stated across two sections | `ed25519_sign(sha256(JCS(object minus "sig")), key)` |
-
-Item 7 is a genuine internal contradiction, not merely a gap: §4.5 states a requirement the wire
-format cannot express.
+| 9 | §6.7 says the out-of-band `propose` travels "in a URL/QR" but fixes no serialization | `base64url(JCS(message))`, unpadded, carried in the URL **fragment** so the payload never reaches a courtesy renderer's server |
+| 12 | §7 `act` rejection reasons are not enumerated in the spec | The reason strings in `node-surface/act-tool.json` are the suite's names for refusals §7 requires but does not name |
 
 ## Regenerating
 

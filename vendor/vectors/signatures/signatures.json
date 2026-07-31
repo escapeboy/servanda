@@ -54,24 +54,24 @@
       "unsigned_object": {
         "v": "servanda/0.1",
         "type": "assertion",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "proposed",
         "asserted_at": "2026-07-25T09:00:00Z",
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": null
       },
-      "canonical": "{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea\",\"evidence_hash\":null,\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "7a6d5491d318b6c4669c7297b98664500f0b581e9352d1d7ec3d026cae5ae9da",
-      "signature": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d",
+      "canonical": "{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "dfc616738696f8e6673c1cce66e734160d74410790f07ef27b27eb465f56435a",
+      "signature": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a",
       "signed_object": {
         "v": "servanda/0.1",
         "type": "assertion",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "proposed",
         "asserted_at": "2026-07-25T09:00:00Z",
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": null,
-        "sig": "db1a810c7b7bf9eaf91e3b5e54c514495a4efd3602061389f42f672bd3812b824a0ad884427c958673e31292cb619e9244de0a434e4a286ea376d213f7c7c50d"
+        "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
       }
     },
     {
@@ -84,24 +84,24 @@
       "unsigned_object": {
         "v": "servanda/0.1",
         "type": "assertion",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "confirmed",
         "asserted_at": "2026-07-25T10:00:00Z",
         "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "evidence_hash": null
       },
-      "canonical": "{\"asserted_at\":\"2026-07-25T10:00:00Z\",\"by\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"edge_id\":\"50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea\",\"evidence_hash\":null,\"state\":\"confirmed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "5531c7a81312077a320037d5ba678904e9f8f80d32d1b1ce85ad6a11055dcf98",
-      "signature": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00",
+      "canonical": "{\"asserted_at\":\"2026-07-25T10:00:00Z\",\"by\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"state\":\"confirmed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "a2b1355631f2333b63f00686abe087d71ca657129f394e9e58b26cec18994273",
+      "signature": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09",
       "signed_object": {
         "v": "servanda/0.1",
         "type": "assertion",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "confirmed",
         "asserted_at": "2026-07-25T10:00:00Z",
         "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "evidence_hash": null,
-        "sig": "b43b9dee1b26c2d6f93b731aae4ddf1d8b714d306577e54cec253141b63e51c9f43ba1c7d09d46fecd2b0a51c266c1093fb0377adcd31c6cec0e012861f4ca00"
+        "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
       }
     },
     {
@@ -114,24 +114,24 @@
       "unsigned_object": {
         "v": "servanda/0.1",
         "type": "assertion",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "closed",
         "asserted_at": "2026-08-02T12:00:00Z",
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": "ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da"
       },
-      "canonical": "{\"asserted_at\":\"2026-08-02T12:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea\",\"evidence_hash\":\"ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da\",\"state\":\"closed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "62e1b7f1d601c54bfbe9650a27a4ec6c93aaba7c2a23ed4ee8946610a5de1ab3",
-      "signature": "f368aad8ec63ef1368932c928980706fe1c9bcdaa8c98e2c5cd66047e2678ed45db2ef7420c8b0fc0aad429d45d71b1ef94944c49365dbdf3fe6ec444d3e4f04",
+      "canonical": "{\"asserted_at\":\"2026-08-02T12:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":\"ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da\",\"state\":\"closed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
+      "sha256_preimage": "b15a4713a238956963547f3abfa670dea9b69dd216f9de9c1f1ea0c8a61886c8",
+      "signature": "c558aa63e28031c2a8933fcc5053e1254bec6033210db4d0ee3b092e939074681bcb4ae1e41a9edfad429c224a9ae1a362957f9af6d8df3ae5be9521757fda05",
       "signed_object": {
         "v": "servanda/0.1",
         "type": "assertion",
-        "edge_id": "50227c19031388347197d72e13a4f82e5de887ce1bb6b7d824b993af3592fdea",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "closed",
         "asserted_at": "2026-08-02T12:00:00Z",
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": "ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da",
-        "sig": "f368aad8ec63ef1368932c928980706fe1c9bcdaa8c98e2c5cd66047e2678ed45db2ef7420c8b0fc0aad429d45d71b1ef94944c49365dbdf3fe6ec444d3e4f04"
+        "sig": "c558aa63e28031c2a8933fcc5053e1254bec6033210db4d0ee3b092e939074681bcb4ae1e41a9edfad429c224a9ae1a362957f9af6d8df3ae5be9521757fda05"
       }
     },
     {

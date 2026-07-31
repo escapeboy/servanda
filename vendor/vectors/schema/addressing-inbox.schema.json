@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/addressing-inbox.schema.json",
+  "title": "Inbox record vectors (§6.7, M-17)",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": [
+    "description",
+    "verification_rule",
+    "known_keys",
+    "hub_queue_ttl",
+    "cases"
+  ],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "verification_rule": { "type": "string", "minLength": 1 },
+    "known_keys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["label", "persona_id"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "persona_id": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          }
+        }
+      }
+    },
+    "hub_queue_ttl": {
+      "type": "object",
+      "required": ["recommended_minimum", "recommended_minimum_seconds", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "recommended_minimum": { "type": "string", "pattern": "^P" },
+        "recommended_minimum_seconds": { "type": "integer", "minimum": 1 },
+        "note": { "type": "string", "minLength": 1 }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "contains": { "properties": { "expected": { "properties": { "accepted": { "const": false } } } } },
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "signed_by", "record", "canonical", "expected"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": { "type": "string", "minLength": 1 },
+          "signed_by": {
+            "type": "object",
+            "required": ["label", "persona_id"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+              "persona_id": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              }
+            }
+          },
+          "record": {
+            "type": "object",
+            "required": ["v", "type", "persona", "hubs", "issued_at", "sig"],
+            "additionalProperties": false,
+            "properties": {
+              "v": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+              },
+              "type": { "const": "inbox" },
+              "persona": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              },
+              "hubs": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "pattern": "^https://" }
+              },
+              "issued_at": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+              },
+              "sig": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+              }
+            }
+          },
+          "canonical": { "type": "string" },
+          "expected": {
+            "type": "object",
+            "required": ["accepted", "rejection_reason", "actual_signer"],
+            "additionalProperties": false,
+            "properties": {
+              "accepted": { "type": "boolean" },
+              "rejection_reason": {
+                "oneOf": [
+                  { "enum": ["invalid-signature", "signer-is-not-the-persona"] },
+                  { "type": "null" }
+                ]
+              },
+              "actual_signer": {
+                "oneOf": [{ "type": "string", "pattern": "^[a-z0-9-]+$" }, { "type": "null" }]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -82,7 +82,18 @@ export const TERMINAL_STATES: readonly EffectiveState[] = [
 export const ClosurePolicy = z.enum(['on-evidence', 'on-acceptance']);
 export type ClosurePolicy = z.infer<typeof ClosurePolicy>;
 
-/** §4.1 default acceptance window. */
+/**
+ * The window this node writes when it CREATES an `on-acceptance` edge. It is not a fallback.
+ *
+ * §4.1 has no default: `acceptance_window` is required non-null iff `closure_policy` is
+ * `on-acceptance`, and null otherwise (upstream #5). A verifier that supplied this value for an
+ * edge that omitted one would be inventing a term neither party signed — which is why
+ * `verifyAssertionChain` rejects such an edge outright with `malformed-edge-acceptance-window`
+ * rather than reaching for this constant.
+ *
+ * Here it is only ever written INTO an edge, so the window the counterparty sees is one the edge
+ * states explicitly and both parties sign against.
+ */
 export const DEFAULT_ACCEPTANCE_WINDOW = 'P5D';
 
 /** §4.7 collective edges — owner is a group key. */
@@ -167,6 +178,7 @@ export const RejectionReason = z.enum([
   'due-is-null',
   'expiry-before-due',
   'acceptance-window-not-elapsed',
+  'malformed-edge-acceptance-window',
   'implicit-transition-not-assertable',
   'invalid-signature',
   'terminal-state-reached',

@@ -98,12 +98,12 @@ describe('archaeology is deterministic', () => {
     expect(second).toBe(first);
   });
 
-  it('every id is the sha256 of the canonical form sans id', async () => {
-    const { hashCanonical } = await import('@servanda/crypto');
+  it('every id is the sha256 of the domain tag and the canonical form sans id', async () => {
+    const { envelopeId } = await import('@servanda/crypto');
     const { UnidentifiedEnvelope } = await import('@servanda/types');
     for (const envelope of mine()) {
       const { id, ...rest } = envelope;
-      expect(id).toBe(hashCanonical(UnidentifiedEnvelope.parse(rest)));
+      expect(id).toBe(envelopeId(UnidentifiedEnvelope.parse(rest)));
     }
   });
 

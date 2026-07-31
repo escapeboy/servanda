@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/node-surface-actions.schema.json",
+  "title": "§7 advertised actions (M-20)",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": ["description", "act_vocabulary", "act_tool_bindings", "cases"],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "act_vocabulary": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/act" }
+    },
+    "act_tool_bindings": {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/actTooling"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "edge",
+          "assertions",
+          "viewer",
+          "effective_state",
+          "window_elapsed",
+          "expected_actions",
+          "must_not_advertise"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": { "type": "string", "minLength": 1 },
+          "edge": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge" },
+          "assertions": {
+            "type": "array",
+            "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/assertion" }
+          },
+          "viewer": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/viewer" },
+          "effective_state": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/effectiveState"
+          },
+          "window_elapsed": { "type": "boolean" },
+          "expected_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/advertisedAction"
+            }
+          },
+          "must_not_advertise": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/act" }
+          }
+        }
+      }
+    }
+  }
+}

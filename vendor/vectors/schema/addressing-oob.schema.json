@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/addressing-oob.schema.json",
+  "title": "Out-of-band bootstrap payload vectors (§6.7)",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": ["description", "encoding", "cases"],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "encoding": {
+      "type": "object",
+      "required": ["scheme", "url_form", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "scheme": { "type": "string", "minLength": 1 },
+        "url_form": { "type": "string", "minLength": 1 },
+        "note": { "type": "string", "minLength": 1 }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "sender",
+          "message",
+          "canonical",
+          "payload_b64url",
+          "url",
+          "decoded_equals_original",
+          "edge_equals_original",
+          "signature_verifies"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "description": { "type": "string", "minLength": 1 },
+          "sender": {
+            "type": "object",
+            "required": ["label", "persona_id"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+              "persona_id": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              }
+            }
+          },
+          "message": {
+            "type": "object",
+            "required": ["v", "type", "payload", "sender", "sent_at", "sig"],
+            "additionalProperties": false,
+            "properties": {
+              "v": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+              },
+              "type": { "const": "propose" },
+              "payload": {
+                "type": "object",
+                "required": ["edge", "assertion"],
+                "additionalProperties": false,
+                "properties": {
+                  "edge": {
+                    "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge"
+                  },
+                  "assertion": {
+                    "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/assertion"
+                  }
+                }
+              },
+              "sender": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              },
+              "sent_at": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+              },
+              "sig": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+              }
+            }
+          },
+          "canonical": { "type": "string" },
+          "payload_b64url": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+          "url": { "type": "string", "pattern": "^https://[^#]+#[A-Za-z0-9_-]+$" },
+          "decoded_equals_original": { "type": "boolean" },
+          "edge_equals_original": { "type": "boolean" },
+          "signature_verifies": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
