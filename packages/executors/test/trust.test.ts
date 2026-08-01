@@ -148,6 +148,35 @@ describe('ceilings — a property of the class, not of accumulated trust', () =>
     }
   });
 
+  it('recognises it anywhere in the tree, not only at the repo root', () => {
+    // The cap is on the blast radius, so where in the tree the CI config lives cannot decide
+    // whether it is sensitive. Every glob above was anchored at the root, which in a workspace —
+    // this repo is one — misses the ordinary place these files live: a package's own `.github/`
+    // and the per-app `.env`. `packages/api/.github/workflows/ci.yml` ran CI exactly as the root
+    // one does and scored `routine`.
+    for (const path of [
+      'packages/api/.github/workflows/ci.yml',
+      'apps/web/.env.production',
+      'config/.env',
+      'sub/Jenkinsfile',
+      'sub/.gitlab-ci.yml',
+      'tools/.circleci/config.yml',
+    ]) {
+      expect(isSensitivePath(path), path).toBe(true);
+    }
+  });
+
+  it('caps an artifact that touches a nested CI config, however good the history', () => {
+    const flawless = run(emptyTrustRecord(PERSONA, 'tests', NOW), Array<'approved'>(6).fill('approved'));
+    const decision = effectiveAutonomy({
+      record: flawless,
+      ceiling: ceilingFor('routine', ['packages/api/.github/workflows/ci.yml']),
+      edgeVerifiable: true,
+    });
+    expect(decision.level).toBe('draft-for-review');
+    expect(decision.cappedBy).toBe('ceiling');
+  });
+
   it('lets a routine class reach silent — the ceiling is not a blanket refusal', () => {
     const flawless = run(emptyTrustRecord(PERSONA, 'tests', NOW), Array<'approved'>(6).fill('approved'));
     const decision = effectiveAutonomy({

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { boundsViolation } from '@servanda/envelope';
 import { Envelope, Rfc3339 } from '@servanda/types';
 import { ClaudeCodeConnector, HOOK_KINDS, MAX_PAYLOAD_TEXT } from '../../src/index.js';
 
@@ -110,6 +111,23 @@ describe('M-6: transcript content is data, never instruction', () => {
     );
     expect(envelope.payload['text']).toBe(INJECTION);
     assertInert(envelope, INJECTION);
+  });
+
+  it('bounds the `model` a transcript names, not only the text it carries', () => {
+    // `model` is read out of the same file as `content` and is exactly as attacker-shaped, but it
+    // does not land in `payload` — it lands in `actor.external_id`, which §2 gives no bound and
+    // the envelope boundary therefore cannot reduce. Unclipped, a long enough one carried the
+    // whole envelope past §2's canonical-form bound with no member left to shrink: the connector
+    // emitted an envelope that every conforming node would refuse, from one line of a .jsonl file.
+    const line = JSON.stringify({
+      type: 'assistant',
+      message: { role: 'assistant', model: 'm'.repeat(100_000), content: 'I will do it.' },
+      uuid: '99999999-9999-4999-8999-999999999999',
+      timestamp: '2026-01-05T09:00:00Z',
+    });
+    const [envelope] = connector.fromTranscript(line, ctx);
+    expect(envelope).toBeDefined();
+    expect(boundsViolation(envelope)).toBeNull();
   });
 
   it('bounds payload text however long the utterance is', () => {

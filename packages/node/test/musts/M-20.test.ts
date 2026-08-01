@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { ACT_TOOL_BINDINGS } from '@servanda/types';
-import { makeFixture, type Fixture } from '../support/fixture.js';
+import { ACT_TOOL_BINDINGS, type ActInput, type ActOutput, type Assertion, type Edge } from '@servanda/types';
+import { makeFixture, persona, type Fixture } from '../support/fixture.js';
 
 /**
  * M-20 — `act` signs only the acts bound to it, only for the role that owns them, and only from
@@ -22,6 +22,10 @@ const VECTORS = 'vendor/vectors/node-surface/act-tool.json';
 interface ActCase {
   name: string;
   description: string;
+  edge: Edge;
+  assertions: Assertion[];
+  effective_state: string;
+  window_elapsed: boolean;
   call: { caller: { persona_id: string; role: string }; input: Record<string, unknown> };
   expected: { accepted: boolean; rejection_reason: string | null; asserts: string | null };
 }
@@ -35,9 +39,55 @@ beforeAll(() => {
   bindings = suite.act_tool_bindings;
 });
 
+/** The vectors' alice/bob/carol are personas 0/1/2 of the published test mnemonic. */
+const PERSONA_INDEX = new Map([0, 1, 2].map((i) => [persona(i).personaId, i] as const));
+
+/**
+ * Stand the case's edge and chain up in the caller's own vault and make the call for real.
+ *
+ * The caller holds the edge even when they are not a party to it — that is what makes the
+ * non-party case a test of `act` rather than of the vault: carol has the object and still has no
+ * standing. The clock is derived from `window_elapsed`, which is the vector's way of saying where
+ * `now` sits relative to the acceptance window without pinning a wall-clock instant.
+ */
+function replay(c: ActCase): ActOutput {
+  const index = PERSONA_INDEX.get(c.call.caller.persona_id);
+  if (index === undefined) throw new Error(`unknown caller ${c.call.caller.persona_id}`);
+  const lastAsserted = Date.parse(c.assertions[c.assertions.length - 1]!.asserted_at);
+  const now = new Date(lastAsserted + (c.window_elapsed ? 10 * 86_400_000 : 0) + 3_600_000);
+
+  const fx: Fixture = makeFixture({
+    personas: [
+      { index: 0, label: 'alice' },
+      { index: 1, label: 'bob' },
+      { index: 2, label: 'carol' },
+    ],
+    activePersonaIndex: index,
+    now,
+  });
+  const holder = fx.personas[index]!;
+  fx.vault.putEdge(holder, c.edge);
+  for (const a of c.assertions) fx.vault.appendAssertion(holder, a);
+  try {
+    return fx.node.act(c.call.input as unknown as ActInput);
+  } finally {
+    fx.cleanup();
+  }
+}
+
 describe('M-20: act signs only what it is bound to, for the role that owns it', () => {
-  it('replays every case the oracle states', () => {
+  it('the oracle states fourteen cases', () => {
     expect(cases).toHaveLength(14);
+  });
+
+  /**
+   * The vectors were read and asserted ON — `expect(c.expected.rejection_reason).toBe(...)` checks
+   * that the JSON says what the JSON says, which no implementation can fail. Nothing here ran the
+   * node. This does, and it is the only thing in this file that can go red for a code change.
+   */
+  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])('case %i, replayed against the node', (i) => {
+    const c = cases[i]!;
+    expect({ name: c.name, ...replay(c) }).toEqual({ name: c.name, ...c.expected });
   });
 
   it('the binding table here is the one the vectors pin', () => {

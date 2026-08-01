@@ -1,6 +1,13 @@
+import { z } from 'zod';
 import { verifyObject, withSignature } from '@servanda/crypto';
 import type { Assertion, Edge, Rotation } from '@servanda/types';
-import { PROTOCOL_VERSION, Rotation as RotationSchema } from '@servanda/types';
+import {
+  Assertion as AssertionSchema,
+  Edge as EdgeSchema,
+  PersonaId,
+  PROTOCOL_VERSION,
+  Rotation as RotationSchema,
+} from '@servanda/types';
 import type { Vault } from '@servanda/vault';
 import { isParty, mayServeEdge } from './serve.js';
 
@@ -24,14 +31,23 @@ import { isParty, mayServeEdge } from './serve.js';
 
 export type RecoveryProof = Rotation | { challenge: string; sig: string };
 
+/**
+ * §6.2 payload shapes. `proof` is only required to BE an object here — deciding what makes a
+ * proof acceptable is `verifyRequest`'s job and stays there. What this buys is that a
+ * `recover_request` carrying no proof at all is discarded at the inbox instead of reaching a
+ * responder that dereferenced it.
+ */
+export const RecoverRequestSchema = z.object({ persona: PersonaId, proof: z.record(z.unknown()) });
+export const RecoverResponseSchema = z.object({
+  edges: z.array(z.object({ edge: EdgeSchema, assertions: z.array(AssertionSchema) })),
+});
+
 export interface RecoverRequest {
   persona: string;
   proof: RecoveryProof;
 }
 
-export interface RecoverResponse {
-  edges: { edge: Edge; assertions: Assertion[] }[];
-}
+export type RecoverResponse = z.infer<typeof RecoverResponseSchema>;
 
 export type RecoveryVerdict =
   | { verified: true; persona: string; predecessor: string | null }

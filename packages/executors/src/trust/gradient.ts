@@ -76,16 +76,22 @@ export const RISK_CEILING: Readonly<Record<RiskClass, AutonomyLevel>> = {
  * "class CI config has a ceiling and never reaches silent, regardless of history" expressed
  * where it belongs — on the blast radius, not on the executor's name. No v1 executor holds a
  * write capability for any of these; the cap is the second lock on a door that has no handle.
+ *
+ * Every glob is position-independent. The CI ones were anchored at the repo root, which reads as
+ * correct until the repo is a workspace: `packages/api/.github/workflows/ci.yml` runs CI exactly
+ * as the root file does, and `apps/web/.env.production` is where the secrets actually are. Both
+ * scored `routine` and reached silent. Where a file sits in the tree is not what makes it
+ * sensitive.
  */
 export const SENSITIVE_PATH_GLOBS: readonly string[] = [
-  '.github/**',
-  '.gitlab-ci.yml',
-  '.circleci/**',
-  'Jenkinsfile',
+  '**/.github/**',
+  '**/.gitlab-ci.yml',
+  '**/.circleci/**',
+  '**/Jenkinsfile',
   '**/*.pem',
   '**/*.key',
-  '.env',
-  '.env.*',
+  '**/.env',
+  '**/.env.*',
   '**/secrets/**',
   '**/auth/**',
   '**/*secret*',

@@ -50,7 +50,7 @@ describe('§6.4 reconciliation', () => {
 
     const request = buildReconRequest(pair.a.vault, pair.a.personaId, pair.b.personaId);
     const response = answerReconRequest(pair.b.vault, pair.b.personaId, pair.a.personaId, request);
-    const applied = applyReconResponse(pair.a.vault, pair.a.personaId, response);
+    const applied = applyReconResponse(pair.a.vault, pair.a.personaId, pair.b.personaId, response);
 
     expect(applied.accepted).toHaveLength(1);
     expect(applied.discarded).toEqual([]);
@@ -69,7 +69,7 @@ describe('§6.4 reconciliation', () => {
     const response = {
       edges: [{ edge_id: edgeId, assertions: pair.b.vault.getAssertions(pair.b.personaId, edgeId) }],
     };
-    const applied = applyReconResponse(pair.a.vault, pair.a.personaId, response);
+    const applied = applyReconResponse(pair.a.vault, pair.a.personaId, pair.b.personaId, response);
     expect(applied.accepted).toEqual([]);
     expect(applied.discarded).toEqual([]);
   });
@@ -83,6 +83,7 @@ describe('§6.4 reconciliation', () => {
     applyReconResponse(
       pair.a.vault,
       pair.a.personaId,
+      pair.b.personaId,
       answerReconRequest(pair.b.vault, pair.b.personaId, pair.a.personaId, request),
     );
     expect(pair.a.vault.listOutbox(pair.a.personaId).length).toBe(before);

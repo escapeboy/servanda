@@ -205,10 +205,14 @@ nav {
 .seal-marked { background: #8C2F1B; border-width: 2px; }
 .seal-cracked { background: #8C2F1B; border-style: dotted; }
 .seal-arrow { background: #8C2F1B; border-radius: 50% 50% 50% 0; }
+/* Struck in ladder order (§1.6: 0 < 1 < ext < 2 < 3), so the wax never says more than the
+   evidence. ext is a deeper inset than continuity and still a 1px rim: a binding proof is
+   more than "the same key as before" and less than a third party staking its own key. It was
+   a 3px double rim here — the deepest mark on the page, above an attestation. */
 .seal.relief-continuity { box-shadow: inset 0 0 0 1px var(--bone); }
+.seal.relief-external { box-shadow: inset 0 0 0 2px var(--bone); }
 .seal.relief-attested { border-width: 2px; }
 .seal.relief-domain { border-width: 3px; }
-.seal.relief-external { border-width: 3px; border-style: double; }
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -228,6 +232,7 @@ nav {
   .rung-locked,
   .rung-closed { color: rgba(247, 244, 236, 0.55); }
   .seal.relief-continuity { box-shadow: inset 0 0 0 1px var(--ink); }
+  .seal.relief-external { box-shadow: inset 0 0 0 2px var(--ink); }
 }
 
 @media (prefers-reduced-motion: reduce) {

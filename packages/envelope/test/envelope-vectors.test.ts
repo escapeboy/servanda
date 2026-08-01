@@ -9,6 +9,7 @@ import {
   MAX_REF,
   MAX_REFS,
   boundsViolation,
+  clip,
   octets,
 } from '../src/index.js';
 
@@ -97,11 +98,63 @@ describe('§2 envelope bounds vectors (M-19)', () => {
   it('clips to a scalar boundary rather than to the octet count', () => {
     const ex = v.clipping.scalar_boundary_example;
     expect(octets(ex.source)).toBe(ex.source_octets);
+    // THIS is the line that replays the vector: `clip` is handed the source and has to land on
+    // the octet the vector names. Every assertion below it is about the example itself, and an
+    // earlier version of this test had only those — it passed unchanged with `clip` reduced to
+    // `bytes.subarray(0, maxOctets)`, which produces the U+FFFD §2 forbids. A vector nobody feeds
+    // to the implementation checks the vector.
+    expect(clip(ex.source, MAX_PAYLOAD_TEXT)).toBe(ex.clipped);
+    expect(octets(ex.clipped)).toBe(ex.clipped_to_octets);
     // The rule §2 states: no code point in the clipped value that is absent from the source. A
     // cut taken at exactly MAX_PAYLOAD_TEXT would slice this example's last scalar into pieces.
     expect(ex.source.startsWith(ex.clipped)).toBe(true);
     expect(octets(ex.clipped)).toBeLessThanOrEqual(MAX_PAYLOAD_TEXT);
     expect(ex.clipped).not.toContain('�');
+  });
+
+  it('measures each case the way the vector measured it', () => {
+    // `within_bounds` alone is a one-bit answer, and the vector carries the measurement as well
+    // so that an implementation which lands on the right verdict from the wrong number is caught.
+    // Every case sits ON its bound or one unit past it, so the measure is checkable exactly.
+    const measure: Record<string, (e: Record<string, never>) => number> = {
+      refs_entries: (e) => (e['refs'] as unknown as unknown[]).length,
+      ref_value_octets: (e) =>
+        Math.max(...(e['refs'] as unknown as { value: string }[]).map((r) => octets(r.value))),
+      actor_label_octets: (e) => octets((e['actor'] as unknown as { label: string }).label),
+      payload_string_octets: (e) =>
+        Math.max(
+          ...Object.values(e['payload'] as unknown as Record<string, unknown>)
+            .filter((x): x is string => typeof x === 'string')
+            .map(octets),
+        ),
+      canonical_form_octets: (e) => canonicalBytes(e).length,
+    };
+    for (const c of v.cases as { name: string; bound: string; measured: number; envelope_sans_id: Record<string, never> }[]) {
+      const m = measure[c.bound];
+      if (m === undefined) continue; // depth is a count of levels, not of anything octets()able
+      expect(m(c.envelope_sans_id), `${c.name} measures ${c.bound}`).toBe(c.measured);
+    }
+  });
+
+  it('refuses a document nested past the canonicalizer limit instead of blowing the stack', () => {
+    // Stated in the vector as a property of the canonicalizer rather than of the envelope, which
+    // is why it has no case — but an envelope is the thing that gets canonicalized, so it is
+    // reachable from here: a member the §2 payload-depth check does not walk (`actor` is not
+    // `payload`) carries the nesting all the way to JCS. What the vector asks for is a REPORTED
+    // refusal; a RangeError from the platform's own recursion limit would satisfy neither the
+    // depth number nor the word "report".
+    let deep: Record<string, unknown> = { leaf: 1 };
+    for (let i = 0; i < v.canonicalizer_refusal.depth + 8; i++) deep = { d: deep };
+    const base = v.cases.find((c: { name: string }) => c.name === 'refs-at-the-limit')!.envelope_sans_id;
+    let thrown: unknown;
+    try {
+      boundsViolation({ ...base, actor: { label: 'x', nested: deep } });
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).name).toBe('JcsDepthExceeded');
+    expect((thrown as Error).message).toContain(String(v.canonicalizer_refusal.depth));
   });
 
   it('covers every bound on both sides', () => {

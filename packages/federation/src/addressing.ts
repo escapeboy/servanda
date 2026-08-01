@@ -87,10 +87,18 @@ export function verifyInboxRecord(
  *
  * `now` is a parameter rather than a clock read, for the same reason it is everywhere else here:
  * "this record expired" has to be reproducible.
+ *
+ * "Valid for 30 days FROM `issued_at`" bounds the window at both ends. Only the far end was
+ * enforced, so a record dated in the future had an age below the limit at every instant, routed
+ * for ever, and never reached the republish half-life — which turns a 30-day statement about
+ * where a persona wants its mail, and which X25519 key may be sealed to, into a permanent one.
+ * That is the bound that limits how long a single compromise of a persona key keeps steering
+ * that persona's mail, so a record that has not started is refused exactly like one that ended.
+ * Zero tolerance for skew matches `verifyAttestation`'s `not-yet-issued`.
  */
 export function hubsFor(record: InboxRecord, now: string): readonly string[] {
   const age = Date.parse(now) - Date.parse(record.issued_at);
-  if (!Number.isFinite(age)) return [];
+  if (!Number.isFinite(age) || age < 0) return [];
   return age > INBOX_RECORD_LIFETIME_DAYS * 86_400_000 ? [] : record.hubs;
 }
 

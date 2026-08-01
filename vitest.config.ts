@@ -14,7 +14,7 @@ import { defineConfig } from 'vitest/config';
  *
  * `- 1` leaves a core for the main process, which is the one that has to answer that RPC.
  */
-const MAX_WORKERS = Math.max(1, Math.min(4, availableParallelism() - 1));
+const MAX_WORKERS = Math.max(1, Math.min(3, availableParallelism() - 1));
 
 export default defineConfig({
   test: {
@@ -45,11 +45,19 @@ export default defineConfig({
      * for want of a scheduling slot rather than for anything wrong with the code. A federation
      * gate failed exactly once that way and could not be reproduced in isolation.
      *
-     * Four workers is enough to keep the run parallel while leaving each one the memory its
-     * KDF actually needs. The suite is not meaningfully slower; it is merely honest.
+     * Three workers is enough to keep the run parallel while leaving each one the memory its
+     * KDF actually needs. Three is the ceiling, not the number — see `MAX_WORKERS` above for why
+     * that distinction is load-bearing on a small runner.
      *
-     * Four is the ceiling, not the number — see `MAX_WORKERS` above for why that distinction
-     * is load-bearing on a small runner.
+     * **It was four until the suite grew past it.** Adversarial scenario tests roughly tripled the
+     * run (71 s → 200 s) and with it the Argon2id work in flight, and four workers began emitting
+     * `Timeout calling "onTaskUpdate"` on about one run in three — and, worse, reporting FAILED
+     * TESTS that pass in isolation. A suite that invents a red result is worse than a slow one,
+     * because the only defence against it is to stop believing red.
+     *
+     * Measured before changing it, six runs at four workers against three at three: the flakes
+     * vanished AND the wall clock dropped from ~200 s to ~150 s. The fourth worker was not buying
+     * parallelism; it was paying for contention. That is the whole argument for the number.
      */
     maxWorkers: MAX_WORKERS,
     minWorkers: 1,

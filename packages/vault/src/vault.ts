@@ -120,6 +120,14 @@ export class Vault {
   static create(opts: VaultCreateOptions): Vault {
     const { dir } = opts;
     if (existsSync(join(dir, VAULT_MARKER))) throw new VaultError(`vault already exists at ${dir}`);
+    // `assertVaultRepo` guards every LATER call, and cannot guard this one: it asks whether the
+    // directory is the root of its own repo carrying the marker, and creation is what writes the
+    // marker. So an existing repository would pass the guard a moment after being taken over —
+    // `git config` replacing its owner's identity and the first vault commit sweeping up their
+    // uncommitted work through `add -A`.
+    if (existsSync(join(dir, '.git'))) {
+      throw new VaultError(`refusing to create a vault inside an existing git repository: ${dir}`);
+    }
     mkdirSync(dir, { recursive: true });
 
     const clock = opts.now ?? (() => new Date());
@@ -365,6 +373,9 @@ export class Vault {
 
   putAttestation(persona: string, attestation: Attestation): void {
     const dir = this.requirePersona(persona);
+    // The id being written is a path segment exactly as the one being read is (`getAttestation`),
+    // and it arrives from the wire. Checked on both sides or the scoping is one-way.
+    assertHexId(attestation.subject, 'attestation.subject');
     writeSealed(
       join(dir, 'attestations', `${attestation.subject}.json`),
       this.contentKey,
@@ -384,6 +395,7 @@ export class Vault {
 
   putRevocation(persona: string, revocation: Revocation): void {
     const dir = this.requirePersona(persona);
+    assertHexId(revocation.subject, 'revocation.subject');
     writeSealed(
       join(dir, 'revocations', `${revocation.subject}.json`),
       this.contentKey,
@@ -407,6 +419,7 @@ export class Vault {
    */
   putDomainAnchor(persona: string, anchor: DomainAnchor): void {
     const dir = this.requirePersona(persona);
+    assertHexId(anchor.org_root, 'org_root');
     writeSealed(join(dir, 'anchors', `${anchor.org_root}.json`), this.contentKey, 'anchor', anchor);
     this.commit(`feat(anchor): ${anchor.org_root.slice(0, 12)}`);
   }

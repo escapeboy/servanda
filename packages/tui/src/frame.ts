@@ -150,7 +150,38 @@ function proofLines(view: ProofView, focused: string | null): string[] {
   return lines;
 }
 
+/**
+ * What a terminal reads as an instruction rather than as a letter, and what makes a line read
+ * differently from what it contains. Same two classes `@servanda/gestures` scrubs from a
+ * quote, and for the same reason — except that here the text arrives over §7 rather than from
+ * a chat platform, and §7's `intent_or_expect` and `counterparty` are plain unbounded strings.
+ */
+const CONTROL_CHARS = new RegExp('[\\u0000-\\u001F\\u007F-\\u009F]', 'gu');
+const BIDI_CHARS = new RegExp('[\\u202A-\\u202E\\u2066-\\u2069]', 'gu');
+
+/**
+ * The renderer's last act, on every line it emits.
+ *
+ * The words of a promise are content and are shown verbatim (M-21) — but "verbatim" is about
+ * the words, and a cursor-movement sequence is not a word. Left in, `ESC[8m` after a
+ * counterparty's name conceals everything the terminal prints after it, which on a card is
+ * the verification level: the name survives and its evidence does not, which is precisely
+ * what M-12 forbids. Control characters become spaces so the line keeps its length rather
+ * than closing up around what was removed; bidi overrides go entirely, because there is no
+ * width for them to keep.
+ *
+ * Nothing this file writes contains either class, so this can never alter the interface's own
+ * words: the marks are ASCII parentheses and the rule is a box-drawing dash.
+ */
+function terminalSafe(line: string): string {
+  return line.replace(CONTROL_CHARS, ' ').replace(BIDI_CHARS, '');
+}
+
 export function frameLines(state: FrameState): string[] {
+  return composeLines(state).map(terminalSafe);
+}
+
+function composeLines(state: FrameState): string[] {
   const stops: Stop[] = stopsFor(state.app);
   const focused = stops[state.cursor]?.id ?? null;
   // A standalone surface has no navigation in the browser, so it has none here either.

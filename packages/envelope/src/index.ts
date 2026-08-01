@@ -59,12 +59,6 @@ export function compact(o: Record<string, unknown>): Record<string, unknown> {
  * happened. Bounding at the seal means every emitted envelope is inside §2 and carries `clipped`
  * whenever it had to be brought there.
  */
-export function sealEnvelope(candidate: unknown): Envelope {
-  const base = UnidentifiedEnvelope.parse(candidate);
-  const bounded = UnidentifiedEnvelope.parse(bound(base));
-  return Envelope.parse({ ...bounded, id: envelopeId(bounded) });
-}
-
 /**
  * The node half of M-19: an envelope that arrives already formed is REJECTED if it exceeds a
  * bound, never canonicalized and never quietly re-clipped.
@@ -75,14 +69,33 @@ export function sealEnvelope(candidate: unknown): Envelope {
  *
  * This implementation has no ingress for foreign envelopes — its connectors are libraries called
  * in-process, the divergence from §2's `emit_envelope` recorded in the README — so nothing calls
- * this today. It exists because the obligation is on the node, not on the connector, and a rule
- * with no callable form is a rule nothing can be held to.
+ * `acceptEnvelope` today. It exists because the obligation is on the node, not on the connector,
+ * and a rule with no callable form is a rule nothing can be held to.
  */
 export class EnvelopeBoundsExceeded extends RangeError {
   override name = 'EnvelopeBoundsExceeded';
   constructor(reason: string) {
     super(`§2 bounds exceeded: ${reason}. Rejecting the envelope rather than canonicalizing it.`);
   }
+}
+
+export function sealEnvelope(candidate: unknown): Envelope {
+  const base = UnidentifiedEnvelope.parse(candidate);
+  const bounded = UnidentifiedEnvelope.parse(bound(base));
+  // The seal states its own postcondition rather than assuming it.
+  //
+  // `bound` reduces `payload` and `refs`, which are the members §2 gives it room to reduce.
+  // `source`, `kind` and `actor.external_id` it cannot touch — §2 states no bound for them, and
+  // shortening a `kind` would change what the observation says it is. So an oversized one
+  // survives the reduction, and the envelope leaves here over the whole-form bound.
+  //
+  // Emitting it would be the worst of the three outcomes: `id` computed over a canonical form §2
+  // forbids, stored locally, and refused by every conforming node that ever sees it — with
+  // nothing anywhere saying why. Failing names the member instead, and the connector is the only
+  // layer that can shorten it.
+  const reason = boundsViolation(bounded);
+  if (reason !== null) throw new EnvelopeBoundsExceeded(reason);
+  return Envelope.parse({ ...bounded, id: envelopeId(bounded) });
 }
 
 export function acceptEnvelope(candidate: unknown): Envelope {

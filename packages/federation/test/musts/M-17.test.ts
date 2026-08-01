@@ -145,6 +145,33 @@ describe('§6.7: what a verified record then authorizes', () => {
     expect(verifyInboxRecord(record()).accepted).toBe(true);
   });
 
+  it('routes nowhere before the record has been issued', () => {
+    // The 30-day lifetime is what bounds how long one signed statement keeps steering a
+    // persona's mail — and which X25519 key §6.3 seals to. Enforcing only the far end left the
+    // near end open: a record dated 3000-01-01 has an age below the limit at every instant a
+    // sender will ever evaluate it at, so it routes for ever and never reaches the republish
+    // half-life that would replace it. Anyone who holds the persona key for one moment can mint
+    // one, and it outlives the compromise. "Valid for 30 days FROM issued_at" has two ends.
+    const forever = InboxRecord.parse(
+      withSignature(
+        {
+          v: 'servanda/0.1' as const,
+          type: 'inbox' as const,
+          persona: alice.personaId,
+          hubs: ['https://attacker.example/servanda'],
+          dh_key: alice.dhPublicKey,
+          issued_at: '3000-01-01T00:00:00Z',
+        },
+        alice.privateKey,
+      ),
+    );
+    expect(hubsFor(forever, '2026-07-26T09:00:00Z')).toEqual([]);
+    // …and therefore no sealing key comes out of it either (§6.3 joins here).
+    expect(dhKeyFrom(forever, '2026-07-26T09:00:00Z')).toBeNull();
+    // It is not a forgery, though: it verifies. Only its window is wrong.
+    expect(verifyInboxRecord(forever).accepted).toBe(true);
+  });
+
   it('asks for republication at half-life, well before anything expires', () => {
     const day = (n: number) => new Date(Date.parse('2026-07-25T09:00:00Z') + n * 86_400_000).toISOString();
     expect(shouldRepublish(record(), day(14))).toBe(false);

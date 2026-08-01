@@ -4,8 +4,15 @@ import { AssertPayload, ProposePayload } from '@servanda/types';
 import type { Vault } from '@servanda/vault';
 import type { ProposalBudget } from './antispam.js';
 import { edgeIdOf, verifyMessage } from './messages.js';
-import { applyReconResponse, type ReconApplyResult, type ReconRequest, type ReconResponse } from './recon.js';
-import type { RecoverRequest, RecoverResponse } from './recovery.js';
+import {
+  applyReconResponse,
+  inWireOrder,
+  ReconRequestSchema,
+  ReconResponseSchema,
+  type ReconApplyResult,
+  type ReconRequest,
+} from './recon.js';
+import { RecoverRequestSchema, RecoverResponseSchema, type RecoverRequest, type RecoverResponse } from './recovery.js';
 import { isParty } from './serve.js';
 
 /**
@@ -107,23 +114,46 @@ export class Inbox {
         case 'assert':
           this.ingestAssert(message, result);
           break;
-        case 'recon_request':
-          result.reconRequests.push({ from: message.sender, request: message.payload as ReconRequest });
+        case 'recon_request': {
+          const parsed = ReconRequestSchema.safeParse(message.payload);
+          if (!parsed.success) {
+            result.discarded.push({ type: message.type, edge_id: null, reason: 'malformed-payload' });
+            break;
+          }
+          result.reconRequests.push({ from: message.sender, request: parsed.data });
           break;
+        }
         case 'recon_response': {
-          const applied = applyReconResponse(this.vault, this.persona, message.payload as ReconResponse);
+          const parsed = ReconResponseSchema.safeParse(message.payload);
+          if (!parsed.success) {
+            result.discarded.push({ type: message.type, edge_id: null, reason: 'malformed-payload' });
+            break;
+          }
+          const applied = applyReconResponse(this.vault, this.persona, message.sender, parsed.data);
           result.recon.accepted.push(...applied.accepted);
           result.recon.discarded.push(...applied.discarded);
           result.recon.ignored.push(...applied.ignored);
           break;
         }
-        case 'recover_request':
-          result.recoverRequests.push({ from: message.sender, request: message.payload as RecoverRequest });
+        case 'recover_request': {
+          const parsed = RecoverRequestSchema.safeParse(message.payload);
+          if (!parsed.success) {
+            result.discarded.push({ type: message.type, edge_id: null, reason: 'malformed-payload' });
+            break;
+          }
+          result.recoverRequests.push({ from: message.sender, request: parsed.data as RecoverRequest });
           break;
+        }
         case 'recover_response':
           // §6.6 responses restore edges this node lost. Applying them is a distinct act with
           // its own trust decision (the requester chose whom to ask), so it is not folded into
-          // routine ingestion; `applyRecoverResponse` is called explicitly.
+          // routine ingestion; `applyRecoverResponse` is called explicitly. What ingestion still
+          // owes the caller is that an `accepted` recover_response is one whose payload is
+          // actually a recover_response — otherwise "accepted" means only "signed".
+          if (!RecoverResponseSchema.safeParse(message.payload).success) {
+            result.discarded.push({ type: message.type, edge_id: null, reason: 'malformed-payload' });
+            break;
+          }
           result.accepted.push({ type: message.type, edge_id: null });
           break;
         default:
@@ -226,6 +256,11 @@ export class Inbox {
  * §6.6: apply a recovery response. Edges arrive with their chains; each chain is replayed
  * through the transition table so a responder cannot hand back a state we would not have
  * reached ourselves.
+ *
+ * Replaying is not enough on its own: the table is order-sensitive, so a responder that handed
+ * back a chain in a chosen order chose the state we recovered into. Reversing an honest
+ * `[proposed, accepted]` left the restored node at `proposed` with the acceptance discarded.
+ * `inWireOrder` is the same normalisation §6.4 applies, and for the same reason.
  */
 export function applyRecoverResponse(vault: Vault, persona: string, response: RecoverResponse): {
   restored: string[];
@@ -236,9 +271,9 @@ export function applyRecoverResponse(vault: Vault, persona: string, response: Re
   for (const { edge, assertions } of response.edges) {
     if (!isParty(edge, persona)) continue;
     if (!vault.getEdge(persona, edge.edge_id)) vault.putEdge(persona, edge);
-    const held = new Set(vault.getAssertions(persona, edge.edge_id).map((a) => a.sig));
     const local = vault.getAssertions(persona, edge.edge_id);
-    const incoming = assertions.filter((a) => !held.has(a.sig));
+    const held = new Set(local.map((a) => a.sig));
+    const incoming = assertions.filter((a) => !held.has(a.sig)).sort(inWireOrder);
     const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming]);
     for (let i = 0; i < incoming.length; i++) {
       const outcome = outcomes[local.length + i]!;

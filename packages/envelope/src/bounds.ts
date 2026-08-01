@@ -263,7 +263,11 @@ export function bound(candidate: Record<string, unknown>): Record<string, unknow
     clipped = true;
   }
 
+  // Only ever set, never cleared. A caller that arrived already carrying `clipped: true` cut
+  // something before it got here, and this function has no way to know it did not; erasing the
+  // marker because nothing needed cutting *at this boundary* would republish the observation as
+  // whole. That is the silence M-19 forbids, and it is the harder one to notice because the
+  // envelope that results is perfectly well-formed.
   if (clipped) out['clipped'] = true;
-  else delete out['clipped'];
   return out;
 }

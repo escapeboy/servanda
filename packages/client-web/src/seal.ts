@@ -70,13 +70,22 @@ export const RELIEF_BY_LEVEL: Record<VerificationLevel, SealRelief> = {
   ext: 'external',
 };
 
-/** Ordering used by the M-12 test: rendered relief must never exceed the evidence. */
+/**
+ * Ordering used by the M-12 test: rendered relief must never exceed the evidence.
+ *
+ * This is §1.6's ladder — `0 < 1 < ext < 2 < 3` — and not the order the level names happen
+ * to sort in. `ext` is a binding proof, the persona's own signature on a channel it
+ * controls, so it outranks continuity and is outranked by an attestation, where a third
+ * party stakes its own key. It sat at 3 here, tied with `domain`, for as long as this table
+ * existed: which made an `ext` seal the deepest strike on the page, and made every "no
+ * higher relief leaked" loop walk an empty set at exactly that level.
+ */
 export const RELIEF_RANK: Record<SealRelief, number> = {
   flat: 0,
   continuity: 1,
-  attested: 2,
-  domain: 3,
-  external: 3,
+  external: 2,
+  attested: 3,
+  domain: 4,
 };
 
 export interface TrustView {

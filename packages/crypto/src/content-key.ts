@@ -86,11 +86,20 @@ export function generateContentKey(): Uint8Array {
   return randomBytes(CONTENT_KEY_BYTES);
 }
 
-export function deriveKeyFromPassphrase(passphrase: string, salt: Uint8Array): Uint8Array {
+/**
+ * `params` defaults to today's values for wrapping, and is the WRAP's own values for unwrapping.
+ * That asymmetry is the whole point of storing them: new wraps are made at the current cost,
+ * existing ones are opened at the cost they were made at.
+ */
+export function deriveKeyFromPassphrase(
+  passphrase: string,
+  salt: Uint8Array,
+  params: { m: number; t: number; p: number } = ARGON2ID_PARAMS,
+): Uint8Array {
   return argon2id(utf8(passphrase), salt, {
-    m: ARGON2ID_PARAMS.m,
-    t: ARGON2ID_PARAMS.t,
-    p: ARGON2ID_PARAMS.p,
+    m: params.m,
+    t: params.t,
+    p: params.p,
     dkLen: ARGON2ID_PARAMS.dkLen,
   });
 }
@@ -171,7 +180,9 @@ export function unwrapWithPassphrase(keyset: ContentKeySet, passphrase: string, 
   );
   for (const wrap of candidates) {
     if (!wrap.kdf) continue;
-    const kek = deriveKeyFromPassphrase(passphrase, fromHex(wrap.kdf.salt));
+    // The wrap's own parameters, not today's: a vault made before the cost was raised must still
+    // open, and deriving with the current constants would tell its owner the passphrase is wrong.
+    const kek = deriveKeyFromPassphrase(passphrase, fromHex(wrap.kdf.salt), wrap.kdf);
     try {
       return unwrapWith(kek, wrap);
     } catch {

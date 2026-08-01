@@ -132,6 +132,19 @@ describe('M-13: an adapter observes; it never signs', () => {
     for (const forbidden of ['commit', 'push', 'fetch', 'tag', 'update-ref', 'config']) {
       expect(() => runGit(REPO, [forbidden]), forbidden).toThrow(RefusedGitSubcommand);
     }
+    // argv[0] is the subcommand, full stop. The tempting "helpful" version of this guard looks
+    // past leading options to find the verb — and that version runs `git -c core.pager=sh
+    // rev-parse`, which is an allowlisted subcommand carrying an arbitrary command with it. The
+    // env scrub answers a config file; it does not answer `-c` on the command line. Nothing here
+    // may be smuggled in front of the name.
+    for (const smuggled of [
+      ['-c', 'core.pager=sh', 'rev-parse'],
+      ['--exec-path=/tmp', 'rev-parse'],
+      ['-c', 'protocol.ext.allow=always', 'cat-file'],
+      [],
+    ]) {
+      expect(() => runGit(REPO, smuggled), JSON.stringify(smuggled)).toThrow(RefusedGitSubcommand);
+    }
   });
 
   it('every adapter is an observer — the interface has no verb that acts', () => {

@@ -90,7 +90,10 @@ function actionsOf(card: CardView): El {
  */
 function partyPairEl(party: PartyView): El {
   return el('span', { class: 'party-pair' }, [
-    textEl('span', party.display, { class: party.isKey ? 'party party-key' : 'party' }),
+    // `bdi`, not `span`: the name and its level are inline siblings and therefore one bidi
+    // paragraph, so an unterminated U+202E inside a name reorders the level beside it. The
+    // name is content and is shown as recorded — the defence is containment, not censorship.
+    textEl('bdi', party.display, { class: party.isKey ? 'party party-key' : 'party' }),
     textEl('span', party.trust.label, {
       class: `trust relief-${party.trust.relief}`,
       'data-level': party.trust.level,

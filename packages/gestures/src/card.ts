@@ -278,7 +278,9 @@ function withWhomEl(card: GestureCard): El {
       'aria-label': card.seal.label,
     }),
     el('span', { class: 'party-pair' }, [
-      textEl('span', card.withWhom.display, {
+      // `bdi` for the same reason the app renderer uses one: a name and its level share a
+      // bidi paragraph, and an override inside the name would reorder the level beside it.
+      textEl('bdi', card.withWhom.display, {
         class: card.withWhom.isKey ? 'party party-key' : 'party',
       }),
       textEl('span', card.withWhom.trust.label, {

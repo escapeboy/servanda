@@ -70,8 +70,13 @@ export function derivePath(seed: Uint8Array, path: string): ExtendedKey {
     if (!segment.endsWith("'") && !segment.endsWith('h')) {
       throw new TypeError(`§1.2 requires hardened derivation; unhardened segment "${segment}" in ${path}`);
     }
-    const index = Number.parseInt(segment.slice(0, -1), 10);
-    if (!Number.isInteger(index)) throw new TypeError(`bad path segment "${segment}" in ${path}`);
+    const digits = segment.slice(0, -1);
+    // `Number.parseInt` stops at the first character it cannot read rather than failing, so
+    // `1.5'`, `1e3'` and `1abc'` all used to derive `m/…/1'` — a DIFFERENT index silently
+    // returning the same key. `Number.isInteger` could not catch it: parseInt yields an integer
+    // or NaN and never anything else, so the check only ever fired on wholly non-numeric input.
+    if (!/^\d+$/.test(digits)) throw new TypeError(`bad path segment "${segment}" in ${path}`);
+    const index = Number.parseInt(digits, 10);
     key = deriveHardenedChild(key, index);
   }
   return key;

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { Rfc3339 } from '@servanda/types';
 import type { Envelope } from '@servanda/types';
-import { MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
+import { MAX_LABEL, MAX_REF, clip, compact, label, sealEnvelope } from './envelope.js';
 
 /**
  * Reader for Claude Code's local session transcripts (`~/.claude/projects/**\/*.jsonl`).
@@ -84,7 +84,13 @@ export function envelopeFromLine(
   const text = textOf(m['content']);
   if (text.trim().length === 0) return undefined;
 
-  const model = role === 'assistant' ? str(m['model']) : undefined;
+  // A transcript line is a file on disk that this connector did not write, so `model` is as
+  // attacker-shaped as `content` is. Unclipped it lands in `actor.external_id`, which §2 gives no
+  // bound and the envelope boundary therefore cannot reduce — a long enough one puts the whole
+  // envelope over §2's canonical-form bound with no member left to shrink. `MAX_LABEL` is the
+  // bound §2 states for the field beside it.
+  const rawModel = role === 'assistant' ? str(m['model']) : undefined;
+  const model = rawModel === undefined ? undefined : clip(rawModel, MAX_LABEL);
 
   const refs: { kind: 'message' | 'file'; value: string }[] = [
     { kind: 'message', value: clip(uuid, MAX_REF) },

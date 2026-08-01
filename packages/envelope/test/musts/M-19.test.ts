@@ -139,6 +139,16 @@ describe('M-19: a clipped envelope says so', () => {
     expect(Object.keys(sealed.payload).length).toBeGreaterThan(0);
   });
 
+  it('keeps a `clipped` the caller had already set, even when it cuts nothing itself', () => {
+    // A connector that truncated upstream — a MIME body cut at the parser, a transcript read to a
+    // byte budget — knows something was lost that this boundary cannot see. Clearing the marker
+    // because nothing needed cutting HERE republishes the observation as whole, and the envelope
+    // that comes out is perfectly well-formed, so nothing downstream can tell. That is the
+    // silence M-19 is about, not the truncation.
+    const sealed = sealEnvelope(envelope({ clipped: true }));
+    expect(sealed.clipped).toBe(true);
+  });
+
   it('is deterministic: the same source gives the same clipped envelope and the same id', () => {
     const payload: Record<string, unknown> = {};
     for (let i = 0; i < 40; i++) payload[`k${i}`] = 'z'.repeat(MAX_PAYLOAD_TEXT);
@@ -159,6 +169,24 @@ describe('M-19: a clipped envelope says so', () => {
       { list: Array.from({ length: 500 }, () => 'w'.repeat(4096)) },
     ]) {
       expect(boundsViolation(sealEnvelope(envelope({ payload })))).toBeNull();
+    }
+  });
+
+  it('refuses rather than emitting an envelope it could not bring inside the bounds', () => {
+    // The reduction owns `payload` and `refs`. It does not own `kind`, `source`, or
+    // `actor.external_id` — §2 states no bound for those and shortening a `kind` would change
+    // what the observation claims to be — so an oversized one survives every stage of the
+    // reduction and the envelope leaves the seal over the whole-form bound.
+    //
+    // The failure that mattered was not the size. It was that this used to be returned: an
+    // envelope with an `id` computed over a canonical form §2 forbids, stored locally, and
+    // refused by `acceptEnvelope` on every node that would ever see it, with nothing saying why.
+    // The connector is the only layer that can shorten these, so it is the layer that must hear.
+    for (const over of [
+      { kind: 'k'.repeat(MAX_ENVELOPE_OCTETS + 1) },
+      { actor: { label: 'someone', external_id: 'e'.repeat(MAX_ENVELOPE_OCTETS + 1) } },
+    ]) {
+      expect(() => sealEnvelope(envelope(over))).toThrow(EnvelopeBoundsExceeded);
     }
   });
 });

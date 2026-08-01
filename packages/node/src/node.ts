@@ -20,9 +20,10 @@ import type {
   OpenLoopItem,
   OpenLoopsInput,
   OpenLoopsOutput,
+  RejectionReason,
   VerificationLevel,
 } from '@servanda/types';
-import { ACT_TOOL_BINDINGS, ActRejectionReason, PROTOCOL_VERSION } from '@servanda/types';
+import { ACT_TOOL_BINDINGS, type ActRejectionReason, PROTOCOL_VERSION } from '@servanda/types';
 import { DEFAULT_ACCEPTANCE_WINDOW } from '@servanda/types';
 import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
 import { verifyAssertionChain, type ChainVerification } from './transitions.js';
@@ -68,6 +69,39 @@ export interface ServandaNodeOptions {
 }
 
 export const DEFAULT_BRIEF_SLOTS = 5;
+
+/**
+ * §4.3's fifteen rejection reasons projected onto the seven `act` may report.
+ *
+ * `act` defers to the transition table, and the table's vocabulary is the larger one — so the
+ * projection has to be total. It was a `.parse()`, which meant every reason without a surface name
+ * threw a ZodError out of a tool whose contract is to REFUSE, not to throw: `act({act:'done'})`
+ * with no evidence (the schema's own default) and a second `done` on a closed edge both crashed.
+ * Two of the collapses below are not this module's choice — `node-surface/act-tool.json` states
+ * `evidence-hash-required` for the first and `illegal-source-state` for the second, and those two
+ * vectors are the ones the crash was hiding.
+ *
+ * Total by type, so a new reason in `RejectionReason` cannot compile until it has an answer here.
+ * The remaining collapses to `illegal-source-state` are lossy: the surface enum has no member for
+ * "the edge itself is malformed" or "you already signed this one".
+ */
+const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
+  'wrong-signer-for-transition': 'wrong-role-for-act',
+  'signer-not-a-party': 'not-a-party',
+  'illegal-source-state': 'illegal-source-state',
+  'evidence-hash-required': 'evidence-hash-required',
+  'evidence-hash-required-for-owner-closure': 'evidence-hash-required',
+  'due-is-null': 'illegal-source-state',
+  'expiry-before-due': 'illegal-source-state',
+  'acceptance-window-not-elapsed': 'acceptance-window-not-elapsed',
+  'dispute-window-not-elapsed': 'illegal-source-state',
+  'malformed-edge-acceptance-window': 'illegal-source-state',
+  'implicit-transition-not-assertable': 'illegal-source-state',
+  'invalid-signature': 'illegal-source-state',
+  'terminal-state-reached': 'illegal-source-state',
+  'edge-id-mismatch': 'illegal-source-state',
+  'duplicate-assertion-by-same-party': 'illegal-source-state',
+};
 
 /**
  * What `intent_or_expect` says when this node holds the edge but not the plaintext — either
@@ -420,7 +454,8 @@ export class ServandaNode {
     const verification = verifyAssertionChain(edge, chain);
     const last = verification.outcomes[verification.outcomes.length - 1];
     if (!last || !last.accepted) {
-      return refuse(ActRejectionReason.parse(last?.rejection_reason ?? 'illegal-source-state'));
+      const reason = last?.rejection_reason;
+      return refuse(reason ? ACT_REJECTION[reason] : 'illegal-source-state');
     }
 
     this.vault.appendAssertion(persona, assertion);
@@ -690,12 +725,35 @@ export class ServandaNode {
    */
   brief(input: BriefInput): BriefOutput {
     const now = this.now();
-    const keys =
+    const all =
       input.persona === null || input.persona === undefined
         ? this.vault.listOrderingKeysAcrossPersonas()
         : this.vault.listOrderingKeys(this.resolvePersona(input.persona));
 
-    const ranked = keys
+    // The vault emits a key for a commitment AND a key for the edge built from it, so a proposed
+    // promise arrived here twice: once as an edge, and once as a commitment whose only advertised
+    // act is `propose` — on a record already proposed. `open_loops` has always dropped the second
+    // (`edgeCommitments`); `brief` did not, and the two §7 read tools disagreed about how many
+    // things were in the same vault. The comparison is per-persona and over hashes, so no content
+    // and no persona boundary is crossed.
+    const withEdges = new Map<string, Set<string>>();
+    const supersededByAnEdge = (key: OrderingKey): boolean => {
+      if (key.kind !== 'commitment') return false;
+      let hashes = withEdges.get(key.persona);
+      if (!hashes) {
+        hashes = new Set(
+          this.vault
+            .listEdgeIds(key.persona)
+            .map((id) => this.vault.getEdge(key.persona, id)?.commitment_hash)
+            .filter((hash): hash is string => hash !== undefined),
+        );
+        withEdges.set(key.persona, hashes);
+      }
+      return hashes.has(key.id);
+    };
+
+    const ranked = all
+      .filter((key) => !supersededByAnEdge(key))
       .map((key) => ({ key, rank: rank(key, now) }))
       .sort((a, b) => b.rank.score - a.rank.score);
 

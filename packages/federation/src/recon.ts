@@ -1,6 +1,8 @@
+import { z } from 'zod';
 import { hashCanonical } from '@servanda/crypto';
 import { verifyAssertionChain } from '@servanda/node';
 import type { Assertion, Edge, EffectiveState, RejectionReason } from '@servanda/types';
+import { Assertion as AssertionSchema, Sha256Hex } from '@servanda/types';
 import type { Vault } from '@servanda/vault';
 import { isParty, mayServeEdge } from './serve.js';
 
@@ -24,18 +26,25 @@ import { isParty, mayServeEdge } from './serve.js';
 /** §6.4: `recon_request` covers "all shared open edges". */
 const OPEN_FAMILY: readonly EffectiveState[] = ['proposed', 'open', 'pending-acceptance', 'disputed'] as const;
 
-export interface ReconEdgeRef {
-  edge_id: string;
-  latest_assertion_hash: string;
-}
+/**
+ * §6.2 gives a wire payload no shape at all (`payload: z.unknown()`), so these are the schemas
+ * that turn attacker-chosen bytes into the types below. They are the payload's only shape check
+ * — a `recon_request` whose `edges` is a string used to reach the responder as one, and a
+ * `recon_response` whose `edges` was missing threw out of ingestion, taking the rest of the
+ * delivery with it. The inbox parses with these before either type is read.
+ */
+export const ReconEdgeRefSchema = z.object({
+  edge_id: Sha256Hex,
+  latest_assertion_hash: Sha256Hex,
+});
+export const ReconRequestSchema = z.object({ edges: z.array(ReconEdgeRefSchema) });
+export const ReconResponseSchema = z.object({
+  edges: z.array(z.object({ edge_id: Sha256Hex, assertions: z.array(AssertionSchema) })),
+});
 
-export interface ReconRequest {
-  edges: ReconEdgeRef[];
-}
-
-export interface ReconResponse {
-  edges: { edge_id: string; assertions: Assertion[] }[];
-}
+export type ReconEdgeRef = z.infer<typeof ReconEdgeRefSchema>;
+export type ReconRequest = z.infer<typeof ReconRequestSchema>;
+export type ReconResponse = z.infer<typeof ReconResponseSchema>;
 
 export interface DiscardedAssertion {
   edge_id: string;
@@ -118,14 +127,47 @@ export function answerReconRequest(
 }
 
 /**
- * Apply a `recon_response`. Every incoming assertion is evaluated by the transition table in
- * the context of the chain this node already holds; only the accepted ones are stored.
+ * The order a responder's assertions are evaluated in.
  *
- * Ordering: incoming assertions are appended after the local chain, sorted by `asserted_at`
- * with `sig` as the tie-break. A deterministic order matters because the transition table is
- * order-sensitive, and a peer that could choose our evaluation order could choose our state.
+ * The transition table is order-sensitive, so whoever chooses the order chooses the outcome:
+ * replay an honest `[proposed, confirmed]` back-to-front and `confirmed` has no legal source
+ * state, so it is dropped and the edge settles at `proposed`. Normalising by `asserted_at` takes
+ * that choice away from a sender whose timestamps are ordered. Both §6.4 and §6.6 appliers use
+ * this — the divergence between them WAS the bug, so there is one comparator rather than two.
+ *
+ * There is deliberately NO tie-break, and the sort must be a stable one. §4.2 assertions carry no
+ * `prev` link, so `asserted_at` is the only causal signal on the wire and two assertions made in
+ * the same second are common (a propose and its confirmation inside one clock tick tie in every
+ * fixture here). Breaking those ties by `sig` — as this did — orders them by signature bytes,
+ * which is causally meaningless: it dropped `confirmed` from perfectly honest chains on roughly
+ * half of all edges, decided by a hash. Worse, `sig` follows content, so a party willing to grind
+ * the sub-second digits of its own `asserted_at` could pick which of two same-instant assertions
+ * sorted first, i.e. choose the outcome the tie-break was supposed to deny it. A stable sort
+ * leaves tied assertions in the order the sender listed them, which for an honest peer IS its
+ * causal chain — the best signal that exists — and for a hostile one is a divergence §6.4 heals
+ * on the next exchange, since a rejected assertion is never stored and is re-offered.
  */
-export function applyReconResponse(vault: Vault, persona: string, response: ReconResponse): ReconApplyResult {
+export function inWireOrder(a: Assertion, b: Assertion): number {
+  return Date.parse(a.asserted_at) - Date.parse(b.asserted_at);
+}
+
+/**
+ * Apply a `recon_response` from `responder`. Every incoming assertion is evaluated by the
+ * transition table in the context of the chain this node already holds; only the accepted ones
+ * are stored.
+ *
+ * §6.4 calls reconciliation "pairwise sync between nodes sharing edges", so BOTH ends are
+ * checked: this persona must be a party, and so must the responder. Only checking our own side
+ * let any persona that could reach us push a chain for an edge it has no part in — every
+ * assertion still had to be signed and legal, but "who may hand me a chain for this edge" is a
+ * separate question from "is this chain well-formed", and it was going unasked.
+ */
+export function applyReconResponse(
+  vault: Vault,
+  persona: string,
+  responder: string,
+  response: ReconResponse,
+): ReconApplyResult {
   const result: ReconApplyResult = { accepted: [], discarded: [], ignored: [] };
 
   for (const entry of response.edges) {
@@ -133,16 +175,14 @@ export function applyReconResponse(vault: Vault, persona: string, response: Reco
     // Reconciliation never introduces an edge. §6.4 exchanges assertions between nodes that
     // already share the edge; a new edge arrives as a `propose` and is admitted by the inbox,
     // where the anti-spam budget (§6.5) applies.
-    if (!edge || !isParty(edge, persona)) {
+    if (!edge || !isParty(edge, persona) || !isParty(edge, responder)) {
       result.ignored.push(entry.edge_id);
       continue;
     }
 
     const local = vault.getAssertions(persona, entry.edge_id);
     const held = new Set(local.map((a) => a.sig));
-    const incoming = entry.assertions
-      .filter((a) => !held.has(a.sig))
-      .sort((x, y) => Date.parse(x.asserted_at) - Date.parse(y.asserted_at) || x.sig.localeCompare(y.sig));
+    const incoming = entry.assertions.filter((a) => !held.has(a.sig)).sort(inWireOrder);
     if (incoming.length === 0) continue;
 
     const candidate = [...local, ...incoming];

@@ -87,12 +87,32 @@ export function envelopeId(envelopeSansId: unknown): string {
   return sha256Hex(concatBytes(domainTag(ENVELOPE_ID_TAG), canonicalBytes(envelopeSansId)));
 }
 
+/**
+ * §4.1 concatenates the three hex fields with no separator between them, and that is ratified
+ * exactly as implemented — the encoding is frozen and is not what this guard changes.
+ *
+ * What makes the concatenation unambiguous is that each field is exactly 64 octets, and nothing
+ * enforced it. A 63-octet `commitment_hash` beside a 65-octet `owner` produces the same preimage
+ * as the well-formed pair beside it, so two distinct edges share one `edge_id` — and an `edge_id`
+ * is what an assertion chain is filed under. `proposed_at` needs no width because it is last:
+ * nothing follows it to slide across.
+ *
+ * Rejecting a malformed field changes no valid identifier. Every input §4.1 permits produces
+ * exactly the digest it produced before.
+ */
+const HEX64 = /^[0-9a-f]{64}$/;
+
 export function edgeId(input: {
   commitment_hash: string;
   owner: string;
   owed_to: string;
   proposed_at: string;
 }): string {
+  for (const field of ['commitment_hash', 'owner', 'owed_to'] as const) {
+    if (!HEX64.test(input[field])) {
+      throw new TypeError(`edge_id: ${field} must be 64 lowercase hex characters, got ${JSON.stringify(input[field])}`);
+    }
+  }
   return sha256Hex(
     concatBytes(
       domainTag(EDGE_ID_TAG),

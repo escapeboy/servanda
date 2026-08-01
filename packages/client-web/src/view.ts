@@ -269,7 +269,12 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
     // A slot whose primary action is null has nothing that signs — lead with whatever the card
     // already offers rather than promoting a control that does nothing.
     const led = slot.primary_action === null ? card.actions : leadWith(card, slot.primary_action.tool);
-    cards.push({ ...card, what: slot.headline, actions: led });
+    // `slot.headline` is not read. §7 defines it as the commitment's intent "as they wrote
+    // it", which is the item's own words — and the item is already in hand. A schema cannot
+    // check that claim (`z.string()` takes copy as readily as content), and `<p class="what">`
+    // is the card's accessible name, so a headline that diverged would be the node wording the
+    // loudest thing on the surface. The brief decides what leads; `open_loops` says what it is.
+    cards.push({ ...card, actions: led });
   }
 
   return {

@@ -8,13 +8,21 @@ export function toHex(bytes: Uint8Array): string {
   return s;
 }
 
+/**
+ * `Number.parseInt` alone is not a hex check: it skips leading whitespace, accepts a sign, and
+ * stops at the first character it cannot read instead of failing. Per byte-pair that quietly
+ * turned `-1` into `0xff`, `" f"` into `0x0f` and `"1z"` into `0x01` — two different strings
+ * decoding to one key, which is the single thing a decoder at this boundary must not do.
+ */
+const HEX_BYTE = /^[0-9a-fA-F]{2}$/;
+
 export function fromHex(hex: string): Uint8Array {
   if (hex.length % 2 !== 0) throw new TypeError(`odd-length hex string: ${hex.length} chars`);
   const out = new Uint8Array(hex.length / 2);
   for (let i = 0; i < out.length; i++) {
-    const byte = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    if (Number.isNaN(byte)) throw new TypeError(`invalid hex at offset ${i * 2}`);
-    out[i] = byte;
+    const pair = hex.slice(i * 2, i * 2 + 2);
+    if (!HEX_BYTE.test(pair)) throw new TypeError(`invalid hex at offset ${i * 2}`);
+    out[i] = Number.parseInt(pair, 16);
   }
   return out;
 }

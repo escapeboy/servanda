@@ -66,6 +66,19 @@ function perCase(fn: (solo: Solo, c: VectorCase) => void): void {
 }
 
 describe('M-14: invalid assertions arriving over the wire are discarded', () => {
+  /**
+   * A declared budget, not a global one.
+   *
+   * These two cases each replay all 23 negative vectors, standing a vault up per case — Argon2id
+   * at the §9.3 minimum, ~15 s unloaded and roughly double that when the whole suite competes for
+   * cores. They crossed the 30 s `testTimeout` under load and reported FAILURE for want of a
+   * scheduling slot, with every assertion sound. `vitest.config.ts` keeps that 30 s deliberately
+   * so a slow assertion still means something is wrong; the right answer is therefore to say what
+   * THESE cost rather than to relax the rule for every test in the repo. A replay loop over an
+   * oracle is setup-shaped work that happens to live in a test body.
+   */
+  const REPLAY_BUDGET = 120_000;
+
   it('every negative vector delivered as a §6.4 recon_response is rejected identically', () => {
     perCase((solo, c) => {
       const message = signMessage(
@@ -96,7 +109,7 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
         `${c.name}: stored chain`,
       ).toEqual(accepted);
     });
-  });
+  }, REPLAY_BUDGET);
 
   it('every negative vector delivered one §6.2 `assert` at a time reaches the same state', () => {
     perCase((solo, c) => {
@@ -116,7 +129,7 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
       }
       expect(stateOf(solo, c.edge), `${c.name}: final state via assert`).toBe(c.expected_final_state);
     });
-  });
+  }, REPLAY_BUDGET);
 
   it('a `propose` whose assertion violates the table creates no edge at all', () => {
     // The strongest form of "discarded": the vector rejected at index 0 is
