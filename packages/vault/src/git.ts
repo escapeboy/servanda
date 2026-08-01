@@ -19,19 +19,27 @@ export class VaultGitError extends Error {
 }
 
 /**
- * `gc.auto=0`, and it is not a performance tweak.
+ * Two settings, and they are not a performance tweak. A library-managed store should not mutate
+ * itself while its owner believes it is idle.
  *
- * git forks a DETACHED background `gc --auto` after commits, which keeps writing into
- * `.git/objects` after the synchronous command has returned. For a vault that is the wrong
- * behaviour on its own terms — a library-managed store should not mutate itself while its owner
- * believes it is idle — and it is also what made teardown flaky on CI: `rmSync` raced the
- * background process and threw `ENOTEMPTY: rmdir '.git/objects'` from `afterAll`, failing a whole
- * test file in which every assertion had passed.
+ * After a commit, git forks a DETACHED background process that keeps writing into `.git/objects`
+ * after the synchronous command has returned. On CI that raced `rmSync` and threw
+ * `ENOTEMPTY: rmdir '.git/objects/pack'` from teardown, failing a whole test file in which every
+ * assertion had passed.
  *
- * Retries were the first remedy and they treated the symptom; this removes the process that
- * races. A vault is small and append-only, so nothing here needs collecting behind our back.
+ * **`maintenance.auto=false` is the one that stops it.** Modern git does not fork `gc --auto`
+ * directly; it forks `git maintenance run --auto`, and `maintenance.auto` is the switch for
+ * whether that happens at all (git-config(1): "controls whether some commands run
+ * `git maintenance run --auto` after doing their normal work"). `gc.auto=0` only tells the gc
+ * TASK it has nothing to do — the process is still forked, still opens the repository, and still
+ * touches `.git` on its way to deciding that. That is why an earlier fix setting `gc.auto=0`
+ * alone held on a developer machine running git 2.33 and failed on CI's newer git.
+ *
+ * `gc.auto=0` stays: it is the guard for a maintenance run reached by any other route, and it
+ * costs nothing. A vault is small and append-only, so nothing here needs collecting behind our
+ * back either way.
  */
-const GIT_CONFIG = ['-c', 'gc.auto=0'];
+export const GIT_CONFIG = ['-c', 'maintenance.auto=false', '-c', 'gc.auto=0'];
 
 function git(dir: string, args: string[]): string {
   try {

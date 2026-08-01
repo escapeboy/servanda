@@ -46,10 +46,10 @@ export class GitTransportError extends Error {
 
 function git(dir: string, args: string[]): string {
   try {
-    // `gc.auto=0` for the same reason the vault sets it: git forks a detached background
-    // `gc --auto` after commits, which keeps writing to `.git/objects` after the synchronous
-    // call returns. See packages/vault/src/git.ts.
-    return execFileSync('git', ['-c', 'gc.auto=0', ...args], {
+    // Same two settings the vault sets, for the same reason and in the same order of importance:
+    // `maintenance.auto=false` stops git forking a detached background process after a commit,
+    // `gc.auto=0` only makes that process decide it has no work. See packages/vault/src/git.ts.
+    return execFileSync('git', ['-c', 'maintenance.auto=false', '-c', 'gc.auto=0', ...args], {
       cwd: dir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

@@ -97,7 +97,16 @@ describe('§6.1 hub transport', () => {
     await client(A).send(B.personaId, note(A));
     const stored = hub.visibleState()[0]!;
     // A dishonest relay flips a ciphertext byte. §6.3: fabrication is caught at the recipient.
-    stored.envelope.sealed.ciphertext = `ff${stored.envelope.sealed.ciphertext.slice(2)}`;
+    //
+    // XOR rather than an assignment. This line used to write a literal `ff` over the first byte,
+    // which tampers with nothing whenever the byte is ALREADY `ff` — and the ciphertext is HPKE
+    // output, so it is fresh randomness on every run. One run in 256 asserted that an untampered
+    // envelope decrypts to nothing, and failed. It went red on CI having passed locally minutes
+    // earlier, which is how a probabilistic test announces itself.
+    const original = stored.envelope.sealed.ciphertext;
+    const flipped = (parseInt(original.slice(0, 2), 16) ^ 0x01).toString(16).padStart(2, '0');
+    stored.envelope.sealed.ciphertext = `${flipped}${original.slice(2)}`;
+    expect(stored.envelope.sealed.ciphertext).not.toBe(original);
     expect(await client(B).receive(B.personaId)).toEqual([]);
   });
 

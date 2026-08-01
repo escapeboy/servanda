@@ -1,10 +1,11 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Assertion, type Commitment, type Edge } from '@servanda/types';
-import { logMessages, ScopeViolation, Vault, VaultGitError, type PersonaRecord } from '../src/index.js';
+import { GIT_CONFIG, logMessages, ScopeViolation, Vault, VaultGitError, type PersonaRecord } from '../src/index.js';
 
 /**
  * @servanda/vault — the sovereign local store (L0).
@@ -196,5 +197,50 @@ describe('vault: persona scoping', () => {
     vault.putCommitment(p0.personaId, commitment('mine'));
     expect(vault.listCommitments(p0.personaId)).toHaveLength(1);
     expect(vault.listCommitments(p1.personaId)).toHaveLength(0);
+  });
+});
+
+describe('vault: nothing keeps writing after a commit returns', () => {
+  /**
+   * A vault must not mutate itself while its owner believes it is idle, and the way that breaks
+   * is invisible in an ordinary assertion: git forks a DETACHED maintenance process after a
+   * commit, so every assertion passes and teardown then dies on `ENOTEMPTY .git/objects/pack`
+   * — on CI, on some git versions, sometimes.
+   *
+   * This has been mis-fixed twice: first with `rmSync` retries (treating the symptom), then with
+   * `gc.auto=0` (the wrong knob — it tells the gc TASK it has no work, while git still forks the
+   * process that decides that). Both looked green locally. So this test observes the fork itself
+   * through `GIT_TRACE` rather than waiting to be told about it by a flaky teardown.
+   */
+  it('forks no background maintenance process', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'servanda-vault-trace-'));
+    dirs.push(dir);
+    const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+    vault.putPersona(personaRecord(p0, 0, 'me'));
+
+    // GIT_CONFIG is imported from the vault's own module rather than restated here. A test that
+    // spelled the flags out would keep passing if someone changed the real ones, which is the
+    // failure mode this whole file exists to stop.
+    //
+    // GIT_TRACE is pointed at a FILE, not at `1`. git writes the trace to stderr, and
+    // `execFileSync` returns stdout only — asserting on its return value compares two empty
+    // strings and passes whatever git does. Verified by reverting the fix and watching this go
+    // red, which is the only thing that distinguishes a test from a decoration.
+    writeFileSync(join(dir, 'trace-probe'), 'x');
+    const traceFile = join(dir, 'git-trace.log');
+    const run = (args: string[]): void => {
+      execFileSync('git', [...GIT_CONFIG, ...args], {
+        cwd: dir,
+        encoding: 'utf8',
+        env: { ...process.env, GIT_TRACE: traceFile },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    };
+    run(['add', '-A']);
+    run(['commit', '--quiet', '-m', 'probe']);
+    const trace = readFileSync(traceFile, 'utf8');
+    expect(trace).toMatch(/run_command|built-in/); // the trace really was captured
+    expect(trace).not.toMatch(/run_command:.*maintenance/);
+    expect(trace).not.toMatch(/run_command:.*gc /);
   });
 });
