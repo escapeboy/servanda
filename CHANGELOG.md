@@ -7,6 +7,28 @@ All notable changes to this project are documented here. The format follows
 Version numbers below 1.0.0 carry no compatibility promise, and these releases have used it: every
 one so far changes derived keys. A vault does not migrate across any of them.
 
+## [Unreleased]
+
+### Added
+
+- **§2 envelope conformance vectors, replayed here** (`packages/envelope/test/envelope-vectors.test.ts`,
+  upstream `vectors/envelope/`). Until now M-19 and the §2 `id` preimage were enforced only by
+  tests this project wrote about its own code — §8 said so itself, and `GOVERNANCE.md` draws the
+  consequence that a behaviour the suite does not cover is not yet a conformance requirement. Two
+  MUSTs were optional in practice.
+
+  Replaying them found the disagreement worth having: the vectors and this implementation counted
+  payload nesting differently. **The vectors were wrong** — §2 bounds the level of a *value*, so
+  the scalar at the bottom of a chain occupies a level, and the generator's measure had been
+  counting containers and reading 7 where §2 reads 8. It agreed with itself, which is why it
+  passed alone. Fixed upstream.
+
+- **Upstream [#36](https://github.com/escapeboy/servanda-protocol/issues/36)**, filed rather than
+  resolved here: §2 says two nodes observing one event MUST compute the same envelope `id`, but the
+  preimage includes `persona` and the observing node's own `received_at`, neither of which the
+  sentence names and neither of which independent observers can agree on. The vectors encode the
+  construction, which is unambiguous, and take no position on the sentence.
+
 ## [0.4.0-pre] — 2026-08-01
 
 ### Changed — breaking

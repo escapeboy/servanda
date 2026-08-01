@@ -25,9 +25,12 @@ import {
  * silently truncated to look short are indistinguishable downstream, and §2 forbids both
  * silent truncation and silent dropping in the same sentence.
  *
- * §8 records that the conformance suite cannot reach this rule — there is no envelope vector
- * family, so the §2 `id` preimage has no oracle. These tests are therefore the whole of the
- * enforcement, which is a reason to be more explicit here rather than less.
+ * These used to be the whole of the enforcement — §8 recorded that the suite could not reach the
+ * rule because no envelope vector family existed. It does now, and `../envelope-vectors.test.ts`
+ * replays it: the bounds, the id preimage, and the clipping boundary are checked against numbers
+ * written upstream rather than against this package's opinion of itself. What stays here is the
+ * behaviour a vector cannot express — that an over-long observation comes back clipped AND
+ * marked, and that the marking survives.
  */
 
 const PERSONA = 'a'.repeat(64);

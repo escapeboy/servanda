@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/envelope-id.schema.json",
+  "title": "envelope id vectors (spec §2)",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner"
+    }
+  ],
+  "required": [
+    "description",
+    "domain_tag",
+    "id_removal",
+    "determinism_scope",
+    "base_id",
+    "cases"
+  ],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": {
+      "type": "string"
+    },
+    "domain_tag": {
+      "type": "object",
+      "description": "§0: the identifier preimage is tag || 0x00 || JCS(envelope sans id).",
+      "required": [
+        "tag",
+        "separator",
+        "note"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tag": {
+          "const": "servanda/0.1:envelope_id"
+        },
+        "separator": {
+          "const": "0x00"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "id_removal": {
+      "type": "object",
+      "description": "An envelope carrying `id` hashes to the base id once `id` is removed.",
+      "required": [
+        "description",
+        "envelope_with_id",
+        "id_after_removal"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "envelope_with_id": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+            }
+          }
+        },
+        "id_after_removal": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        }
+      }
+    },
+    "determinism_scope": {
+      "type": "object",
+      "description": "What the preimage covers, stated so the §2 determinism sentence can be read against it.",
+      "required": [
+        "note",
+        "members_in_preimage"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "type": "string"
+        },
+        "members_in_preimage": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "base_id": {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "envelope_sans_id",
+          "canonical",
+          "id_preimage_hex",
+          "id",
+          "same_id_as_base"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "envelope_sans_id": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/envelopeSansId"
+          },
+          "canonical": {
+            "type": "string",
+            "minLength": 1
+          },
+          "id_preimage_hex": {
+            "type": "string",
+            "pattern": "^[0-9a-f]+$"
+          },
+          "id": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          },
+          "same_id_as_base": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

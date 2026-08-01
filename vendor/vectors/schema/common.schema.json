@@ -14,31 +14,68 @@
       "description": "Lowercase hex Ed25519 signature."
     },
     "hex64OrNull": {
-      "oneOf": [{ "$ref": "#/$defs/hex64" }, { "type": "null" }]
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hex64"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "rfc3339": {
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"
     },
     "rfc3339OrNull": {
-      "oneOf": [{ "$ref": "#/$defs/rfc3339" }, { "type": "null" }]
+      "oneOf": [
+        {
+          "$ref": "#/$defs/rfc3339"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "protocolVersion": {
       "const": "servanda/0.1"
     },
     "banner": {
       "type": "object",
-      "required": ["suite_version", "protocol_version", "spec_reference", "generated_by"],
+      "required": [
+        "suite_version",
+        "protocol_version",
+        "spec_reference",
+        "generated_by"
+      ],
       "properties": {
-        "suite_version": { "type": "string" },
-        "protocol_version": { "$ref": "#/$defs/protocolVersion" },
-        "spec_reference": { "type": "string", "minLength": 1 },
-        "generated_by": { "type": "string" }
+        "suite_version": {
+          "type": "string"
+        },
+        "protocol_version": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "spec_reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generated_by": {
+          "type": "string"
+        }
       }
     },
     "act": {
       "description": "spec/07-node-surface.md: the one closed act vocabulary, shared by open_loops[].actions and brief.slots[].primary_action.",
-      "enum": ["done", "release", "supersede", "delegate", "ping", "confirm", "dismiss", "propose"]
+      "enum": [
+        "done",
+        "release",
+        "supersede",
+        "delegate",
+        "ping",
+        "confirm",
+        "dismiss",
+        "propose"
+      ]
     },
     "effectiveState": {
       "description": "The state a node computes from an assertion chain. `confirmed` folds into `open`; `pending-acceptance` models the §4.4 window and is never an assertion's `state`.",
@@ -55,33 +92,81 @@
       ]
     },
     "verificationLevel": {
-      "enum": ["0", "1", "ext", "2", "3"]
+      "enum": [
+        "0",
+        "1",
+        "ext",
+        "2",
+        "3"
+      ]
     },
     "advertisedAction": {
       "type": "object",
-      "required": ["act", "tool", "args"],
+      "required": [
+        "act",
+        "tool",
+        "args"
+      ],
       "additionalProperties": false,
       "properties": {
-        "act": { "$ref": "#/$defs/act" },
-        "tool": { "type": ["string", "null"] },
-        "args": { "type": "object" }
+        "act": {
+          "$ref": "#/$defs/act"
+        },
+        "tool": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "args": {
+          "type": "object"
+        }
       },
       "allOf": [
         {
           "description": "§7: where `tool` is null, `args` MUST be {}.",
-          "if": { "properties": { "tool": { "type": "null" } }, "required": ["tool"] },
-          "then": { "properties": { "args": { "maxProperties": 0 } } }
+          "if": {
+            "properties": {
+              "tool": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "tool"
+            ]
+          },
+          "then": {
+            "properties": {
+              "args": {
+                "maxProperties": 0
+              }
+            }
+          }
         }
       ]
     },
     "viewer": {
       "type": "object",
-      "required": ["label", "persona_id", "role"],
+      "required": [
+        "label",
+        "persona_id",
+        "role"
+      ],
       "additionalProperties": false,
       "properties": {
-        "label": { "type": "string" },
-        "persona_id": { "$ref": "#/$defs/hex64" },
-        "role": { "enum": ["owner", "owed_to", "non-party"] }
+        "label": {
+          "type": "string"
+        },
+        "persona_id": {
+          "$ref": "#/$defs/hex64"
+        },
+        "role": {
+          "enum": [
+            "owner",
+            "owed_to",
+            "non-party"
+          ]
+        }
       }
     },
     "actTooling": {
@@ -91,11 +176,21 @@
       "maxItems": 8,
       "items": {
         "type": "object",
-        "required": ["act", "tool"],
+        "required": [
+          "act",
+          "tool"
+        ],
         "additionalProperties": false,
         "properties": {
-          "act": { "$ref": "#/$defs/act" },
-          "tool": { "type": ["string", "null"] }
+          "act": {
+            "$ref": "#/$defs/act"
+          },
+          "tool": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
     },
@@ -129,20 +224,63 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "v": { "$ref": "#/$defs/protocolVersion" },
-        "type": { "const": "edge" },
-        "edge_id": { "$ref": "#/$defs/hex64" },
-        "commitment_hash": { "$ref": "#/$defs/hex64" },
-        "owner": { "$ref": "#/$defs/hex64" },
-        "owed_to": { "$ref": "#/$defs/hex64" },
-        "proposed_at": { "$ref": "#/$defs/rfc3339" },
-        "due": { "$ref": "#/$defs/rfc3339OrNull" },
-        "closure_policy": { "enum": ["on-evidence", "on-acceptance"] },
-        "acceptance_window": {
-          "oneOf": [{ "type": "string", "pattern": "^P" }, { "type": "null" }]
+        "v": {
+          "$ref": "#/$defs/protocolVersion"
         },
-        "blocked_by": { "type": "array", "items": { "$ref": "#/$defs/hex64" } },
-        "supersedes": { "oneOf": [{ "$ref": "#/$defs/hex64" }, { "type": "null" }] }
+        "type": {
+          "const": "edge"
+        },
+        "edge_id": {
+          "$ref": "#/$defs/hex64"
+        },
+        "commitment_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "owner": {
+          "$ref": "#/$defs/hex64"
+        },
+        "owed_to": {
+          "$ref": "#/$defs/hex64"
+        },
+        "proposed_at": {
+          "$ref": "#/$defs/rfc3339"
+        },
+        "due": {
+          "$ref": "#/$defs/rfc3339OrNull"
+        },
+        "closure_policy": {
+          "enum": [
+            "on-evidence",
+            "on-acceptance"
+          ]
+        },
+        "acceptance_window": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^P"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blocked_by": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hex64"
+          }
+        },
+        "supersedes": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
       }
     },
     "assertion": {
@@ -159,14 +297,118 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "v": { "$ref": "#/$defs/protocolVersion" },
-        "type": { "const": "assertion" },
-        "edge_id": { "$ref": "#/$defs/hex64" },
-        "state": { "$ref": "#/$defs/assertionState" },
-        "asserted_at": { "$ref": "#/$defs/rfc3339" },
-        "by": { "$ref": "#/$defs/hex64" },
-        "evidence_hash": { "$ref": "#/$defs/hex64OrNull" },
-        "sig": { "$ref": "#/$defs/hex128" }
+        "v": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "type": {
+          "const": "assertion"
+        },
+        "edge_id": {
+          "$ref": "#/$defs/hex64"
+        },
+        "state": {
+          "$ref": "#/$defs/assertionState"
+        },
+        "asserted_at": {
+          "$ref": "#/$defs/rfc3339"
+        },
+        "by": {
+          "$ref": "#/$defs/hex64"
+        },
+        "evidence_hash": {
+          "$ref": "#/$defs/hex64OrNull"
+        },
+        "sig": {
+          "$ref": "#/$defs/hex128"
+        }
+      }
+    },
+    "envelopeSansId": {
+      "type": "object",
+      "description": "§2 envelope with `id` absent — `id` is never part of its own preimage.",
+      "required": [
+        "v",
+        "type",
+        "source",
+        "kind",
+        "occurred_at",
+        "received_at",
+        "actor",
+        "payload",
+        "refs",
+        "persona"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+        },
+        "type": {
+          "const": "envelope"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "occurred_at": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+        },
+        "received_at": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+        },
+        "actor": {
+          "type": "object",
+          "required": [
+            "label",
+            "external_id"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "external_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "payload": {
+          "type": "object"
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "persona": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "clipped": {
+          "description": "§2: true or ABSENT. Never false — it is inside the canonical form the id hashes over.",
+          "const": true
+        }
       }
     }
   }

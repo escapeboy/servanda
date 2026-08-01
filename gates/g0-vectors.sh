@@ -30,6 +30,8 @@ fi
 required=(
   canonicalization/jcs.json
   hashing/commitment-hash.json
+  envelope/envelope-id.json
+  envelope/bounds.json
   signatures/signatures.json
   derivation/persona-keys.json
   transitions/valid.json

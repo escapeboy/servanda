@@ -1,0 +1,484 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/02-signal-envelope.md §2, spec/00-overview.md (domain separation)",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "id = sha256(\"servanda/0.1:envelope_id\" || 0x00 || JCS(envelope with `id` removed)). Cases with same_id_as_base=false prove the member reaches the digest. `id_preimage_hex` is the complete preimage as octets, tag and separator included, so the domain tag is checkable without reconstructing it.",
+  "domain_tag": {
+    "tag": "servanda/0.1:envelope_id",
+    "separator": "0x00",
+    "note": "§0: identifier preimages are domain-separated by a fixed ASCII tag followed by one 0x00 octet. The tag contains no 0x00, so it is self-delimiting."
+  },
+  "id_removal": {
+    "description": "An envelope that already carries `id` hashes to the same value once `id` is removed. This is what \"sans id\" means and it is the only case that cannot be written as a patch over the base.",
+    "envelope_with_id": {
+      "v": "servanda/0.1",
+      "type": "envelope",
+      "source": "github",
+      "kind": "pr_comment",
+      "occurred_at": "2026-07-25T08:41:12Z",
+      "received_at": "2026-07-25T08:41:19Z",
+      "actor": {
+        "label": "octavia",
+        "external_id": "4412"
+      },
+      "payload": {
+        "body": "I will add the integration tests for PaymentRetryService by Friday.",
+        "pr": 219
+      },
+      "refs": [
+        {
+          "kind": "url",
+          "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+        },
+        {
+          "kind": "commit",
+          "value": "9f2b1c4"
+        }
+      ],
+      "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+      "id": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "id_after_removal": "aecc963ee549fe95758042ec7e2396edd67832d09c18b1e54e81481910c29ad2"
+  },
+  "determinism_scope": {
+    "note": "§2 says two nodes observing the same source event and emitting the same source, kind, timestamps, actor, payload and refs MUST compute the same id. That list does not name `persona`, and `received_at` is the observing node’s own clock — yet both are members of the canonical form and both reach the digest, as `differs-in-persona` and `differs-in-received-at` show. These vectors encode the construction §2 defines (sha256 over JCS of the envelope sans id) and take no position on the sentence. See the upstream issue linked from the family README.",
+    "members_in_preimage": [
+      "v",
+      "type",
+      "source",
+      "kind",
+      "occurred_at",
+      "received_at",
+      "actor",
+      "payload",
+      "refs",
+      "persona",
+      "clipped (when present)"
+    ]
+  },
+  "base_id": "aecc963ee549fe95758042ec7e2396edd67832d09c18b1e54e81481910c29ad2",
+  "cases": [
+    {
+      "name": "base",
+      "description": "Reference envelope; every other case is compared against this id.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "aecc963ee549fe95758042ec7e2396edd67832d09c18b1e54e81481910c29ad2",
+      "same_id_as_base": true
+    },
+    {
+      "name": "differs-in-source",
+      "description": "`source` is inside the canonical form, so it reaches the id.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "sentry",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"sentry\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a2273656e747279222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "587a1e214de5cba9d9c37757a7a064af9f10103ccf637bea9f5bc40602a7f072",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-kind",
+      "description": "`kind` reaches the id.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "push",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"push\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270757368222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "c7c7b2a7f796fcf20789680bb467126d18e8631d57394b897eb3c96f2d11e654",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-occurred-at",
+      "description": "When the event happened reaches the id.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:13Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:13Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31335a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "d5fef8d13ffd16f0d9a48a027bfa4c378916a46610954ad55723f26634773968",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-received-at",
+      "description": "`received_at` is the OBSERVING node’s clock, and it reaches the id like every other member. Two nodes that saw the same event at different moments therefore compute different ids — see the note on `determinism_scope`.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:20Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:20Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a32305a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "73d320ed8409c867f5dc1b1fe877df44f5f8dd8e0b7dd02010ae2a4cc2380e73",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-actor-label",
+      "description": "`actor.label` reaches the id.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia-bot",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia-bot\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f6374617669612d626f74227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "b0a7810b74ab743ccafe36be9ed3d899513f358ae14aa079b356ef3ad88c3118",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-actor-external-id-null",
+      "description": "null is hashed as the JSON literal, not omitted — an absent external_id and a null one are the same document only because the schema writes null.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": null
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":null,\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a6e756c6c2c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "4361ae6a9b7ba6aaacdcba7b05bfa8f728327f83abd3790984a7112a474dee68",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-payload",
+      "description": "`payload` is opaque to the core but not to the digest.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests by Monday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests by Monday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e207465737473206279204d6f6e6461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "40df6b33a3e18e168fdf2ca099d1190c3f11e0e90c155d64466428489deff716",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-refs-order",
+      "description": "JCS sorts OBJECT members; it does not reorder arrays. `refs` order is therefore part of the identity, and a connector that emits them in a different order emits a different envelope.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          },
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"commit\",\"value\":\"9f2b1c4\"},{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d2c7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "4ab6d1bc30f1686d524577a6ddc9722802ca816c37b9dec444cc695bee0d0a2d",
+      "same_id_as_base": false
+    },
+    {
+      "name": "differs-in-persona",
+      "description": "`persona` is a member of the envelope, so it reaches the id. Two personas observing one event compute two ids. This case exists to make that consequence checkable rather than inferred — see `determinism_scope`.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2237326432623433363063313261336265303263336464343039323431306331386331383837303938353839316537613039396439346139336533623338633066222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "30038a3293d4c44aa093c5ceff00554652d41d896b5201407a7edeecf6f26dcb",
+      "same_id_as_base": false
+    },
+    {
+      "name": "clipped-true-changes-the-id",
+      "description": "M-19’s marking is a member of the envelope, not metadata beside it: an envelope that had to be clipped is a different document from one that did not.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "clipped": true
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"clipped\":true,\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"I will add the integration tests for PaymentRetryService by Friday.\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c22636c6970706564223a747275652c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22492077696c6c206164642074686520696e746567726174696f6e20746573747320666f72205061796d656e74526574727953657276696365206279204672696461792e222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "21a438bf617f0c230fd14e5e1fe63417be0e48c8074b8a65bef3925f49988c4f",
+      "same_id_as_base": false
+    },
+    {
+      "name": "unicode-payload",
+      "description": "Non-ASCII payload, exercising JCS string handling inside the id preimage.",
+      "envelope_sans_id": {
+        "v": "servanda/0.1",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "Изпрати офертата — до петък 😀",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "canonical": "{\"actor\":{\"external_id\":\"4412\",\"label\":\"octavia\"},\"kind\":\"pr_comment\",\"occurred_at\":\"2026-07-25T08:41:12Z\",\"payload\":{\"body\":\"Изпрати офертата — до петък 😀\",\"pr\":219},\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"received_at\":\"2026-07-25T08:41:19Z\",\"refs\":[{\"kind\":\"url\",\"value\":\"https://github.com/acme/billing/pull/219#issuecomment-1\"},{\"kind\":\"commit\",\"value\":\"9f2b1c4\"}],\"source\":\"github\",\"type\":\"envelope\",\"v\":\"servanda/0.1\"}",
+      "id_preimage_hex": "73657276616e64612f302e313a656e76656c6f70655f6964007b226163746f72223a7b2265787465726e616c5f6964223a2234343132222c226c6162656c223a226f637461766961227d2c226b696e64223a2270725f636f6d6d656e74222c226f636375727265645f6174223a22323032362d30372d32355430383a34313a31325a222c227061796c6f6164223a7b22626f6479223a22d098d0b7d0bfd180d0b0d182d0b820d0bed184d0b5d180d182d0b0d182d0b020e2809420d0b4d0be20d0bfd0b5d182d18ad0ba20f09f9880222c227072223a3231397d2c22706572736f6e61223a2261386134396166346538393763353561626161623637643439333363313433393564376135643265646531623434323139383139373034363838363433353161222c2272656365697665645f6174223a22323032362d30372d32355430383a34313a31395a222c2272656673223a5b7b226b696e64223a2275726c222c2276616c7565223a2268747470733a2f2f6769746875622e636f6d2f61636d652f62696c6c696e672f70756c6c2f323139236973737565636f6d6d656e742d31227d2c7b226b696e64223a22636f6d6d6974222c2276616c7565223a2239663262316334227d5d2c22736f75726365223a22676974687562222c2274797065223a22656e76656c6f7065222c2276223a2273657276616e64612f302e31227d",
+      "id": "4574fc2538ef64b6d22819eaf3558adc4974319a72c68ca224fe31dbd68d505e",
+      "same_id_as_base": false
+    }
+  ]
+}

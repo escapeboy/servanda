@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/envelope-bounds.schema.json",
+  "title": "M-19 envelope bound vectors (spec §2)",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner"
+    }
+  ],
+  "required": [
+    "description",
+    "bounds",
+    "clipping",
+    "canonicalizer_refusal",
+    "cases"
+  ],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": {
+      "type": "string"
+    },
+    "bounds": {
+      "type": "object",
+      "description": "§2's numbers, emitted as data so a consumer asserts against them rather than restating them.",
+      "required": [
+        "canonical_form_octets",
+        "payload_depth_below_payload",
+        "refs_entries",
+        "ref_value_octets",
+        "actor_label_octets",
+        "payload_string_octets",
+        "canonicalizer_refusal_depth"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "canonical_form_octets": {
+          "const": 65536
+        },
+        "payload_depth_below_payload": {
+          "const": 8
+        },
+        "refs_entries": {
+          "const": 32
+        },
+        "ref_value_octets": {
+          "const": 2048
+        },
+        "actor_label_octets": {
+          "const": 200
+        },
+        "payload_string_octets": {
+          "const": 8192
+        },
+        "canonicalizer_refusal_depth": {
+          "const": 256
+        }
+      }
+    },
+    "clipping": {
+      "type": "object",
+      "required": [
+        "note",
+        "scalar_boundary_example",
+        "length_member"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "type": "string"
+        },
+        "scalar_boundary_example": {
+          "type": "object",
+          "required": [
+            "description",
+            "source_octets",
+            "clipped_to_octets",
+            "source",
+            "clipped"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "source_octets": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "clipped_to_octets": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "source": {
+              "type": "string"
+            },
+            "clipped": {
+              "type": "string"
+            }
+          }
+        },
+        "length_member": {
+          "type": "object",
+          "required": [
+            "note",
+            "example"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "note": {
+              "type": "string"
+            },
+            "example": {
+              "type": "object",
+              "required": [
+                "payload",
+                "clipped"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "payload": {
+                  "type": "object"
+                },
+                "clipped": {
+                  "const": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "canonicalizer_refusal": {
+      "type": "object",
+      "required": [
+        "note",
+        "depth"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "type": "string"
+        },
+        "depth": {
+          "const": 256
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "bound",
+          "measured",
+          "within_bounds",
+          "envelope_sans_id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bound": {
+            "enum": [
+              "canonical_form_octets",
+              "payload_depth_below_payload",
+              "refs_entries",
+              "ref_value_octets",
+              "actor_label_octets",
+              "payload_string_octets",
+              "canonicalizer_refusal_depth"
+            ]
+          },
+          "measured": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "within_bounds": {
+            "type": "boolean"
+          },
+          "envelope_sans_id": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/envelopeSansId"
+          }
+        }
+      }
+    }
+  }
+}

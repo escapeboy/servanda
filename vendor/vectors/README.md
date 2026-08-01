@@ -37,6 +37,18 @@ requires reading the generator to understand.
   included, so the domain tag is checkable without reconstructing it. Cases with
   `same_hash_as_base: true` must produce a hash *identical* to `base_commitment_hash`; the rest must
   differ.
+- **envelope/envelope-id** — remove `id`, canonicalize, and recompute
+  `sha256(domain_tag.tag || 0x00 || JCS(envelope sans id))`. Cases with `same_id_as_base: false`
+  prove the member reaches the digest. `id_removal` is the one case that cannot be written as a
+  patch: an envelope that already carries `id` must hash to `base_id` once `id` is taken out.
+  `determinism_scope` lists every member of the preimage — read it against §2's sentence about two
+  nodes computing the same id, which names neither `persona` nor the observing node's own
+  `received_at` ([#36](../../../issues/36)).
+- **envelope/bounds** — M-19. Each case names the `bound` it sits on, its `measured` value in that
+  bound's own unit, and whether it is `within_bounds`. A node MUST reject an envelope outside any
+  bound rather than canonicalize it. `clipping.scalar_boundary_example` is a truncation that would
+  split a 3-octet scalar if taken at the bound exactly: the clipped value must fall back to the
+  scalar boundary and contain no code point absent from the source.
 - **signatures** — recompute `sha256_preimage` from `unsigned_object`, then verify `signature`
   against `signer.persona_id` (the public key). The `sig` field is excluded from its own preimage.
 - **derivation** — derive from `mnemonic` and check every field, including `chain_code`.
