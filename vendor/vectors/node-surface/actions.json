@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/07-node-surface.md (open_loops, brief), conformance M-20",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "For a given edge, assertion chain and viewing persona, the exact `actions` array a node MUST return. `must_not_advertise` is the complement: advertising any of those acts for that item and that viewer is an M-20 violation. `window_elapsed` is an input, never a clock read — generation is clockless, and the flag is exactly what decides whether the owner may yet record tacit acceptance (§4.3).",
@@ -53,7 +53,7 @@
       "name": "proposed-owner",
       "description": "The owner has proposed and is waiting. §4.3 gives the owner no transition out of `proposed`, so the only affordance is `ping` — which is not a transition either, and carries `tool: null`.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -68,14 +68,14 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         }
       ],
       "viewer": {
@@ -106,7 +106,7 @@
       "name": "proposed-owed-to",
       "description": "The counterparty decides. `confirm` and `dismiss` both bind to the `confirm` tool; `dismiss` is vault-local and produces no assertion (§6.5), which is why it is not called `release`.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -121,14 +121,14 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         }
       ],
       "viewer": {
@@ -169,7 +169,7 @@
       "name": "proposed-non-party",
       "description": "M-3 negative case: a persona who is not a party to the edge is offered nothing. Not a filtered list — an empty one.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -184,14 +184,14 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         }
       ],
       "viewer": {
@@ -217,7 +217,7 @@
       "name": "open-owner",
       "description": "THE negative case for M-20 on the owner side: `release` is `owed_to` alone (§4.3) and MUST NOT appear here. A node that advertises it to the owner is offering an assertion the table discards.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -232,24 +232,24 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         }
       ],
       "viewer": {
@@ -291,7 +291,7 @@
       "name": "open-owed-to",
       "description": "The mirror: `done` is the owner's act and MUST NOT be advertised to the counterparty. `release` appears here and only here — it is the protocol's one unilateral act.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -306,24 +306,24 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         }
       ],
       "viewer": {
@@ -365,7 +365,7 @@
       "name": "pending-acceptance-owner-window-not-elapsed",
       "description": "THE time-sensitive negative case. The owner has filed evidence and the window is still running, so a `closed` assertion by the owner would be discarded as `acceptance-window-not-elapsed`. `done` MUST NOT be advertised: M-20 is about the item's current state, and \"the owner may close\" is false right now.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -380,34 +380,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         }
       ],
       "viewer": {
@@ -442,7 +442,7 @@
       "name": "pending-acceptance-owner-window-elapsed",
       "description": "The same edge and the same chain, the window having run. `done` becomes advertisable — the only difference between this case and the previous one is time, which is why the flag is an input rather than a clock read.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -457,34 +457,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         }
       ],
       "viewer": {
@@ -526,7 +526,7 @@
       "name": "pending-acceptance-owed-to",
       "description": "The counterparty inside the window: it may still accept explicitly, dispute, or forgive. `release` remains theirs throughout the open family.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -541,34 +541,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         }
       ],
       "viewer": {
@@ -606,7 +606,7 @@
       "name": "disputed-either-party",
       "description": "§4.4 as resolved: v0 defines no arbitration. `disputed` exits only by both parties asserting `closed` or by supersession, and neither is a single-call act — so the only thing advertised is `supersede`, unbound.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -621,34 +621,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "disputed",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": "b303d988a8d0ef0fb280fbfec50a953133b6b88de5f948fee3d48b73335bfacb",
-          "sig": "78f58a873854aa61a9273b1ba798f09219d618dfea09b54b8dddb9e16c2fa4dc67d9acc525511e5908c1e05686455f3144baea6eeb01be121b024ffe28969b03"
+          "sig": "6615ed955fede5446ec5618751dbe37cc2053887d462c4b18aa4bd3d9195e63ec5bfd32ed5eac8bb796822b88fe33ea05432447f63823a7bbcf4ba20062ab508"
         }
       ],
       "viewer": {
@@ -679,7 +679,7 @@
       "name": "terminal-released",
       "description": "Terminal states carry no affordances at all. A node that keeps advertising `done` on a released edge is inviting an assertion that `terminal-state-reached` will discard.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -694,34 +694,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "released",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "de94411f92909a574f45a189d7a98dd775ffd891fe7c5b2a01426070f5e0367fade90ca6bc13d2c0508624fdab0db45f9494a8da4044d6871a1239a376f9dc0d"
+          "sig": "5c46f0952db3b1a231cdf9aa27aad4072f3992bc87a28762bce9d89672e024c39d71037faf378fc6a408fce0dc7af6debc0330c16286c0cbb3c14a2c43aa710f"
         }
       ],
       "viewer": {
@@ -747,7 +747,7 @@
       "name": "on-evidence-open-owner",
       "description": "An `on-evidence` edge: the owner closes directly, so `done` is advertisable with no window at all. Same array as the `on-acceptance` open case — closure policy changes when the act lands, not who may perform it.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -762,24 +762,24 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         }
       ],
       "viewer": {

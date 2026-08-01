@@ -87,7 +87,7 @@ export interface WrappedKey {
 }
 
 export interface ContentKeySet {
-  v: 'servanda/0.1';
+  v: 'servanda/0.2';
   type: 'content_keyset';
   wraps: WrappedKey[];
 }
@@ -186,7 +186,7 @@ export function sealContentKey(
   wraps: WrappedKey[],
 ): ContentKeySet {
   assertM16(wraps);
-  return { v: 'servanda/0.1', type: 'content_keyset', wraps };
+  return { v: 'servanda/0.2', type: 'content_keyset', wraps };
 }
 
 /** M-16 check, exported so vault code and the M-suite can assert on the same predicate. */

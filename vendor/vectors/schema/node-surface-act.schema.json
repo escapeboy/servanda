@@ -3,14 +3,24 @@
   "$id": "https://servanda.dev/schema/node-surface-act.schema.json",
   "title": "§7 act tool calls (M-14, M-20)",
   "type": "object",
-  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
-  "required": ["description", "act_tool_bindings", "cases"],
+  "allOf": [
+    {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner"
+    }
+  ],
+  "required": [
+    "description",
+    "act_tool_bindings",
+    "cases"
+  ],
   "properties": {
     "suite_version": {},
     "protocol_version": {},
     "spec_reference": {},
     "generated_by": {},
-    "description": { "type": "string" },
+    "description": {
+      "type": "string"
+    },
     "act_tool_bindings": {
       "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/actTooling"
     },
@@ -31,30 +41,56 @@
         ],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-          "description": { "type": "string", "minLength": 1 },
-          "edge": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge" },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "edge": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge"
+          },
           "assertions": {
             "type": "array",
-            "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/assertion" }
+            "items": {
+              "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/assertion"
+            }
           },
           "effective_state": {
             "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/effectiveState"
           },
           "call": {
             "type": "object",
-            "required": ["caller", "tool", "input"],
+            "required": [
+              "caller",
+              "tool",
+              "input"
+            ],
             "additionalProperties": false,
             "properties": {
-              "caller": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/viewer" },
-              "tool": { "const": "act" },
+              "caller": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/viewer"
+              },
+              "tool": {
+                "const": "act"
+              },
               "input": {
                 "type": "object",
-                "required": ["id", "act", "evidence_hash"],
+                "required": [
+                  "id",
+                  "act",
+                  "evidence_hash"
+                ],
                 "additionalProperties": false,
                 "properties": {
-                  "id": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64" },
-                  "act": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/act" },
+                  "id": {
+                    "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+                  },
+                  "act": {
+                    "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/act"
+                  },
                   "evidence_hash": {
                     "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64OrNull"
                   }
@@ -62,16 +98,26 @@
               }
             }
           },
-          "window_elapsed": { "type": "boolean" },
+          "window_elapsed": {
+            "type": "boolean"
+          },
           "expected": {
             "type": "object",
-            "required": ["accepted", "rejection_reason", "asserts"],
+            "required": [
+              "accepted",
+              "rejection_reason",
+              "asserts"
+            ],
             "additionalProperties": false,
             "properties": {
-              "accepted": { "type": "boolean" },
+              "accepted": {
+                "type": "boolean"
+              },
               "rejection_reason": {
                 "oneOf": [
-                  { "type": "null" },
+                  {
+                    "type": "null"
+                  },
                   {
                     "enum": [
                       "not-a-party",
@@ -80,29 +126,70 @@
                       "illegal-source-state",
                       "evidence-hash-required",
                       "evidence-hash-must-be-null",
-                      "acceptance-window-not-elapsed"
+                      "acceptance-window-not-elapsed",
+                      "terminal-state-reached",
+                      "duplicate-assertion-by-same-party",
+                      "malformed-edge-acceptance-window"
                     ]
                   }
                 ]
               },
-              "asserts": { "oneOf": [{ "type": "null" }, { "enum": ["closed", "released"] }] }
+              "asserts": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "enum": [
+                      "closed",
+                      "released"
+                    ]
+                  }
+                ]
+              }
             },
             "allOf": [
               {
-                "if": { "properties": { "accepted": { "const": true } }, "required": ["accepted"] },
+                "if": {
+                  "properties": {
+                    "accepted": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "accepted"
+                  ]
+                },
                 "then": {
                   "properties": {
-                    "rejection_reason": { "type": "null" },
-                    "asserts": { "type": "string" }
+                    "rejection_reason": {
+                      "type": "null"
+                    },
+                    "asserts": {
+                      "type": "string"
+                    }
                   }
                 }
               },
               {
-                "if": { "properties": { "accepted": { "const": false } }, "required": ["accepted"] },
+                "if": {
+                  "properties": {
+                    "accepted": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "accepted"
+                  ]
+                },
                 "then": {
                   "properties": {
-                    "rejection_reason": { "type": "string" },
-                    "asserts": { "type": "null" }
+                    "rejection_reason": {
+                      "type": "string"
+                    },
+                    "asserts": {
+                      "type": "null"
+                    }
                   }
                 }
               }

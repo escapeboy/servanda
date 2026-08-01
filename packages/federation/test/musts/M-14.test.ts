@@ -34,7 +34,7 @@ const OWNER = persona(0);
 const COUNTERPARTY = persona(1);
 
 beforeAll(() => {
-  expect(cases).toHaveLength(23);
+  expect(cases).toHaveLength(25);
   for (const c of cases) {
     expect(c.edge.owner).toBe(OWNER.personaId);
     expect(c.edge.owed_to).toBe(COUNTERPARTY.personaId);
@@ -79,8 +79,27 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
    */
   const REPLAY_BUDGET = 120_000;
 
+  /**
+   * §6.4 normalises a batch by `asserted_at` before applying it, and that is what makes an honest
+   * peer's chain reconstructable when §4.2 carries no `prev` link. It also means the backdating
+   * rule (§4.3, upstream #38) cannot see through this path: a batch containing an assertion dated
+   * before its own signer's previous one sorts into an order where it no longer is, and the chain
+   * that results is monotonic.
+   *
+   * That is a real limit, not an oversight, and naming it here is the point. The rule protects the
+   * LOCAL signing path, where the node saw the earlier assertion first and refuses to help its
+   * owner backdate. Over the wire, order is exactly what is unprovable — and a hostile responder
+   * would sort the batch itself before sending it, so checking arrival order would buy nothing
+   * against the party the rule exists to constrain.
+   */
+  const NOT_REPLAYABLE_OVER_RECON = new Set([
+    'owner-backdates-to-manufacture-an-elapsed-acceptance-window',
+    'counterparty-backdates-a-dispute',
+  ]);
+
   it('every negative vector delivered as a §6.4 recon_response is rejected identically', () => {
     perCase((solo, c) => {
+      if (NOT_REPLAYABLE_OVER_RECON.has(c.name)) return;
       const message = signMessage(
         'recon_response',
         { edges: [{ edge_id: c.edge.edge_id, assertions: c.assertions }] },

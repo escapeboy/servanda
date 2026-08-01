@@ -62,7 +62,7 @@ describe('M-2: a proposal is not a promise until the counterparty signs — acro
 
     const assertion = withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'assertion' as const,
         edge_id: edgeId,
         state: 'confirmed' as const,

@@ -181,6 +181,8 @@ export const RejectionReason = z.enum([
   /** §4.4: `disputed → expired` before `dispute_window` ran. Names a window, never a verdict. */
   'dispute-window-not-elapsed',
   'malformed-edge-acceptance-window',
+  /** v0.2 (§4.3, upstream #38): `asserted_at` is non-decreasing per signer within a chain. */
+  'asserted-at-before-signers-previous',
   'implicit-transition-not-assertable',
   'invalid-signature',
   'terminal-state-reached',

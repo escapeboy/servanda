@@ -94,12 +94,12 @@ const CHILD = `
 const A = await import(${JSON.stringify(pathToFileURL(DIST).href)});
 const OWNER = 'a'.repeat(64);
 const commitment = (refs) => ({
-  v: 'servanda/0.1', type: 'commitment', owner: OWNER, owed_to: 'b'.repeat(64),
+  v: 'servanda/0.2', type: 'commitment', owner: OWNER, owed_to: 'b'.repeat(64),
   due: null, conditions: [], evidence_refs: refs, created_at: '2026-07-01T09:00:00Z',
   source: 'explicit', confidence: 1, commitment_hash: 'b'.repeat(64),
 });
 const envelope = {
-  v: 'servanda/0.1', type: 'envelope', id: ${JSON.stringify(ENVELOPE_ID)}, source: 'ci',
+  v: 'servanda/0.2', type: 'envelope', id: ${JSON.stringify(ENVELOPE_ID)}, source: 'ci',
   kind: 'check_run', occurred_at: '2026-07-18T12:00:00Z', received_at: '2026-07-18T12:00:03Z',
   actor: { label: 'ci' },
   payload: { check_run_id: 1, text: 'ci / test', status: 'completed', conclusion: 'success',

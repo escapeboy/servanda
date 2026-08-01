@@ -3,7 +3,11 @@
   "$id": "https://servanda.dev/schema/verification-levels.schema.json",
   "title": "§1.6 verification ladder (M-12)",
   "type": "object",
-  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "allOf": [
+    {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner"
+    }
+  ],
   "required": [
     "description",
     "level_order",
@@ -17,44 +21,83 @@
     "protocol_version": {},
     "spec_reference": {},
     "generated_by": {},
-    "description": { "type": "string" },
+    "description": {
+      "type": "string"
+    },
     "level_order": {
       "description": "§1.6 as resolved: the total order, ascending.",
       "type": "array",
       "minItems": 5,
       "maxItems": 5,
-      "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/verificationLevel" }
+      "items": {
+        "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/verificationLevel"
+      }
     },
     "level_rank": {
       "type": "object",
-      "required": ["0", "1", "ext", "2", "3"],
+      "required": [
+        "0",
+        "1",
+        "ext",
+        "2",
+        "3"
+      ],
       "additionalProperties": false,
       "properties": {
-        "0": { "const": 0 },
-        "1": { "const": 1 },
-        "ext": { "const": 2 },
-        "2": { "const": 3 },
-        "3": { "const": 4 }
+        "0": {
+          "const": 0
+        },
+        "1": {
+          "const": 1
+        },
+        "ext": {
+          "const": 2
+        },
+        "2": {
+          "const": 3
+        },
+        "3": {
+          "const": 4
+        }
       }
     },
-    "ordering_note": { "type": "string", "minLength": 1 },
+    "ordering_note": {
+      "type": "string",
+      "minLength": 1
+    },
     "name_bearing_levels": {
       "description": "The only levels at which a display name may be emitted (M-12).",
       "type": "array",
       "minItems": 2,
       "maxItems": 2,
-      "items": { "enum": ["2", "3"] }
+      "items": {
+        "enum": [
+          "2",
+          "3"
+        ]
+      }
     },
     "cases": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["name", "description", "evidence", "expected"],
+        "required": [
+          "name",
+          "description",
+          "evidence",
+          "expected"
+        ],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-          "description": { "type": "string", "minLength": 1 },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
           "evidence": {
             "type": "object",
             "required": [
@@ -66,39 +109,125 @@
             ],
             "additionalProperties": false,
             "properties": {
-              "priorConfirmedEdge": { "type": "boolean" },
-              "bindingProof": { "type": "boolean" },
-              "attestation": { "type": "boolean" },
-              "domainAnchored": { "type": "boolean" },
-              "attestedDisplayName": { "type": ["string", "null"] }
+              "priorConfirmedEdge": {
+                "type": "boolean"
+              },
+              "bindingProof": {
+                "type": "boolean"
+              },
+              "attestation": {
+                "type": "boolean"
+              },
+              "domainAnchored": {
+                "type": "boolean"
+              },
+              "attestedDisplayName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "externalLabel": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           },
           "expected": {
             "type": "object",
-            "required": ["level", "display_name", "name_bearing"],
+            "required": [
+              "level",
+              "display_name",
+              "name_bearing",
+              "counterparty"
+            ],
             "additionalProperties": false,
             "properties": {
               "level": {
                 "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/verificationLevel"
               },
-              "display_name": { "type": ["string", "null"] },
-              "name_bearing": { "type": "boolean" }
+              "display_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name_bearing": {
+                "type": "boolean"
+              },
+              "counterparty": {
+                "description": "§7 (v0.2, #39): the name a client renders and whether it is a claim about anyone. `attested` MUST NOT be rendered above its level; `self-labelled` is rendered at any level.",
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "origin"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "origin": {
+                        "enum": [
+                          "attested",
+                          "self-labelled"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
             },
             "allOf": [
               {
                 "description": "M-12: a name may only accompany levels 2 and 3.",
                 "if": {
-                  "properties": { "name_bearing": { "const": true } },
-                  "required": ["name_bearing"]
+                  "properties": {
+                    "name_bearing": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "name_bearing"
+                  ]
                 },
-                "then": { "properties": { "level": { "enum": ["2", "3"] } } }
+                "then": {
+                  "properties": {
+                    "level": {
+                      "enum": [
+                        "2",
+                        "3"
+                      ]
+                    }
+                  }
+                }
               },
               {
                 "if": {
-                  "properties": { "name_bearing": { "const": false } },
-                  "required": ["name_bearing"]
+                  "properties": {
+                    "name_bearing": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "name_bearing"
+                  ]
                 },
-                "then": { "properties": { "display_name": { "type": "null" } } }
+                "then": {
+                  "properties": {
+                    "display_name": {
+                      "type": "null"
+                    }
+                  }
+                }
               }
             ]
           }

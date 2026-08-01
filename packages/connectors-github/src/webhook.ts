@@ -268,7 +268,7 @@ export function envelopeFromWebhook(
   if (built === undefined) return undefined;
 
   return sealEnvelope({
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'envelope',
     source: built.source,
     kind: built.kind,

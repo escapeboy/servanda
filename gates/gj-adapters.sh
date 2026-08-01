@@ -70,7 +70,7 @@ OBSERVE='
 const A = await import("./packages/adapters/dist/index.js");
 const { hashCanonical } = await import("./packages/crypto/dist/index.js");
 const commitment = {
-  v: "servanda/0.1", type: "commitment", owner: "a".repeat(64), owed_to: "b".repeat(64),
+  v: "servanda/0.2", type: "commitment", owner: "a".repeat(64), owed_to: "b".repeat(64),
   due: null, conditions: [], created_at: "2026-07-01T09:00:00Z", source: "explicit",
   confidence: 1, commitment_hash: "b".repeat(64),
   evidence_refs: [{ kind: "commit", value: "branch:main" }, { kind: "file", value: "src/flags.ts" }],
@@ -102,7 +102,7 @@ echo "    two processes, one hash: ${h1}"
 EVIDENCE_HASH="${h1}" node --input-type=module -e '
 const { Assertion } = await import("./packages/types/dist/index.js");
 const a = {
-  v: "servanda/0.1", type: "assertion", edge_id: "a".repeat(64), state: "closed",
+  v: "servanda/0.2", type: "assertion", edge_id: "a".repeat(64), state: "closed",
   asserted_at: "2026-07-26T10:00:00Z", by: "a".repeat(64),
   evidence_hash: process.env.EVIDENCE_HASH, sig: "f".repeat(128),
 };
@@ -135,17 +135,17 @@ const CREATED = "2026-07-01T09:00:00Z";
 const DUE = "2026-07-20T00:00:00Z";
 const commitment_hash = commitmentHash({ intent: INTENT, owner: owner.personaId, owed_to: owed.personaId, due: DUE, created_at: CREATED });
 const edge = (over = {}) => ({
-  v: "servanda/0.1", type: "edge",
+  v: "servanda/0.2", type: "edge",
   edge_id: edgeId({ commitment_hash, owner: owner.personaId, owed_to: owed.personaId, proposed_at: CREATED }),
   commitment_hash, owner: owner.personaId, owed_to: owed.personaId, proposed_at: CREATED,
   due: DUE, closure_policy: "on-evidence", acceptance_window: null, blocked_by: [], supersedes: null,
   ...over,
 });
 const sign = (edge_id, state, who, asserted_at, evidence_hash) => withSignature({
-  v: "servanda/0.1", type: "assertion", edge_id, state, asserted_at, by: who.personaId, evidence_hash,
+  v: "servanda/0.2", type: "assertion", edge_id, state, asserted_at, by: who.personaId, evidence_hash,
 }, who.privateKey);
 const commitment = (refs) => ({
-  v: "servanda/0.1", type: "commitment", owner: owner.personaId, owed_to: owed.personaId,
+  v: "servanda/0.2", type: "commitment", owner: owner.personaId, owed_to: owed.personaId,
   due: DUE, conditions: [], evidence_refs: refs, created_at: CREATED, source: "explicit",
   confidence: 1, commitment_hash,
 });

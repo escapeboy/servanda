@@ -34,7 +34,7 @@ const got = JSON.parse(readFileSync(`${dir}/transitions/invalid.json`, "utf8")).
 // to do with federation. The count is still pinned rather than counted, because a family that
 // silently SHRINKS is the failure the oracle exists to catch; the two numbers just have to move
 // together.
-if (got !== 23) { console.error(`FAIL: transitions/invalid.json has ${got} cases, expected 23`); process.exit(1); }
+if (got !== 25) { console.error(`FAIL: transitions/invalid.json has ${got} cases, expected 25`); process.exit(1); }
 console.log(`    transitions/invalid.json: ${got} cases (reused as wire input)`);
 '
 

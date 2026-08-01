@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/07-node-surface.md (brief), conformance M-20 / M-21",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "One `brief` slot, and whether a node may emit it. M-21 says no user-facing copy crosses the node surface: a client authors the wording of every control it renders, so a slot carries an ACT and never a label. `headline` is the exception that proves it — a person's own recorded words are content, not copy, and travel verbatim. The invalid cases are the substance: `open_loops` was already pinned while `brief` was not, so an implementation could ship node-supplied button text and pass the entire suite.",

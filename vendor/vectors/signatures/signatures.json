@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/00-overview.md (Conventions), §1.3, §1.7, §4.2",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "Ed25519 over sha256(JCS(object without its `sig` field)). Verify by recomputing `sha256_preimage` from `unsigned_object` and checking `signature` against the signer key.",
@@ -14,7 +14,7 @@
         "derivation_path": "m/7391'/0'"
       },
       "unsigned_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "attestation",
         "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
         "subject": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -26,11 +26,11 @@
         "issued_at": "2026-07-01T00:00:00Z",
         "expires_at": "2027-07-01T00:00:00Z"
       },
-      "canonical": "{\"claims\":{\"display_name\":\"Maria Ivanova\",\"handle\":\"maria@acme.com\"},\"expires_at\":\"2027-07-01T00:00:00Z\",\"issued_at\":\"2026-07-01T00:00:00Z\",\"org\":\"95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020\",\"subject\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"subject_kind\":\"persona\",\"type\":\"attestation\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "9411eb04d11737a1c234e76115944234c6aedf91198f137797b097e70d67689f",
-      "signature": "a27f04c8e3ed02ef5822ac119917a44cbd8d495acc8f27019c4852da06c2d5626ed408454f1871594d3fb872fa557c6cc8ce33e55ad45d89ecaaff28c44a0f07",
+      "canonical": "{\"claims\":{\"display_name\":\"Maria Ivanova\",\"handle\":\"maria@acme.com\"},\"expires_at\":\"2027-07-01T00:00:00Z\",\"issued_at\":\"2026-07-01T00:00:00Z\",\"org\":\"95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020\",\"subject\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"subject_kind\":\"persona\",\"type\":\"attestation\",\"v\":\"servanda/0.2\"}",
+      "sha256_preimage": "3b30a2f34c2debb46b37e41ea50e244b1172c3175cc000be0ff349734978b607",
+      "signature": "cd3f3cc6097f5e8a2404afa0665c89cb9197c960190a99be89b5b73eb902a867a3886c86224e7106da560ce32b95919d7c13b8b49cca628bc55755c7953bfe00",
       "signed_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "attestation",
         "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
         "subject": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -41,7 +41,7 @@
         },
         "issued_at": "2026-07-01T00:00:00Z",
         "expires_at": "2027-07-01T00:00:00Z",
-        "sig": "a27f04c8e3ed02ef5822ac119917a44cbd8d495acc8f27019c4852da06c2d5626ed408454f1871594d3fb872fa557c6cc8ce33e55ad45d89ecaaff28c44a0f07"
+        "sig": "cd3f3cc6097f5e8a2404afa0665c89cb9197c960190a99be89b5b73eb902a867a3886c86224e7106da560ce32b95919d7c13b8b49cca628bc55755c7953bfe00"
       }
     },
     {
@@ -52,7 +52,7 @@
         "derivation_path": "m/7391'/0'"
       },
       "unsigned_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "assertion",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "proposed",
@@ -60,18 +60,18 @@
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": null
       },
-      "canonical": "{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "dfc616738696f8e6673c1cce66e734160d74410790f07ef27b27eb465f56435a",
-      "signature": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a",
+      "canonical": "{\"asserted_at\":\"2026-07-25T09:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"state\":\"proposed\",\"type\":\"assertion\",\"v\":\"servanda/0.2\"}",
+      "sha256_preimage": "c51023c6e03a566fe53f87956dae380f2386e5721fb582c277b2dddee4b931b4",
+      "signature": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e",
       "signed_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "assertion",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "proposed",
         "asserted_at": "2026-07-25T09:00:00Z",
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": null,
-        "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+        "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
       }
     },
     {
@@ -82,7 +82,7 @@
         "derivation_path": "m/7391'/1'"
       },
       "unsigned_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "assertion",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "confirmed",
@@ -90,18 +90,18 @@
         "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "evidence_hash": null
       },
-      "canonical": "{\"asserted_at\":\"2026-07-25T10:00:00Z\",\"by\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"state\":\"confirmed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "a2b1355631f2333b63f00686abe087d71ca657129f394e9e58b26cec18994273",
-      "signature": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09",
+      "canonical": "{\"asserted_at\":\"2026-07-25T10:00:00Z\",\"by\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":null,\"state\":\"confirmed\",\"type\":\"assertion\",\"v\":\"servanda/0.2\"}",
+      "sha256_preimage": "e702caf35752a451b73a02b7cedd7be792706d4e81beadb4c400f93669fd719a",
+      "signature": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08",
       "signed_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "assertion",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "confirmed",
         "asserted_at": "2026-07-25T10:00:00Z",
         "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "evidence_hash": null,
-        "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+        "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
       }
     },
     {
@@ -112,7 +112,7 @@
         "derivation_path": "m/7391'/0'"
       },
       "unsigned_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "assertion",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "closed",
@@ -120,18 +120,18 @@
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": "ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da"
       },
-      "canonical": "{\"asserted_at\":\"2026-08-02T12:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":\"ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da\",\"state\":\"closed\",\"type\":\"assertion\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "b15a4713a238956963547f3abfa670dea9b69dd216f9de9c1f1ea0c8a61886c8",
-      "signature": "c558aa63e28031c2a8933fcc5053e1254bec6033210db4d0ee3b092e939074681bcb4ae1e41a9edfad429c224a9ae1a362957f9af6d8df3ae5be9521757fda05",
+      "canonical": "{\"asserted_at\":\"2026-08-02T12:00:00Z\",\"by\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"edge_id\":\"141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a\",\"evidence_hash\":\"ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da\",\"state\":\"closed\",\"type\":\"assertion\",\"v\":\"servanda/0.2\"}",
+      "sha256_preimage": "9199e79be6f51fd35977de7f1919c4985d2e40fe047dd172c69c420f1d807246",
+      "signature": "2a0b9e8da299312746f9c20ad5eb8d08b17f28b71c50a8a0b05c9cc217366579f73a58dd73182d93a20310b626a94b37c19c68ea28fe0fe440bf3228e2dceb0e",
       "signed_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "assertion",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "state": "closed",
         "asserted_at": "2026-08-02T12:00:00Z",
         "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "evidence_hash": "ac91e2761d5e21f314e5d5f8c4852cb07f459de5025c954f56fdd907e96e65da",
-        "sig": "c558aa63e28031c2a8933fcc5053e1254bec6033210db4d0ee3b092e939074681bcb4ae1e41a9edfad429c224a9ae1a362957f9af6d8df3ae5be9521757fda05"
+        "sig": "2a0b9e8da299312746f9c20ad5eb8d08b17f28b71c50a8a0b05c9cc217366579f73a58dd73182d93a20310b626a94b37c19c68ea28fe0fe440bf3228e2dceb0e"
       }
     },
     {
@@ -142,22 +142,22 @@
         "derivation_path": "m/7391'/0'"
       },
       "unsigned_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "rotation",
         "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "new": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
         "rotated_at": "2026-09-01T00:00:00Z"
       },
-      "canonical": "{\"new\":\"cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9\",\"old\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"rotated_at\":\"2026-09-01T00:00:00Z\",\"type\":\"rotation\",\"v\":\"servanda/0.1\"}",
-      "sha256_preimage": "0157a055464d779686c15dbfdb679029d78bd119ed374a0af5d2543d64b0b55b",
-      "signature": "8efc090dfd39562890e4669bc7d42243b556f4cc0fd3d31b4bc1e77bf9536a445183d44947cd8c8867f6e8242efd4cee3537f5976695c088b50316249844f10e",
+      "canonical": "{\"new\":\"cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9\",\"old\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"rotated_at\":\"2026-09-01T00:00:00Z\",\"type\":\"rotation\",\"v\":\"servanda/0.2\"}",
+      "sha256_preimage": "3d6315067bfb500011ed77010c7840ab8a83c750e802e0102683db395c63d33e",
+      "signature": "99c84bdf57624a6c3742ecfdb8f5cfc5a39066d30744e866e4772b73ea2060594289429aa5f46a76887c4d07995736abed8477c181f650b9be5b2be392713f06",
       "signed_object": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "rotation",
         "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "new": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
         "rotated_at": "2026-09-01T00:00:00Z",
-        "sig": "8efc090dfd39562890e4669bc7d42243b556f4cc0fd3d31b4bc1e77bf9536a445183d44947cd8c8867f6e8242efd4cee3537f5976695c088b50316249844f10e"
+        "sig": "99c84bdf57624a6c3742ecfdb8f5cfc5a39066d30744e866e4772b73ea2060594289429aa5f46a76887c4d07995736abed8477c181f650b9be5b2be392713f06"
       }
     }
   ]

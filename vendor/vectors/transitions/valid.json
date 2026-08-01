@@ -1,16 +1,16 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/04-edge.md §4.3–§4.5",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "Assertion sequences a conforming node MUST accept, with the resulting effective edge state.",
   "note": "Effective state folds `confirmed` into `open` (§4.3 marks confirmed ≡ open) and adds `pending-acceptance` to model the §4.4 acceptance window, which §4.3 has no row for. See vectors/README.md — this is an interpretation, not normative.",
   "cases": [
     {
-      "name": "on-acceptance-explicit-accept",
-      "description": "Full cross-person happy path: owner proposes, owed_to confirms, owner submits evidence (opening the acceptance window), owed_to explicitly accepts.",
+      "name": "the-rule-is-per-signer-not-global",
+      "description": "§4.3 (v0.2, #38): two parties legitimately disagree about `now`, and neither is authoritative over the other’s clock. A counterparty confirming at an instant EARLIER than the owner’s proposal is honest clock skew, not backdating, and is accepted — the rule compares a signer only against itself.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -25,44 +25,97 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T08:59:59Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "c42bec3cb4802841726fde27b1ad6fcbaf2ec3f3ea0ff6585e428a00d8d7ce3d32f84743cb3c54cf134ba2946781d6e35090887ae1c852a8464c740c66572e02"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        }
+      ],
+      "expected_final_state": "open"
+    },
+    {
+      "name": "on-acceptance-explicit-accept",
+      "description": "Full cross-person happy path: owner proposes, owed_to confirms, owner submits evidence (opening the acceptance window), owed_to explicitly accepts.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "b19058ab8cd1087b69b5eafbe0ac1697c5cca0bd13e8b709b6a7f8fb410261de3eda222ada8b5a212d32bbd98a7b54b3d360520cf03d243b9aefa9e6e420ba06"
+          "sig": "9e7f776ae4f9e92ca8423c3b726e289f881e62822f4396a397c9f054328889627ef6005bffd37c15737423fda62f6b5d813f168657b6e5f3e4fdb9001f0d590e"
         }
       ],
       "expected_outcomes": [
@@ -93,7 +146,7 @@
       "name": "on-acceptance-tacit-expiry",
       "description": "§4.4: window expiry is tacit acceptance — the owner records the final closed assertion after P5D has elapsed.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -108,44 +161,44 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-08T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "40fb9eca76f556ea48d3320f0a2b461faaf08254bcdd7364f92b07abb65cca8a723aec073d6465221e90011a60455521d9dcf9b854787350b95f03222f9c4102"
+          "sig": "15262637790c242156dcb56d599ec5f2483e798b73acc933120ec6f6968a611e62d3c0584a28db9da256289c329bfadfe65b2fd48ff7b11c2d18cb652d84ad06"
         }
       ],
       "expected_outcomes": [
@@ -176,7 +229,7 @@
       "name": "on-evidence-owner-closes",
       "description": "§4.4: under on-evidence the owner closes directly with a non-null evidence_hash.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -191,34 +244,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         }
       ],
       "expected_outcomes": [
@@ -244,7 +297,7 @@
       "name": "released-by-owed-to",
       "description": "§4.3: unilateral forgiveness closes the edge on owed_to’s signature alone.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -259,34 +312,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "released",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "327dbab05e3a9afb9e1ac7f41521f40149e14137a1b80fc3749b04d3ea99731b670d800788c1aabc08cac70b7dfc9643232c55bf496148abf5fdfdbcfbada10e"
+          "sig": "09ba10cdbc632726d58fc811fa1667da1dee4bdf92891386f2ced1ad42890968e461ccd48323129770d1dc088081e297d735940e12f00c8d88af54c276295600"
         }
       ],
       "expected_outcomes": [
@@ -312,7 +365,7 @@
       "name": "expired-after-due",
       "description": "§4.3: either party may assert expiry once due has passed.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -327,34 +380,34 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "expired",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "468fb3a4a2e8373b2dcc0de1e70cbd0e16f2f196ccea8edd99c251f70c305fb965e104061ba2e89ee7345f80671a1069d695f764392edf73ad88de15e2845506"
+          "sig": "46473bb95ce97f2ed36c3c54b72e46226156e739f0cbb6a9eb20c83b08dda738475bedd186a63a405380266e5bc0e6b333e3570cd8ae83137cd44474a94c7f02"
         }
       ],
       "expected_outcomes": [
@@ -380,7 +433,7 @@
       "name": "disputed-then-expired-after-the-window",
       "description": "§4.4: a dispute that goes silent does not freeze the edge forever. Once `dispute_window` (P30D) has run from the disputing assertion, EITHER party may assert `expired`. This resolves nothing — the dispute and its evidence stay in the chain — it ends a dead edge.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -395,54 +448,54 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "disputed",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": "c9c5c840b98e0fd564d63f51753590effce04001f271792f547518bc29ba0687",
-          "sig": "6b8e26321087385070ea837e81da5db7af5f29532a59185d339b4b83b31a5ff411ede7bddc1f1cef7e762400ec813921258257be9cffc8fe585883abc0660908"
+          "sig": "c0477c69ff335130e208a017cb8718e851c88470394b4b456e60286c0c77b8ff48bad4c30e1911e8b6192618c4dbe5e8caffff6f34bd97d9bd0c9473ef92d200"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "expired",
           "asserted_at": "2026-09-02T12:00:01Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "bfe712de7d8c85ef3bfaed9881f5c228c36e6dcaf7298c71c35fb1e7ac7388e1f5a812ab3d1f6f34f5c10ef6a228fe894d0a6816753a5922229bff1532034c08"
+          "sig": "f0999d9196b2e09e427d4447300b6c192dc3c5c3b44a53c5c467298cd130d2bc8ba3ff085676639f2ccce171dce75c064bfc5697a82d4534886fc23ec4bf0806"
         }
       ],
       "expected_outcomes": [
@@ -478,7 +531,7 @@
       "name": "disputed-then-mutual-close",
       "description": "§4.3: dispute carries evidence; v0 defines the exit as mutual closure — both parties assert.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -493,64 +546,64 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
-          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "disputed",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": "c9c5c840b98e0fd564d63f51753590effce04001f271792f547518bc29ba0687",
-          "sig": "6b8e26321087385070ea837e81da5db7af5f29532a59185d339b4b83b31a5ff411ede7bddc1f1cef7e762400ec813921258257be9cffc8fe585883abc0660908"
+          "sig": "c0477c69ff335130e208a017cb8718e851c88470394b4b456e60286c0c77b8ff48bad4c30e1911e8b6192618c4dbe5e8caffff6f34bd97d9bd0c9473ef92d200"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-08T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "40fb9eca76f556ea48d3320f0a2b461faaf08254bcdd7364f92b07abb65cca8a723aec073d6465221e90011a60455521d9dcf9b854787350b95f03222f9c4102"
+          "sig": "15262637790c242156dcb56d599ec5f2483e798b73acc933120ec6f6968a611e62d3c0584a28db9da256289c329bfadfe65b2fd48ff7b11c2d18cb652d84ad06"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "closed",
           "asserted_at": "2026-08-08T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "d3fb4ac33859a8a66fe889a671e8a88f5a0659c0df40c3b07f92d26b129d9e5bc9a3e930882035bf26c2606f9cf77fc0fa17e41b7a6a3f16d4fc792bc6a94a05"
+          "sig": "8dd98d9fb60c29d8cc6a58d6cace00163978134976b53f26df7dc735a713bc48b024c9f0b9fc2a9934f3dccca905b80198d4f5634a1d87588d6d68620d487108"
         }
       ],
       "expected_outcomes": [
@@ -591,7 +644,7 @@
       "name": "supersession-needs-both-parties",
       "description": "§4.5: a single superseded assertion is valid but does NOT complete the transition; the edge stays open until the second party signs.",
       "edge": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "edge",
         "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
         "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
@@ -606,44 +659,44 @@
       },
       "assertions": [
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "proposed",
           "asserted_at": "2026-07-25T09:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "confirmed",
           "asserted_at": "2026-07-25T10:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "superseded",
           "asserted_at": "2026-08-02T12:00:00Z",
           "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
           "evidence_hash": null,
-          "sig": "7ee5c960802134e035779c8397ff1f7a700deb30b1f33513014eaa7a66e2b80b85b5431cc5ac9cbe3cb5557687296936c8a6b2e10b6a1f1c5ad0471599836f01"
+          "sig": "2ea5cdf7ad974cc28a30a9046ed3c5266442cef4e74ab40b4dd058a20a464fca8c3834c3c782910c9dccfa52528debe1a9e9bb50e89164934cb922d347c78c05"
         },
         {
-          "v": "servanda/0.1",
+          "v": "servanda/0.2",
           "type": "assertion",
           "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
           "state": "superseded",
           "asserted_at": "2026-08-03T12:00:00Z",
           "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
           "evidence_hash": null,
-          "sig": "9b75df50e58f0c5ce516c1c8e5403f8e5e55b3f651cbcbdcde61e76ba0c13c16b4e52a0fe89497f4c905655d1fb00adb8f7878ce20c62c0d74521a1cb40e7305"
+          "sig": "d4fc121f674029f60e8bce7524b3d959563d4e61cf7a05aea500b80af8bb0069876c7f49e9ce079c429e30d18234fc1ae545f81dde5263f2bcd44ccd4231bc05"
         }
       ],
       "expected_outcomes": [

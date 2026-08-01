@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/01-identity.md §1.6, conformance M-12",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "The verification ladder as a total order, and the rule that a display name travels only at the levels an org attestation establishes. Each case gives an evidence set and the level plus display_name a node MUST report. The negative cases are where a name is available in the surrounding data and MUST NOT be emitted, because the achieved level does not carry it.",
@@ -25,6 +25,69 @@
   ],
   "cases": [
     {
+      "name": "self-labelled-name-at-level-0-is-rendered",
+      "description": "§7 `counterparty.origin` (v0.2, #39). An `external_label` is a name the VIEWER typed for someone off-network — level 0 by construction, and the only name that counterparty will ever have. It is not evidence about anyone, so M-12 does not suppress it: a client that hid it would erase the person from their own register and break the solo path M-10 protects. v0.1 had no way to tell this apart from an attested name, which is why M-12’s client half was unenforceable rather than merely untested.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": false,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": null,
+        "externalLabel": "Georgi from the warehouse"
+      },
+      "expected": {
+        "level": "0",
+        "display_name": null,
+        "name_bearing": false,
+        "counterparty": {
+          "value": "Georgi from the warehouse",
+          "origin": "self-labelled"
+        }
+      }
+    },
+    {
+      "name": "an-attested-name-outranks-the-viewers-own-label",
+      "description": "Both present at level 2. The attestation is evidence and the label is a private note, so the attested name is what the node reports and its origin says so.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": false,
+        "attestation": true,
+        "domainAnchored": false,
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": "the supplier"
+      },
+      "expected": {
+        "level": "2",
+        "display_name": "Maria Ivanova",
+        "name_bearing": true,
+        "counterparty": {
+          "value": "Maria Ivanova",
+          "origin": "attested"
+        }
+      }
+    },
+    {
+      "name": "the-viewers-label-survives-a-level-that-carries-no-name",
+      "description": "`ext` outranks continuity and still carries no name — a binding proof binds a key to a CHANNEL. The label is not promoted by the level and not suppressed by it either.",
+      "evidence": {
+        "priorConfirmedEdge": false,
+        "bindingProof": true,
+        "attestation": false,
+        "domainAnchored": false,
+        "attestedDisplayName": null,
+        "externalLabel": "Georgi from the warehouse"
+      },
+      "expected": {
+        "level": "ext",
+        "display_name": null,
+        "name_bearing": false,
+        "counterparty": {
+          "value": "Georgi from the warehouse",
+          "origin": "self-labelled"
+        }
+      }
+    },
+    {
       "name": "level-0-no-evidence",
       "description": "No evidence of any kind. Level 0, and no name may be shown.",
       "evidence": {
@@ -32,12 +95,14 @@
         "bindingProof": false,
         "attestation": false,
         "domainAnchored": false,
-        "attestedDisplayName": null
+        "attestedDisplayName": null,
+        "externalLabel": null
       },
       "expected": {
         "level": "0",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     },
     {
@@ -48,12 +113,14 @@
         "bindingProof": false,
         "attestation": false,
         "domainAnchored": false,
-        "attestedDisplayName": null
+        "attestedDisplayName": null,
+        "externalLabel": null
       },
       "expected": {
         "level": "1",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     },
     {
@@ -64,12 +131,14 @@
         "bindingProof": true,
         "attestation": false,
         "domainAnchored": false,
-        "attestedDisplayName": null
+        "attestedDisplayName": null,
+        "externalLabel": null
       },
       "expected": {
         "level": "ext",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     },
     {
@@ -80,12 +149,14 @@
         "bindingProof": true,
         "attestation": false,
         "domainAnchored": false,
-        "attestedDisplayName": null
+        "attestedDisplayName": null,
+        "externalLabel": null
       },
       "expected": {
         "level": "ext",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     },
     {
@@ -96,12 +167,17 @@
         "bindingProof": false,
         "attestation": true,
         "domainAnchored": false,
-        "attestedDisplayName": "Maria Ivanova"
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": null
       },
       "expected": {
         "level": "2",
         "display_name": "Maria Ivanova",
-        "name_bearing": true
+        "name_bearing": true,
+        "counterparty": {
+          "value": "Maria Ivanova",
+          "origin": "attested"
+        }
       }
     },
     {
@@ -112,12 +188,17 @@
         "bindingProof": true,
         "attestation": true,
         "domainAnchored": false,
-        "attestedDisplayName": "Maria Ivanova"
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": null
       },
       "expected": {
         "level": "2",
         "display_name": "Maria Ivanova",
-        "name_bearing": true
+        "name_bearing": true,
+        "counterparty": {
+          "value": "Maria Ivanova",
+          "origin": "attested"
+        }
       }
     },
     {
@@ -128,12 +209,17 @@
         "bindingProof": false,
         "attestation": true,
         "domainAnchored": true,
-        "attestedDisplayName": "Maria Ivanova"
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": null
       },
       "expected": {
         "level": "3",
         "display_name": "Maria Ivanova",
-        "name_bearing": true
+        "name_bearing": true,
+        "counterparty": {
+          "value": "Maria Ivanova",
+          "origin": "attested"
+        }
       }
     },
     {
@@ -144,12 +230,14 @@
         "bindingProof": true,
         "attestation": false,
         "domainAnchored": false,
-        "attestedDisplayName": "Maria Ivanova"
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": null
       },
       "expected": {
         "level": "ext",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     },
     {
@@ -160,12 +248,14 @@
         "bindingProof": false,
         "attestation": false,
         "domainAnchored": false,
-        "attestedDisplayName": "Maria Ivanova"
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": null
       },
       "expected": {
         "level": "1",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     },
     {
@@ -176,12 +266,14 @@
         "bindingProof": false,
         "attestation": false,
         "domainAnchored": true,
-        "attestedDisplayName": "Maria Ivanova"
+        "attestedDisplayName": "Maria Ivanova",
+        "externalLabel": null
       },
       "expected": {
         "level": "0",
         "display_name": null,
-        "name_bearing": false
+        "name_bearing": false,
+        "counterparty": null
       }
     }
   ]

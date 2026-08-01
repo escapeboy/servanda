@@ -71,7 +71,7 @@ FIXTURE="${FIXTURE}" FIXTURE_HEAD="${FIXTURE_HEAD}" node --input-type=module -e 
 const { runExecutor, DraftPrArtifact } = await import("./packages/executors/dist/index.js");
 const FIXTURE = process.env.FIXTURE;
 const commitment = {
-  v: "servanda/0.1", type: "commitment", owner: "a".repeat(64), owed_to: null, due: null,
+  v: "servanda/0.2", type: "commitment", owner: "a".repeat(64), owed_to: null, due: null,
   conditions: [], created_at: "2026-01-01T00:00:00Z", source: "archaeology", confidence: 0.9,
   commitment_hash: "b".repeat(64),
 };

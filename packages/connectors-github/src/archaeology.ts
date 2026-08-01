@@ -241,7 +241,7 @@ export function archaeologyEnvelopes(persona: string, options: ArchaeologyOption
       if (line === undefined) continue; // uncommitted line: no age, no finding
       envelopes.push(
         sealEnvelope({
-          v: 'servanda/0.1',
+          v: 'servanda/0.2',
           type: 'envelope',
           source: ARCHAEOLOGY_SOURCE,
           kind: 'archaeology_todo',
@@ -277,7 +277,7 @@ export function archaeologyEnvelopes(persona: string, options: ArchaeologyOption
     if (referenceEpoch - tip.committedAtEpoch <= staleSeconds) continue;
     envelopes.push(
       sealEnvelope({
-        v: 'servanda/0.1',
+        v: 'servanda/0.2',
         type: 'envelope',
         source: ARCHAEOLOGY_SOURCE,
         kind: 'archaeology_stale_branch',
@@ -309,7 +309,7 @@ export function archaeologyEnvelopes(persona: string, options: ArchaeologyOption
     if (line === undefined) continue;
     envelopes.push(
       sealEnvelope({
-        v: 'servanda/0.1',
+        v: 'servanda/0.2',
         type: 'envelope',
         source: ARCHAEOLOGY_SOURCE,
         kind: 'archaeology_dead_flag',
@@ -341,7 +341,7 @@ export function archaeologyEnvelopes(persona: string, options: ArchaeologyOption
     if (stamp === undefined) continue;
     envelopes.push(
       sealEnvelope({
-        v: 'servanda/0.1',
+        v: 'servanda/0.2',
         type: 'envelope',
         source: ARCHAEOLOGY_SOURCE,
         kind: 'archaeology_unrun_migration',

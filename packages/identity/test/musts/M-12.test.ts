@@ -248,7 +248,7 @@ describe('M-12: the ladder as the conformance suite states it', () => {
   }
 
   it('replays every case the oracle states', () => {
-    expect(suite.cases).toHaveLength(10);
+    expect(suite.cases).toHaveLength(13);
   });
 
   it('reaches the oracle’s level and name on every case', () => {

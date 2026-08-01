@@ -53,7 +53,10 @@ const PERSONA_INDEX = new Map([0, 1, 2].map((i) => [persona(i).personaId, i] as 
 function replay(c: ActCase): ActOutput {
   const index = PERSONA_INDEX.get(c.call.caller.persona_id);
   if (index === undefined) throw new Error(`unknown caller ${c.call.caller.persona_id}`);
-  const lastAsserted = Date.parse(c.assertions[c.assertions.length - 1]!.asserted_at);
+  // A case may carry no chain at all — the malformed-edge case is about the edge object, and
+  // giving it assertions would be asserting against something the table refuses to read.
+  const last = c.assertions[c.assertions.length - 1];
+  const lastAsserted = last ? Date.parse(last.asserted_at) : Date.parse(c.edge.proposed_at);
   const now = new Date(lastAsserted + (c.window_elapsed ? 10 * 86_400_000 : 0) + 3_600_000);
 
   const fx: Fixture = makeFixture({
@@ -76,8 +79,8 @@ function replay(c: ActCase): ActOutput {
 }
 
 describe('M-20: act signs only what it is bound to, for the role that owns it', () => {
-  it('the oracle states fourteen cases', () => {
-    expect(cases).toHaveLength(14);
+  it('the oracle states seventeen cases', () => {
+    expect(cases).toHaveLength(17);
   });
 
   /**

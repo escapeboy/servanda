@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/recovery.schema.json",
+  "title": "§6.6 recovery proof-of-possession vectors",
+  "type": "object",
+  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
+  "required": ["description", "challenge_preimage", "cases"],
+  "properties": {
+    "suite_version": {},
+    "protocol_version": {},
+    "spec_reference": {},
+    "generated_by": {},
+    "description": { "type": "string" },
+    "challenge_preimage": {
+      "type": "object",
+      "required": ["note", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "note": { "type": "string" },
+        "type": { "const": "recovery_challenge" }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "request", "expected"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "request": {
+            "type": "object",
+            "required": ["v", "type", "persona", "proof"],
+            "additionalProperties": false,
+            "properties": {
+              "v": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion" },
+              "type": { "const": "recover_request" },
+              "persona": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64" },
+              "proof": {
+                "type": "object",
+                "description": "§6.6 (v0.2): `sig` over `challenge` is what proves possession. `rotation` shows succession and is never a substitute — rotations are published, so a bare one proves only that the sender can read.",
+                "required": ["challenge"],
+                "additionalProperties": false,
+                "properties": {
+                  "challenge": { "type": "string", "minLength": 16 },
+                  "sig": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128" },
+                  "rotation": {
+                    "type": "object",
+                    "required": ["v", "type", "old", "new", "rotated_at", "sig"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "v": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion" },
+                      "type": { "const": "rotation" },
+                      "old": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64" },
+                      "new": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64" },
+                      "rotated_at": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339" },
+                      "sig": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "expected": {
+            "type": "object",
+            "required": ["accepted"],
+            "additionalProperties": false,
+            "properties": {
+              "accepted": { "type": "boolean" },
+              "reason": {
+                "enum": [
+                  "no-proof-of-possession",
+                  "challenge-signature-does-not-verify",
+                  "signed-by-another-key",
+                  "rotation-does-not-name-this-persona"
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "description": "An accepted request names no reason; a refused one always does.",
+                "if": { "properties": { "accepted": { "const": false } }, "required": ["accepted"] },
+                "then": { "required": ["reason"] },
+                "else": { "not": { "required": ["reason"] } }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

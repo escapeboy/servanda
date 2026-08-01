@@ -32,7 +32,7 @@ import { fromHex, toHex, utf8 } from './hash.js';
 const INFO_LABEL = utf8('servanda/0.1 blind-courier v2');
 
 export interface SealedForPersona {
-  v: 'servanda/0.1';
+  v: 'servanda/0.2';
   /** The HPKE encapsulated key (an ephemeral X25519 public key), hex. */
   epk: string;
   ciphertext: string;
@@ -76,7 +76,7 @@ export function sealToPersona(
       aad,
       plaintext,
     );
-    return { v: 'servanda/0.1', epk: toHex(enc), ciphertext: toHex(ciphertext) };
+    return { v: 'servanda/0.2', epk: toHex(enc), ciphertext: toHex(ciphertext) };
   } catch (cause) {
     // A degenerate or low-order recipient key surfaces from three layers down as "invalid private
     // or public key received", naming nobody. Caught here it says which persona could not be

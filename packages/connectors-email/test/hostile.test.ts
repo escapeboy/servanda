@@ -33,7 +33,7 @@ function assertInert(envelope: unknown): void {
   expect(parsed.source).toBe('imap');
   expect(KNOWN_KINDS).toContain(parsed.kind);
   expect(parsed.persona).toBe(PERSONA);
-  expect(parsed.v).toBe('servanda/0.1');
+  expect(parsed.v).toBe('servanda/0.2');
   expect(parsed.type).toBe('envelope');
   expect(parsed.received_at).toBe(CTX.receivedAt);
   for (const field of ['v', 'type', 'id', 'source', 'kind', 'received_at', 'persona'] as const) {

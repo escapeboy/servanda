@@ -52,20 +52,19 @@ describe('act: every table rejection comes back as a refusal', () => {
     const edgeId = disputedEdge(fx);
 
     // §4.3 `disputed → closed` needs both parties, so the owner's first `done` is accepted and
-    // changes nothing visible — the edge is still disputed, waiting on the counterparty.
-    const first = fx.node.act({ id: edgeId, act: 'done', evidence_hash: EVIDENCE });
-    expect(first.accepted).toBe(true);
-    expect(fx.node.edgeState(fx.personas[0]!, edgeId).final_state).toBe('disputed');
-
-    // The same party signing again is not the second party. `duplicate-assertion-by-same-party`
-    // has no name in the `act` vocabulary, and used to leave through the exception path.
+    // v0.2 (upstream #41): REFUSED, and this test asserted the opposite until the spec caught up.
+    // The §4.3 table has a `disputed → closed` row requiring both parties, so the owner's half was
+    // a legal assertion and the node signed it — recording, honestly, a closure that could never
+    // complete, because no advertised act reaches the counterparty's half from `disputed`. The
+    // person was told their promise was closed and the edge stayed disputed forever.
     const chainBefore = JSON.stringify(fx.vault.getAssertions(fx.personas[0]!, edgeId));
-    const second = fx.node.act({ id: edgeId, act: 'done', evidence_hash: EVIDENCE });
-    expect(second).toEqual({
+    const first = fx.node.act({ id: edgeId, act: 'done', evidence_hash: EVIDENCE });
+    expect(first).toEqual({
       accepted: false,
       rejection_reason: 'illegal-source-state',
       asserts: null,
     });
+    expect(fx.node.edgeState(fx.personas[0]!, edgeId).final_state).toBe('disputed');
     expect(JSON.stringify(fx.vault.getAssertions(fx.personas[0]!, edgeId))).toBe(chainBefore);
 
     fx.cleanup();

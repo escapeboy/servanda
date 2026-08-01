@@ -12,7 +12,7 @@ import { decryptContent, encryptContent, utf8 } from '@servanda/crypto';
  */
 
 export interface SealedRecord {
-  v: 'servanda/0.1';
+  v: 'servanda/0.2';
   type: 'vault_record';
   kind: string;
   nonce: string;
@@ -28,7 +28,7 @@ export function assertHexId(id: string, what: string): void {
 
 export function sealRecord(contentKey: Uint8Array, kind: string, value: unknown): SealedRecord {
   const blob = encryptContent(contentKey, utf8(JSON.stringify(value)));
-  return { v: 'servanda/0.1', type: 'vault_record', kind, nonce: blob.nonce, ciphertext: blob.ciphertext };
+  return { v: 'servanda/0.2', type: 'vault_record', kind, nonce: blob.nonce, ciphertext: blob.ciphertext };
 }
 
 export function openRecord<T>(contentKey: Uint8Array, record: SealedRecord): T {

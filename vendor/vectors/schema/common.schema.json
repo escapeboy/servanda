@@ -38,7 +38,8 @@
       ]
     },
     "protocolVersion": {
-      "const": "servanda/0.1"
+      "const": "servanda/0.2",
+      "description": "The wire version. Pre-1.0 there is no compatibility between minors; a node refuses a `v` it does not implement rather than interpreting it. Note the §0 domain tags keep their `servanda/0.1:` spelling deliberately — a tag separates identifiers, not versions."
     },
     "banner": {
       "type": "object",

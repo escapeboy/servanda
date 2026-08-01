@@ -72,7 +72,7 @@ describe('G0 signatures (§00 Conventions, §4.2)', () => {
   it('round-trips a freshly derived persona', () => {
     const seed = mnemonicToSeed(derivation.mnemonic, derivation.passphrase);
     const persona = derivePersona(seed, 3);
-    const obj = { v: 'servanda/0.1', type: 'assertion', state: 'proposed', by: persona.personaId };
+    const obj = { v: 'servanda/0.2', type: 'assertion', state: 'proposed', by: persona.personaId };
     const signed = withSignature(obj, persona.privateKey);
     expect(verifyObject(signed, persona.personaId)).toBe(true);
   });

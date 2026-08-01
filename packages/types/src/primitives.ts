@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Spec §00 Conventions — protocol version string carried by every wire message. */
-export const PROTOCOL_VERSION = 'servanda/0.1' as const;
+export const PROTOCOL_VERSION = 'servanda/0.2' as const;
 
 export const ProtocolVersion = z.literal(PROTOCOL_VERSION);
 

@@ -26,7 +26,7 @@ done
 node --input-type=module -e '
 import { readFileSync } from "node:fs";
 const dir = process.env.SERVANDA_VECTORS ?? "vendor/vectors";
-const expected = { "transitions/valid.json": 8, "transitions/invalid.json": 23 };
+const expected = { "transitions/valid.json": 9, "transitions/invalid.json": 25 };
 let bad = 0;
 for (const [file, n] of Object.entries(expected)) {
   const got = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")).cases.length;

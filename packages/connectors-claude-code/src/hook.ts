@@ -59,7 +59,7 @@ export function envelopeFromHookEvent(
     : [];
 
   return sealEnvelope({
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'envelope',
     source: 'transcript',
     kind,

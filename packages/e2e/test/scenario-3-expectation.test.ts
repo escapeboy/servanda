@@ -126,7 +126,7 @@ describe('scenario 3 — expectation: the freelancer and the silent client', () 
     // ── day 11: "yes, starting September" ─────────────────────────────────────────────────
     install.clock.advanceDays(DAYS_TO_DAY_11);
     reply = sealEnvelope({
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'envelope',
       source: 'imap',
       kind: 'email_in',

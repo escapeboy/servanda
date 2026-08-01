@@ -9,6 +9,47 @@ one so far changes derived keys. A vault does not migrate across any of them.
 
 ## [Unreleased]
 
+### Changed — breaking, and breaking the wire
+
+**This implementation now speaks `servanda/0.2`.** The spec was frozen at v0.1 on 2026-08-01 and
+the 0.2 line opened the same day to carry the six resolutions below, all of them normative and
+none of them landable under a freeze. A 0.1 node refuses a 0.2 message rather than misinterpreting
+it, which is what the `v` field is for.
+
+**The §0 domain tags keep their `servanda/0.1:` spelling, deliberately.** A tag separates one
+identifier from another, not one version from another. `commitment_hash` and `edge_id` are
+therefore byte-identical to v0.1 and every signature over a stored object still verifies. Envelope
+ids do move, because `v` is a member of the envelope and the id covers the whole of it — nothing
+recomputes a stored envelope, so an existing vault's `evidence_refs` still resolve. The HPKE
+`info` label and the §1.5 anchor TXT version are pinned for the same reason.
+
+- **§6.6 recovery requires proof of possession** (upstream #37). v0.1 accepted a bare `Rotation`
+  as the whole proof, and rotations are **published** — so the signature a responder verified was
+  genuine, by the old key, over a public artifact, and attested to the wrong proposition. Anyone
+  who had merely watched a rotation go by could replay it and receive the edges and assertion
+  chains of both identities without holding either key. A request now carries a challenge signed
+  by the key it claims; the rotation says which key succeeds which, and never who is asking.
+- **`asserted_at` is non-decreasing per signer** (#38). Both windows in the spec are measured
+  between two timestamps the constrained party writes, so an owner could mint `closed` dated years
+  back and `closed` dated now and compute the acceptance window as elapsed. Per signer, because
+  two honest parties disagree about `now`. **It does not survive §6.4 reconciliation** — a batch
+  is normalised by `asserted_at`, so a backdated assertion sorts into the position it claims — and
+  §4.3 says so rather than leaving it to be discovered.
+- **`counterparty` carries `origin`** (#39). A client could not tell a name the node asserts about
+  a third party from an `external_label` the viewer typed, so M-12 was satisfiable only by
+  suppressing both — destroying the offline path M-10 protects — or neither. This is why M-12's
+  client half was unenforceable rather than merely untested, and it is the dependency the client
+  conformance harness was waiting on.
+- **`source`, `kind` and `actor.external_id` are bounded** (#40), and a connector must refuse
+  rather than emit an envelope it cannot bring inside every bound.
+- **`act` refuses with the reason that is true** (#41): `terminal-state-reached`,
+  `duplicate-assertion-by-same-party` and `malformed-edge-acceptance-window` under their own
+  names rather than collapsed into `illegal-source-state`. **`done` is refused from `disputed`** —
+  it was signing the owner's half of a transition whose other half no advertised act can reach,
+  recording a closure that could never complete.
+- **No cross-node observation identifier** (#36), considered and rejected: nothing consumes one.
+
+
 ### Fixed — the rest of what adversarial testing found
 
 Everything the five passes surfaced that could be fixed without a normative change. What could

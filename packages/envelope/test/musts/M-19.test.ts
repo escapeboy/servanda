@@ -37,7 +37,7 @@ const PERSONA = 'a'.repeat(64);
 
 function envelope(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'envelope',
     source: 'github',
     kind: 'pr_comment',

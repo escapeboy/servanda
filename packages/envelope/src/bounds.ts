@@ -67,9 +67,23 @@ export function boundsViolation(envelope: unknown): string | null {
   if (typeof envelope !== 'object' || envelope === null) return 'not an object';
   const e = envelope as Record<string, unknown>;
 
-  const actor = e['actor'] as { label?: unknown } | undefined;
+  const actor = e['actor'] as { label?: unknown; external_id?: unknown } | undefined;
   if (typeof actor?.label === 'string' && octets(actor.label) > MAX_LABEL) {
     return `actor.label exceeds ${MAX_LABEL} octets`;
+  }
+  // v0.2 (§2, upstream #40). These three counted toward the canonical-form bound while having no
+  // limit of their own, so a connector could build an envelope that no clipping rule could
+  // rescue: every member it was permitted to clip was already inside its own limit. Reached from
+  // ordinary input — a transcript line carrying a 100 KB `model` landed unclipped in
+  // `actor.external_id`.
+  if (typeof actor?.external_id === 'string' && octets(actor.external_id) > MAX_LABEL) {
+    return `actor.external_id exceeds ${MAX_LABEL} octets`;
+  }
+  for (const member of ['source', 'kind'] as const) {
+    const value = e[member];
+    if (typeof value === 'string' && octets(value) > MAX_LABEL) {
+      return `${member} exceeds ${MAX_LABEL} octets`;
+    }
   }
 
   const refs = e['refs'];

@@ -100,7 +100,7 @@ export function envelopeFromLine(
   }
 
   return sealEnvelope({
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'envelope',
     source: 'transcript',
     kind: 'session_utterance',

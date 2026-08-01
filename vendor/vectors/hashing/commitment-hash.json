@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/03-commitment.md §3.2, spec/00-overview.md (domain separation)",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "commitment_hash = sha256(\"servanda/0.1:commitment_hash\" || 0x00 || JCS({intent, owner, owed_to, due, created_at})). Cases with same_hash_as_base=true prove that no other field of the commitment object reaches the hash. `hash_preimage_hex` is the complete preimage as octets, tag and separator included, so the domain tag is checkable without reconstructing it.",
@@ -22,7 +22,7 @@
       "name": "base",
       "description": "Reference commitment; every other case is compared against this hash.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -55,7 +55,7 @@
       "name": "differs-only-in-evidence-refs",
       "description": "THE required pair: identical promise, different evidence sets. Two parties agreeing on a promise need not share evidence, so the hash MUST be identical to base.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -92,7 +92,7 @@
       "name": "differs-only-in-empty-evidence-refs",
       "description": "Evidence removed entirely — still the same promise, still the same hash.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -120,7 +120,7 @@
       "name": "differs-only-in-confidence",
       "description": "Extraction confidence is vault-local and excluded from the preimage.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -153,7 +153,7 @@
       "name": "differs-only-in-source",
       "description": "How the commitment was captured is vault-local and excluded.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -186,7 +186,7 @@
       "name": "differs-only-in-conditions",
       "description": "blocked_by references are vault-local and excluded from the wire identity.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -221,7 +221,7 @@
       "name": "differs-in-intent",
       "description": "intent is one of the five hashed fields.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for InvoiceService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -254,7 +254,7 @@
       "name": "differs-in-owner",
       "description": "owner is one of the five hashed fields.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
@@ -287,7 +287,7 @@
       "name": "differs-in-owed-to",
       "description": "owed_to is one of the five hashed fields.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -320,7 +320,7 @@
       "name": "differs-in-due",
       "description": "due is one of the five hashed fields.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -353,7 +353,7 @@
       "name": "differs-in-created-at",
       "description": "created_at is one of the five hashed fields.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -386,7 +386,7 @@
       "name": "reflexive-owed-to-null",
       "description": "§3.1: owed_to null is a reflexive commitment. null is hashed as the JSON literal, not omitted.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -419,7 +419,7 @@
       "name": "undated-due-null",
       "description": "§3.1: due null is valid and expected to be the majority case.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Add integration tests for PaymentRetryService",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
@@ -452,7 +452,7 @@
       "name": "unicode-intent",
       "description": "Non-ASCII intent, exercising JCS string handling inside the hash preimage.",
       "commitment": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "commitment",
         "intent": "Изпрати оферта на Георги — складът, до петък 😀",
         "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",

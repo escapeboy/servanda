@@ -127,7 +127,7 @@ export function ceilingFor(riskClass: RiskClass, paths: readonly string[] = []):
 /** History for one (human, work class). No level is stored — there is nothing to tamper with. */
 export const TrustRecord = z
   .object({
-    v: z.literal('servanda/0.1'),
+    v: z.literal('servanda/0.2'),
     type: z.literal('trust_record'),
     /** The human. Trust is per-persona: it is *this* human's demonstrated review behaviour. */
     persona: z.string().regex(/^[0-9a-f]{64}$/),
@@ -145,7 +145,7 @@ export type TrustRecord = z.infer<typeof TrustRecord>;
 
 export function emptyTrustRecord(persona: string, workClass: string, now: string): TrustRecord {
   return TrustRecord.parse({
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'trust_record',
     persona,
     work_class: workClass,

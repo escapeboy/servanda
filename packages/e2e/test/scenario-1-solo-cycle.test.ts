@@ -105,7 +105,7 @@ describe('scenario 1 — solo: from a spoken sentence to a brief line', () => {
     pendingId = install.node.queuePendingExtraction(
       alice.personaId,
       {
-        v: 'servanda/0.1',
+        v: 'servanda/0.2',
         type: 'commitment',
         intent: item.raw.intent,
         owner: alice.personaId,
@@ -159,7 +159,7 @@ describe('scenario 1 — solo: from a spoken sentence to a brief line', () => {
     const outcome = await runExecutor({
       executorClass: 'tests',
       commitment: {
-        v: 'servanda/0.1',
+        v: 'servanda/0.2',
         type: 'commitment',
         owner: alice.personaId,
         owed_to: null,

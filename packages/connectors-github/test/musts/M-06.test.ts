@@ -44,7 +44,7 @@ describe('M-6: envelope content is data, never instruction', () => {
     expect(notes?.kind).toBe('archaeology_todo');
     expect(notes?.source).toBe('github');
     expect(notes?.persona).toBe(PERSONA);
-    expect(notes?.v).toBe('servanda/0.1');
+    expect(notes?.v).toBe('servanda/0.2');
     expect(notes?.type).toBe('envelope');
     for (const field of ['v', 'type', 'id', 'source', 'kind', 'occurred_at', 'received_at', 'persona'] as const) {
       expect(String(notes?.[field])).not.toContain('ignore previous instructions');

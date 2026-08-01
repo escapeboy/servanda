@@ -68,7 +68,7 @@ export function signAssertion(
 ): Assertion {
   return withSignature(
     {
-      v: 'servanda/0.1' as const,
+      v: 'servanda/0.2' as const,
       type: 'assertion' as const,
       edge_id: fields.edge_id,
       state: fields.state,

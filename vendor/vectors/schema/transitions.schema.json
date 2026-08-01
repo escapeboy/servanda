@@ -3,15 +3,26 @@
   "$id": "https://servanda.dev/schema/transitions.schema.json",
   "title": "Edge transition-table vectors (spec §4.3, M-14)",
   "type": "object",
-  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
-  "required": ["description", "cases"],
+  "allOf": [
+    {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner"
+    }
+  ],
+  "required": [
+    "description",
+    "cases"
+  ],
   "properties": {
     "suite_version": {},
     "protocol_version": {},
     "spec_reference": {},
     "generated_by": {},
-    "description": { "type": "string" },
-    "note": { "type": "string" },
+    "description": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
     "cases": {
       "type": "array",
       "minItems": 1,
@@ -27,9 +38,17 @@
         ],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-          "description": { "type": "string", "minLength": 1 },
-          "edge": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge" },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "edge": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge"
+          },
           "assertions": {
             "type": "array",
             "minItems": 1,
@@ -42,14 +61,25 @@
             "minItems": 1,
             "items": {
               "type": "object",
-              "required": ["index", "accepted", "rejection_reason"],
+              "required": [
+                "index",
+                "accepted",
+                "rejection_reason"
+              ],
               "additionalProperties": false,
               "properties": {
-                "index": { "type": "integer", "minimum": 0 },
-                "accepted": { "type": "boolean" },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accepted": {
+                  "type": "boolean"
+                },
                 "rejection_reason": {
                   "oneOf": [
-                    { "type": "null" },
+                    {
+                      "type": "null"
+                    },
                     {
                       "enum": [
                         "edge-id-mismatch",
@@ -66,7 +96,8 @@
                         "dispute-window-not-elapsed",
                         "implicit-transition-not-assertable",
                         "duplicate-assertion-by-same-party",
-                        "malformed-edge-acceptance-window"
+                        "malformed-edge-acceptance-window",
+                        "asserted-at-before-signers-previous"
                       ]
                     }
                   ]
@@ -74,12 +105,36 @@
               },
               "allOf": [
                 {
-                  "if": { "properties": { "accepted": { "const": true } } },
-                  "then": { "properties": { "rejection_reason": { "type": "null" } } }
+                  "if": {
+                    "properties": {
+                      "accepted": {
+                        "const": true
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "rejection_reason": {
+                        "type": "null"
+                      }
+                    }
+                  }
                 },
                 {
-                  "if": { "properties": { "accepted": { "const": false } } },
-                  "then": { "properties": { "rejection_reason": { "type": "string" } } }
+                  "if": {
+                    "properties": {
+                      "accepted": {
+                        "const": false
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "rejection_reason": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               ]
             }

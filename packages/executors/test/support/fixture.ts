@@ -15,7 +15,7 @@ export const PERSONA = 'a'.repeat(64);
 export const OTHER_PERSONA = 'c'.repeat(64);
 
 export const COMMITMENT: ExecutorCommitment = {
-  v: 'servanda/0.1',
+  v: 'servanda/0.2',
   type: 'commitment',
   owner: PERSONA,
   owed_to: null,

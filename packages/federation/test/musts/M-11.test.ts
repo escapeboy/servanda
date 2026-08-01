@@ -108,7 +108,7 @@ describe('M-11: a hub MUST NOT compute or serve cross-party fulfillment statisti
     // §7's `localPairwiseHistory` refuses to run over an edge the persona is not a party to.
     // The wire is the only way such an edge could ever enter a vault; it does not.
     const foreign = {
-      v: 'servanda/0.1' as const,
+      v: 'servanda/0.2' as const,
       type: 'edge' as const,
       edge_id: 'b'.repeat(64),
       commitment_hash: 'c'.repeat(64),

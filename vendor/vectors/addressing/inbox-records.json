@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/06-reconciliation-federation.md §6.7, conformance M-17",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "Inbox records `{ v, type:\"inbox\", persona, hubs, dh_key, issued_at, sig }`. Verification rule: the signature MUST verify against the key named in `persona`. `dh_key` is what §6.3 seals to, which is why this record is guarded: a forged one does not merely misroute a persona's mail, it hands the forger the key to read it. `known_keys` exists only so a verifier can report WHICH other key signed a rejected record; a verifier without it still rejects, as `invalid-signature`.",
@@ -33,7 +33,7 @@
         "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
       },
       "record": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "inbox",
         "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "hubs": [
@@ -41,9 +41,9 @@
         ],
         "dh_key": "e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f",
         "issued_at": "2026-07-25T09:00:00Z",
-        "sig": "a27a8c35d759f6f8610e073ea45c05a56be7ab9848e6702b047a2fac4198d2a6a7faaba9248b2df1692ba6d1cf3981fe78b8442a80a782e8611a665f7514e709"
+        "sig": "006406d14b59cf915be99263e1723c836f4c2b27e4f15bd423626d7c7e6ffd3cc433c6a3f083ddfb383dd27aad74c66f67964eb9d7d8c7024e3d4e4164a4eb05"
       },
-      "canonical": "{\"dh_key\":\"e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f\",\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:00:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f\",\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:00:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.2\"}",
       "expected": {
         "accepted": true,
         "rejection_reason": null,
@@ -58,7 +58,7 @@
         "persona_id": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f"
       },
       "record": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "inbox",
         "persona": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
         "hubs": [
@@ -67,9 +67,9 @@
         ],
         "dh_key": "c035f514e4bf0d5841bf94de8c96ffb7b3ce5cb20b56218a5d57788b080a4b73",
         "issued_at": "2026-07-25T09:05:00Z",
-        "sig": "61223f6ce05ac13717a408a95cfd75c406d65922633719b42ae19728b62978f7e0e3e8d6effbd91d001fe89bd64323ea0a6e75ee42dae42b0cc11d1002527a02"
+        "sig": "f7fe33449faebc6b6e44bad39f4f7e8d7e6f248369e7df2f1bad9310478f7be36660e9baa0ea2a07f1b3e48615e41ef620a779647fa79ebc2cffd9ab7ca6b300"
       },
-      "canonical": "{\"dh_key\":\"c035f514e4bf0d5841bf94de8c96ffb7b3ce5cb20b56218a5d57788b080a4b73\",\"hubs\":[\"https://hub.example/servanda\",\"https://backup.hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:05:00Z\",\"persona\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"c035f514e4bf0d5841bf94de8c96ffb7b3ce5cb20b56218a5d57788b080a4b73\",\"hubs\":[\"https://hub.example/servanda\",\"https://backup.hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:05:00Z\",\"persona\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"type\":\"inbox\",\"v\":\"servanda/0.2\"}",
       "expected": {
         "accepted": true,
         "rejection_reason": null,
@@ -84,7 +84,7 @@
         "persona_id": "2469c261d1628b3ac044a3543d7e85c6482dcc774223e7fd1030a1beccfc6a97"
       },
       "record": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "inbox",
         "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "hubs": [
@@ -92,9 +92,9 @@
         ],
         "dh_key": "9d89e90bde5f57ab92958fc5c48de8fca332db37c8ab89602d3e8b2bdf419946",
         "issued_at": "2026-07-25T09:10:00Z",
-        "sig": "daa6c510c7b5f895955bd9cd2d949cc64cdfa116d580aa6824eef7ed043581db17b7c433eec336e70133dadcd709ed80a0aef7c5e9126fd45152fc459246a90a"
+        "sig": "6965fbac92def25ef8e91d45bd5af0a5743942bd897e85a1974c233b0a50d5b3cd9b89ff8cf328fd05d531eb8cf093902f3a00838b9945c594a0a29a92e63507"
       },
-      "canonical": "{\"dh_key\":\"9d89e90bde5f57ab92958fc5c48de8fca332db37c8ab89602d3e8b2bdf419946\",\"hubs\":[\"https://hub.attacker.example/servanda\"],\"issued_at\":\"2026-07-25T09:10:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"9d89e90bde5f57ab92958fc5c48de8fca332db37c8ab89602d3e8b2bdf419946\",\"hubs\":[\"https://hub.attacker.example/servanda\"],\"issued_at\":\"2026-07-25T09:10:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.2\"}",
       "expected": {
         "accepted": false,
         "rejection_reason": "signer-is-not-the-persona",
@@ -109,7 +109,7 @@
         "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
       },
       "record": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "inbox",
         "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
         "hubs": [
@@ -117,9 +117,9 @@
         ],
         "dh_key": "e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f",
         "issued_at": "2026-07-25T09:15:00Z",
-        "sig": "020ae02ca76dce1c4fa274888a4d494867c4ed8c9a53595a924c3124cf30b62d52b682bdd660d6473283ce4d81357305478d09e9e0fdd55527b134fd08577a03"
+        "sig": "02d1c2a597ffe648ecc66b89cda6261e23d58e3f007835ffc98e80f2982cd420adde4db4a19b0b90755430538eb6edfae9daa206e04bf976852d16c9273e5202"
       },
-      "canonical": "{\"dh_key\":\"e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f\",\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:15:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f\",\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:15:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.2\"}",
       "expected": {
         "accepted": false,
         "rejection_reason": "invalid-signature",

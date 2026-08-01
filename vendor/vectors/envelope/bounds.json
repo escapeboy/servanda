@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/02-signal-envelope.md §2 (bounds), spec/08-conformance.md M-19",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "M-19 / §2 bounds. Every case names the bound it sits on and whether it is inside it. A node MUST reject an envelope outside any bound rather than canonicalize it; a connector MUST clip rather than discard the observation. `measured` is in the bound’s own unit (octets of UTF-8, or a count), so a consumer can check the measurement as well as the verdict.",
@@ -10,6 +10,9 @@
     "refs_entries": 32,
     "ref_value_octets": 2048,
     "actor_label_octets": 200,
+    "actor_external_id_octets": 200,
+    "source_octets": 200,
+    "kind_octets": 200,
     "payload_string_octets": 8192,
     "canonicalizer_refusal_depth": 256
   },
@@ -45,7 +48,7 @@
       "measured": 32,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -199,7 +202,7 @@
       "measured": 33,
       "within_bounds": false,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -357,7 +360,7 @@
       "measured": 2048,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -387,7 +390,7 @@
       "measured": 2049,
       "within_bounds": false,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -417,7 +420,7 @@
       "measured": 2048,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -447,7 +450,7 @@
       "measured": 200,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -481,7 +484,7 @@
       "measured": 201,
       "within_bounds": false,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -509,13 +512,217 @@
       }
     },
     {
+      "name": "actor-external-id-at-the-limit",
+      "description": "An external_id of exactly 200 octets is inside the bound (v0.2, #40).",
+      "bound": "actor_external_id_octets",
+      "measured": 200,
+      "within_bounds": true,
+      "envelope_sans_id": {
+        "v": "servanda/0.2",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      }
+    },
+    {
+      "name": "actor-external-id-over-the-limit",
+      "description": "One octet more is outside it. In v0.1 this member had no bound at all.",
+      "bound": "actor_external_id_octets",
+      "measured": 201,
+      "within_bounds": false,
+      "envelope_sans_id": {
+        "v": "servanda/0.2",
+        "type": "envelope",
+        "source": "github",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      }
+    },
+    {
+      "name": "source-at-the-limit",
+      "description": "A source of exactly 200 octets is inside the bound (v0.2, #40).",
+      "bound": "source_octets",
+      "measured": 200,
+      "within_bounds": true,
+      "envelope_sans_id": {
+        "v": "servanda/0.2",
+        "type": "envelope",
+        "source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      }
+    },
+    {
+      "name": "source-over-the-limit",
+      "description": "One octet more is outside it.",
+      "bound": "source_octets",
+      "measured": 201,
+      "within_bounds": false,
+      "envelope_sans_id": {
+        "v": "servanda/0.2",
+        "type": "envelope",
+        "source": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "kind": "pr_comment",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      }
+    },
+    {
+      "name": "kind-at-the-limit",
+      "description": "A kind of exactly 200 octets is inside the bound (v0.2, #40).",
+      "bound": "kind_octets",
+      "measured": 200,
+      "within_bounds": true,
+      "envelope_sans_id": {
+        "v": "servanda/0.2",
+        "type": "envelope",
+        "source": "github",
+        "kind": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      }
+    },
+    {
+      "name": "kind-over-the-limit",
+      "description": "One octet more is outside it.",
+      "bound": "kind_octets",
+      "measured": 201,
+      "within_bounds": false,
+      "envelope_sans_id": {
+        "v": "servanda/0.2",
+        "type": "envelope",
+        "source": "github",
+        "kind": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "occurred_at": "2026-07-25T08:41:12Z",
+        "received_at": "2026-07-25T08:41:19Z",
+        "actor": {
+          "label": "octavia",
+          "external_id": "4412"
+        },
+        "payload": {
+          "body": "I will add the integration tests for PaymentRetryService by Friday.",
+          "pr": 219
+        },
+        "refs": [
+          {
+            "kind": "url",
+            "value": "https://github.com/acme/billing/pull/219#issuecomment-1"
+          },
+          {
+            "kind": "commit",
+            "value": "9f2b1c4"
+          }
+        ],
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      }
+    },
+    {
       "name": "payload-string-at-the-limit",
       "description": "A payload string of exactly 8192 octets is inside the bound.",
       "bound": "payload_string_octets",
       "measured": 8192,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -548,7 +755,7 @@
       "measured": 8193,
       "within_bounds": false,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -581,7 +788,7 @@
       "measured": 8,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -628,7 +835,7 @@
       "measured": 9,
       "within_bounds": false,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -677,7 +884,7 @@
       "measured": 65536,
       "within_bounds": true,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",
@@ -717,7 +924,7 @@
       "measured": 65537,
       "within_bounds": false,
       "envelope_sans_id": {
-        "v": "servanda/0.1",
+        "v": "servanda/0.2",
         "type": "envelope",
         "source": "github",
         "kind": "pr_comment",

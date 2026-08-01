@@ -17,7 +17,7 @@ const vectors = loadVectors<VectorFile<CanonicalizationCase>>('canonicalization/
 
 describe('G0 canonicalization (RFC 8785)', () => {
   it('vector file matches the protocol version this implementation targets', () => {
-    expect(vectors.protocol_version).toBe('servanda/0.1');
+    expect(vectors.protocol_version).toBe('servanda/0.2');
     expect(vectors.cases.length).toBe(16);
   });
 

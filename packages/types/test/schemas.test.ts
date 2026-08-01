@@ -111,7 +111,11 @@ describe('schemas reject what the spec forbids', () => {
   });
 
   it('rejects a wrong protocol version', () => {
-    expect(() => Commitment.parse({ ...base, v: 'servanda/0.2' })).toThrow();
+    // The point of `v` is refusal rather than misinterpretation, so the case has to be a version
+    // this build does NOT implement. It used to be `servanda/0.2` — which this build now is, so
+    // the test would have gone on asserting that the current version is rejected.
+    expect(() => Commitment.parse({ ...base, v: 'servanda/0.1' })).toThrow();
+    expect(() => Commitment.parse({ ...base, v: 'servanda/0.3' })).toThrow();
   });
 
   it('rejects an uppercase or short public key', () => {

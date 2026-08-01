@@ -99,8 +99,23 @@ export class RecoveryResponder {
   verifyRequest(request: RecoverRequest): RecoveryVerdict {
     const proof = request.proof as Record<string, unknown>;
 
-    if (proof['type'] === 'rotation') {
-      const parsed = RotationSchema.safeParse(proof);
+    // §6.6 (v0.2, upstream #37): possession is checked FIRST, and a rotation is never a
+    // substitute for it.
+    //
+    // v0.1 took a bare rotation statement as the whole proof. Rotations are PUBLISHED, so the
+    // signature a responder verified was genuine, by the OLD key, over a public artifact — and it
+    // attested to the wrong proposition. Anyone who had merely watched a rotation go by could
+    // replay it and receive every edge and every assertion chain of BOTH identities without
+    // holding either key. The rotation still has a job: it says which key succeeds which, so a
+    // responder can find records filed under the predecessor. It just cannot say who is asking.
+    const challengeValue = proof['challenge'];
+    const sigValue = proof['sig'];
+    if (typeof challengeValue !== 'string' || typeof sigValue !== 'string') {
+      return { verified: false, reason: '§6.6: proof must carry a challenge signed by the persona it names' };
+    }
+
+    if (proof['rotation'] !== undefined || proof['type'] === 'rotation') {
+      const parsed = RotationSchema.safeParse(proof['rotation'] ?? proof);
       if (!parsed.success) return { verified: false, reason: 'malformed rotation statement' };
       const rotation = parsed.data;
       if (rotation.new !== request.persona) {
@@ -119,6 +134,16 @@ export class RecoveryResponder {
       // A rotation from a key we have never dealt with proves nothing about our records.
       if (!this.knowsParty(rotation.old)) {
         return { verified: false, reason: 'the rotated-from key is not a party to any edge here' };
+      }
+      // Succession established. Possession is still the challenge's job, checked below.
+      if (!this.issued.has(challengeValue)) {
+        return { verified: false, reason: '§6.6: challenge is not one this responder issued, or is spent' };
+      }
+      if (!verifyObject({ challenge: challengeValue, sig: sigValue }, request.persona)) {
+        return {
+          verified: false,
+          reason: '§6.6: the challenge is not signed by the persona being recovered — a rotation says which key succeeds which, not who is asking',
+        };
       }
       return { verified: true, persona: rotation.new, predecessor: rotation.old };
     }

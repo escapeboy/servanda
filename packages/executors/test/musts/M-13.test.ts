@@ -32,7 +32,7 @@ describe('M-13: agents are never parties — automation acts under a persona, ne
 
   it('cannot describe a signed artifact at all — the schema has no room for one', () => {
     const base = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'draft_pr_artifact',
       executor_class: 'dead-code',
       risk_class: 'routine',

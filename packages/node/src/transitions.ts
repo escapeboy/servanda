@@ -52,6 +52,16 @@ interface ChainState {
   dispute_closed_by: Set<string>;
   /** §4.4: `asserted_at` of the accepted `disputed` assertion — when `dispute_window` starts. */
   disputed_at: string | null;
+  /**
+   * §4.3 (v0.2, upstream #38): the latest `asserted_at` accepted from each signer.
+   *
+   * Both windows in the spec are measured between two `asserted_at` values, and both of those
+   * were written by the party the window constrains: an owner minting `closed` dated years back
+   * and `closed` dated now computed the acceptance window as elapsed on an edge the counterparty
+   * had only confirmed. Per-signer rather than global, because two honest parties disagree about
+   * `now` and neither is authoritative over the other's clock.
+   */
+  latest_by_signer: Map<string, string>;
   resolved_at: string | null;
 }
 
@@ -266,6 +276,7 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
     dispute_closed_by: new Set(),
     disputed_at: null,
     resolved_at: null,
+    latest_by_signer: new Map(),
   };
 
   // A malformed edge accepts no assertions at all — not "the offending one", every one. The edge
@@ -285,7 +296,15 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
   }
 
   const outcomes: AssertionOutcome[] = assertions.map((a, index) => {
+    // Checked before the table, because a backdated assertion is not a transition error — the
+    // transition may be perfectly legal — and reporting it as `illegal-source-state` would name
+    // the wrong thing.
+    const previous = ctx.latest_by_signer.get(a.by);
+    if (previous !== undefined && Date.parse(a.asserted_at) < Date.parse(previous)) {
+      return { index, accepted: false, rejection_reason: 'asserted-at-before-signers-previous' as const };
+    }
     const reason = step(edge, ctx, a);
+    if (reason === null) ctx.latest_by_signer.set(a.by, a.asserted_at);
     return reason === null
       ? { index, accepted: true }
       : { index, accepted: false, rejection_reason: reason };

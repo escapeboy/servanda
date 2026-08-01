@@ -55,7 +55,7 @@ describe('a wrap is opened with its own KDF parameters', () => {
     const kdf = { m: 19456, t: 2, p: 1 }; // the OWASP floor an earlier vault might have used
     expect(kdf.m).toBeLessThan(ARGON2ID_PARAMS.m);
     const keyset: ContentKeySet = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'content_keyset',
       wraps: [legacyWrap(contentKey, 'passphrase-of-record', kdf)],
     };
@@ -66,7 +66,7 @@ describe('a wrap is opened with its own KDF parameters', () => {
     // The control. Honouring a wrap's parameters must not turn into opening it regardless.
     const contentKey = generateContentKey();
     const keyset: ContentKeySet = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'content_keyset',
       wraps: [legacyWrap(contentKey, 'right', { m: 8, t: 1, p: 1 })],
     };
@@ -186,7 +186,7 @@ describe('a keyset that came from somewhere else', () => {
     const key = generateContentKey();
     const wrap = wrapForPassphrase(key, 'correct horse');
     const hostile: ContentKeySet = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'content_keyset',
       wraps: [{ ...wrap, kdf: { ...wrap.kdf!, m: MAX_UNWRAP_MEMORY_KIB + 1 } }],
     };
@@ -201,7 +201,7 @@ describe('a keyset that came from somewhere else', () => {
     weak.kdf = { algo: 'argon2id', salt: weak.kdf!.salt, m: 19456, t: 2, p: 1 };
     // rewrap at those parameters so the ciphertext matches the cost it declares
     const rewrapped = wrapForPassphrase(key, 'correct horse');
-    expect(() => unwrapWithPassphrase({ v: 'servanda/0.1', type: 'content_keyset', wraps: [rewrapped] }, 'correct horse')).not.toThrow();
+    expect(() => unwrapWithPassphrase({ v: 'servanda/0.2', type: 'content_keyset', wraps: [rewrapped] }, 'correct horse')).not.toThrow();
   });
 
   it('refuses to build a passphrase wrap from an empty passphrase', () => {

@@ -84,7 +84,7 @@ describe('M-17: a record is believed only when its own persona signed it', () =>
     // our choosing, sign it with a key that is not the persona's, and offer it.
     const honest = withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'inbox' as const,
         persona: alice.personaId,
         hubs: ['https://hub.example/servanda'],
@@ -115,7 +115,7 @@ describe('§6.7: what a verified record then authorizes', () => {
     InboxRecord.parse(
       withSignature(
         {
-          v: 'servanda/0.1' as const,
+          v: 'servanda/0.2' as const,
           type: 'inbox' as const,
           persona: alice.personaId,
           hubs: ['https://first.example/servanda', 'https://second.example/servanda'],
@@ -155,7 +155,7 @@ describe('§6.7: what a verified record then authorizes', () => {
     const forever = InboxRecord.parse(
       withSignature(
         {
-          v: 'servanda/0.1' as const,
+          v: 'servanda/0.2' as const,
           type: 'inbox' as const,
           persona: alice.personaId,
           hubs: ['https://attacker.example/servanda'],
@@ -198,7 +198,7 @@ describe('§6.7: delivering to declared hubs, in the declared order', () => {
 
   const signedRecord = (by: { personaId: string; privateKey: string }, persona = alice.personaId) =>
     withSignature(
-      { v: 'servanda/0.1' as const, type: 'inbox' as const, persona, hubs: HUBS, dh_key: alice.dhPublicKey, issued_at: ISSUED },
+      { v: 'servanda/0.2' as const, type: 'inbox' as const, persona, hubs: HUBS, dh_key: alice.dhPublicKey, issued_at: ISSUED },
       by.privateKey,
     );
 
@@ -297,7 +297,7 @@ describe('§6.3: a sealing key is only usable from a record that verifies', () =
   const record = (by: { privateKey: string }, over: Record<string, unknown> = {}) =>
     withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'inbox' as const,
         persona: alice.personaId,
         hubs: ['https://hub.example'],

@@ -33,7 +33,10 @@
         "ref_value_octets",
         "actor_label_octets",
         "payload_string_octets",
-        "canonicalizer_refusal_depth"
+        "canonicalizer_refusal_depth",
+        "actor_external_id_octets",
+        "source_octets",
+        "kind_octets"
       ],
       "additionalProperties": false,
       "properties": {
@@ -57,6 +60,15 @@
         },
         "canonicalizer_refusal_depth": {
           "const": 256
+        },
+        "actor_external_id_octets": {
+          "const": 200
+        },
+        "source_octets": {
+          "const": 200
+        },
+        "kind_octets": {
+          "const": 200
         }
       }
     },
@@ -180,7 +192,10 @@
               "ref_value_octets",
               "actor_label_octets",
               "payload_string_octets",
-              "canonicalizer_refusal_depth"
+              "canonicalizer_refusal_depth",
+              "actor_external_id_octets",
+              "source_octets",
+              "kind_octets"
             ]
           },
           "measured": {

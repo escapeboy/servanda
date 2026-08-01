@@ -124,6 +124,15 @@ export const ActRejectionReason = z.enum([
   'evidence-hash-required',
   'acceptance-window-not-elapsed',
   'illegal-source-state',
+  /**
+   * v0.2 (§7, upstream #41). v0.1 fixed seven values while the §4.3 table produced fifteen, so
+   * eight distinct refusals reached the caller as the single word `illegal-source-state` — "the
+   * edge is over", "you already signed this one" and "the edge object is malformed" were
+   * indistinguishable. A tool whose contract is to refuse owes the caller a reason it can act on.
+   */
+  'terminal-state-reached',
+  'duplicate-assertion-by-same-party',
+  'malformed-edge-acceptance-window',
 ]);
 export type ActRejectionReason = z.infer<typeof ActRejectionReason>;
 

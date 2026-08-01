@@ -190,7 +190,7 @@ describe('scenario 6 — the attack that did not happen', () => {
     // ── movement 4: even a legitimate-looking record only ever yields a draft ─────────────
     const repo = { path: ensureFixtureRepo(), baseBranch: 'main' };
     const executorCommitment = {
-      v: 'servanda/0.1' as const,
+      v: 'servanda/0.2' as const,
       type: 'commitment' as const,
       owner: alice.personaId,
       owed_to: null,

@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/01-identity.md §1.1–§1.2",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "BIP-39 mnemonic → 64-byte seed → SLIP-0010 hardened ed25519 derivation at m/7391'/{i}'. persona_id = hex(public_key).",

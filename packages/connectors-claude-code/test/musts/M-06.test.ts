@@ -62,7 +62,7 @@ describe('M-6: transcript content is data, never instruction', () => {
       timestamp: '2026-01-05T09:00:00Z',
     });
     const [envelope] = connector.fromTranscript(line, ctx);
-    expect(envelope.v).toBe('servanda/0.1');
+    expect(envelope.v).toBe('servanda/0.2');
     expect(envelope.source).toBe('transcript');
     expect(envelope.kind).toBe('session_utterance');
     expect(envelope.persona).toBe(PERSONA);

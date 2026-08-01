@@ -240,7 +240,7 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
     // ── M-4 / §5.2: published into team scope by an explicit signed act ───────────────────
     publish = withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'publish' as const,
         edge_id: oldEdgeId,
         scope: studioGroup.personaId, // the team's group key (§5.1)
@@ -257,7 +257,7 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
         mila.personaId,
         withSignature(
           {
-            v: 'servanda/0.1' as const,
+            v: 'servanda/0.2' as const,
             type: 'publish' as const,
             edge_id: oldEdgeId,
             scope: studioGroup.personaId,
@@ -316,7 +316,7 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
     // The successor: same promise, new owner. §4.5 requires the new owner's `proposed`
     // signature on top of the old edge's two — three keys across the two edges.
     const successorCommitment = {
-      v: 'servanda/0.1' as const,
+      v: 'servanda/0.2' as const,
       type: 'commitment' as const,
       intent: INTENT,
       owner: ivo.personaId,
@@ -331,7 +331,7 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
     const successorHash = commitmentHash(successorCommitment);
     ivoSide.vault.putCommitment(ivo.personaId, successorCommitment);
     newEdge = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'edge',
       edge_id: edgeId({
         commitment_hash: successorHash,

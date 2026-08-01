@@ -34,7 +34,7 @@ describe('§2 envelope id vectors', () => {
   const v = readVectors(ID_VECTORS);
 
   it('agrees with the vendored suite version', () => {
-    expect(v.protocol_version).toBe('servanda/0.1');
+    expect(v.protocol_version).toBe('servanda/0.2');
     expect(v.domain_tag.tag).toBe('servanda/0.1:envelope_id');
     expect(v.cases.length).toBeGreaterThan(0);
   });

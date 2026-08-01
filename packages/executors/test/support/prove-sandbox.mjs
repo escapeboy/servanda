@@ -141,7 +141,7 @@ let artifactJson = '';
   const outcome = await runExecutor({
     executorClass: 'dead-code',
     commitment: {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'commitment',
       owner: 'a'.repeat(64),
       owed_to: null,

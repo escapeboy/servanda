@@ -136,7 +136,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
     // ── §1.3 + §1.5: why Acme believes ────────────────────────────────────────────────────
     attestation = withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'attestation' as const,
         org: studioOrgRoot.personaId,
         subject: studioGroup.personaId,
@@ -158,7 +158,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
     // The anchor transport is injected. There is no global-fetch fallback in this package: with
     // nothing injected it fails closed, which the third resolution below shows.
     const wellKnown = JSON.stringify({
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       org_root: studioOrgRoot.personaId,
       hubs: [],
     });
@@ -184,7 +184,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
       transport: {
         fetchWellKnown: async () => ({
           status: 200,
-          body: JSON.stringify({ v: 'servanda/0.1', org_root: acme.personaId, hubs: [] }),
+          body: JSON.stringify({ v: 'servanda/0.2', org_root: acme.personaId, hubs: [] }),
           ttlSeconds: 3600,
         }),
       },
@@ -198,7 +198,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
 
     // ── the outward edge: one promise, owned by the group ─────────────────────────────────
     commitment = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'commitment',
       intent: INTENT,
       owner: studioGroup.personaId,
@@ -226,7 +226,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
       const childHash = commitmentHash(childCommitment);
       studioSide.vault.putCommitment(studioGroup.personaId, childCommitment);
       return {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'edge' as const,
         edge_id: edgeId({
           commitment_hash: childHash,
@@ -248,7 +248,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
     for (const child of children) studioSide.vault.putEdge(studioGroup.personaId, child);
 
     parent = {
-      v: 'servanda/0.1',
+      v: 'servanda/0.2',
       type: 'edge',
       edge_id: edgeId({
         commitment_hash: hash,

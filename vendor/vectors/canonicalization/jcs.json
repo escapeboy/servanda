@@ -1,6 +1,6 @@
 {
-  "suite_version": "0.1.0",
-  "protocol_version": "servanda/0.1",
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
   "spec_reference": "spec/00-overview.md (Conventions) — RFC 8785 JCS",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "Canonicalization cases. `input` is raw JSON text; parse it, canonicalize, and compare the result to `canonical` byte for byte. `sha256` is over the UTF-8 bytes of `canonical`.",

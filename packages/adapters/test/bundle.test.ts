@@ -7,7 +7,7 @@ import { assertion, commitment, edge, NOW, OWNER, REPO, REPO_HEAD } from './supp
 
 const bundle = () =>
   EvidenceBundle.parse({
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'evidence_bundle',
     adapters: ['file', 'git'],
     commitment_hash: 'b'.repeat(64),

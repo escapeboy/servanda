@@ -98,7 +98,7 @@ export function archaeologyCandidates(
       envelopeId: envelope.id,
       ageDays: num(payload, 'age_days'),
       commitment: {
-        v: 'servanda/0.1',
+        v: 'servanda/0.2',
         type: 'commitment',
         intent: intent.slice(0, 500),
         owner: opts.persona,

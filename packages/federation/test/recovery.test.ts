@@ -57,7 +57,33 @@ describe('§6.6 edge recovery', () => {
     expect(responder.answer({ persona: pair.a.personaId, proof }).verdict.verified).toBe(false);
   });
 
-  it('§1.7: a rotation successor recovers the predecessor’s edges', () => {
+  it('§1.7: a rotation successor recovers the predecessor’s edges, WITH proof of possession', () => {
+    const rotation = signRotation(
+      pair.a.personaId,
+      SUCCESSOR.personaId,
+      '2026-07-26T09:00:00Z',
+      pair.a.privateKey,
+    );
+    // v0.2 (upstream #37): the rotation says which key succeeds which; the challenge says who is
+    // asking. Both. This test asserted only the first half until the spec caught up.
+    const signed = signChallenge(responder.issueChallenge(), SUCCESSOR.privateKey);
+    const { verdict, response } = responder.answer({
+      persona: SUCCESSOR.personaId,
+      proof: { ...signed, rotation },
+    });
+    expect(verdict).toEqual({
+      verified: true,
+      persona: SUCCESSOR.personaId,
+      predecessor: pair.a.personaId,
+    });
+    expect(response.edges.map((e) => e.edge.edge_id)).toEqual([edgeId]);
+  });
+
+  it('a bare rotation proves nothing — it is published, so anyone can replay it', () => {
+    // THE v0.1 HOLE, pinned. The rotation below is genuine and its signature verifies; it is also
+    // a public artifact. A responder that answered this handed the edges and assertion chains of
+    // BOTH identities to whoever had watched the rotation go by. The signature was never forged —
+    // it attested to the wrong proposition.
     const rotation = signRotation(
       pair.a.personaId,
       SUCCESSOR.personaId,
@@ -65,12 +91,24 @@ describe('§6.6 edge recovery', () => {
       pair.a.privateKey,
     );
     const { verdict, response } = responder.answer({ persona: SUCCESSOR.personaId, proof: rotation });
-    expect(verdict).toEqual({
-      verified: true,
+    expect(verdict.verified).toBe(false);
+    expect(response.edges).toEqual([]);
+  });
+
+  it('a rotation cannot be borrowed: the challenge must be signed by the successor', () => {
+    const rotation = signRotation(
+      pair.a.personaId,
+      SUCCESSOR.personaId,
+      '2026-07-26T09:00:00Z',
+      pair.a.privateKey,
+    );
+    // Succession is not possession of the successor: the predecessor's key signs the challenge.
+    const signed = signChallenge(responder.issueChallenge(), pair.a.privateKey);
+    const { verdict } = responder.answer({
       persona: SUCCESSOR.personaId,
-      predecessor: pair.a.personaId,
+      proof: { ...signed, rotation },
     });
-    expect(response.edges.map((e) => e.edge.edge_id)).toEqual([edgeId]);
+    expect(verdict.verified).toBe(false);
   });
 
   it('a rotation signed by the NEW key proves nothing (§1.7: the old key transfers continuity)', () => {

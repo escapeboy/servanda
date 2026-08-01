@@ -49,6 +49,11 @@ requires reading the generator to understand.
   bound rather than canonicalize it. `clipping.scalar_boundary_example` is a truncation that would
   split a 3-octet scalar if taken at the bound exactly: the clipped value must fall back to the
   scalar boundary and contain no code point absent from the source.
+- **recovery/proof-of-possession** — §6.6, and the family that exists because of a hole. Feed each
+  `request` to your responder and compare both the verdict and the reason. `bare-rotation-is-not-a-proof`
+  is the one that matters: a genuine, verifying, PUBLISHED rotation and no challenge signature. v0.1
+  answered it, which handed the edges and chains of two identities to anyone who had watched a
+  rotation go by. A responder that accepts it is not merely lenient; it is the v0.1 defect.
 - **signatures** — recompute `sha256_preimage` from `unsigned_object`, then verify `signature`
   against `signer.persona_id` (the public key). The `sig` field is excluded from its own preimage.
 - **derivation** — derive from `mnemonic` and check every field, including `chain_code`.

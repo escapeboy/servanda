@@ -1,0 +1,144 @@
+{
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
+  "spec_reference": "spec/06-reconciliation-federation.md §6.6 (proof of possession)",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "A §6.6 `recover_request` MUST prove possession of the key it names: `proof.sig` over `proof.challenge`, verified against `persona`. A `rotation` MAY accompany it to show succession, and is never a substitute — rotations are published, so a bare one proves only that the sender can read. Replay each request through your responder and compare the verdict and the reason.",
+  "challenge_preimage": {
+    "note": "The signed object is `{v, type: \"recovery_challenge\", challenge}` with `sig` removed, per the §0 signing-preimage rule. Signing preimages are NOT domain-separated.",
+    "type": "recovery_challenge"
+  },
+  "cases": [
+    {
+      "name": "challenge-signed-by-the-persona",
+      "description": "The honest case: the requester holds the key it names and proves it.",
+      "request": {
+        "v": "servanda/0.2",
+        "type": "recover_request",
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "proof": {
+          "challenge": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "sig": "2df43754a13638075e009f6e5d16f909598248e8e8e8ea2fca59b7508eb340638377df798e3e5f3129fe9b1cd9c9ab4a4c22723fb88668af4610084a15355e00"
+        }
+      },
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "name": "rotation-plus-challenge-by-the-new-key",
+      "description": "Recovery under a rotated key. The rotation says which key succeeds which; the challenge says who is asking. Both, not either.",
+      "request": {
+        "v": "servanda/0.2",
+        "type": "recover_request",
+        "persona": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proof": {
+          "challenge": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "sig": "3017b7fce1920984241efec5ec574e36de0cab3b0d9b2db012afa6633313cf8dc157a7666b25ae09273104fc67980759675c71f97bfebd0ddead75f9edd6240a",
+          "rotation": {
+            "v": "servanda/0.2",
+            "type": "rotation",
+            "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "new": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+            "rotated_at": "2026-07-25T09:00:00Z",
+            "sig": "e37b20ebdd2d90c07dfbb3477ab32fe647a7e135141d12ec49f40cb3d91d273b2ff910d53a94f2a5643d032f042ffad8b704dae2aa5b2720d65d8e872b9b160d"
+          }
+        }
+      },
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "name": "bare-rotation-is-not-a-proof",
+      "description": "THE v0.1 HOLE. A published rotation, replayed by an observer who holds neither key. The rotation signature is genuine and verifies; it attests that one key succeeded another, not that the sender is either of them. A responder that answered this returned the edges and chains of both identities to a passer-by.",
+      "request": {
+        "v": "servanda/0.2",
+        "type": "recover_request",
+        "persona": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proof": {
+          "challenge": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "rotation": {
+            "v": "servanda/0.2",
+            "type": "rotation",
+            "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "new": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+            "rotated_at": "2026-07-25T09:00:00Z",
+            "sig": "e37b20ebdd2d90c07dfbb3477ab32fe647a7e135141d12ec49f40cb3d91d273b2ff910d53a94f2a5643d032f042ffad8b704dae2aa5b2720d65d8e872b9b160d"
+          }
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "no-proof-of-possession"
+      }
+    },
+    {
+      "name": "challenge-signed-by-the-old-key",
+      "description": "The subtler replay: an attacker who captured the OLD key’s material signs as the predecessor. Succession is not possession of the successor.",
+      "request": {
+        "v": "servanda/0.2",
+        "type": "recover_request",
+        "persona": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proof": {
+          "challenge": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "sig": "2df43754a13638075e009f6e5d16f909598248e8e8e8ea2fca59b7508eb340638377df798e3e5f3129fe9b1cd9c9ab4a4c22723fb88668af4610084a15355e00",
+          "rotation": {
+            "v": "servanda/0.2",
+            "type": "rotation",
+            "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "new": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+            "rotated_at": "2026-07-25T09:00:00Z",
+            "sig": "e37b20ebdd2d90c07dfbb3477ab32fe647a7e135141d12ec49f40cb3d91d273b2ff910d53a94f2a5643d032f042ffad8b704dae2aa5b2720d65d8e872b9b160d"
+          }
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "signed-by-another-key"
+      }
+    },
+    {
+      "name": "challenge-signed-by-a-stranger",
+      "description": "A third party’s signature over the right challenge. Verifies, under the wrong key.",
+      "request": {
+        "v": "servanda/0.2",
+        "type": "recover_request",
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "proof": {
+          "challenge": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "sig": "d1076ec7a0e3ea6dd48c1d407e778570ead3b7fff6bfdba3354654256c24ff3f2311da7a6f42881725707c65594b7c974ebdc21a1f891776f3d272597bea0d03"
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "signed-by-another-key"
+      }
+    },
+    {
+      "name": "rotation-names-a-different-successor",
+      "description": "Possession is proven, and the rotation offered as context names somebody else. A responder MUST NOT follow it: the chain it describes does not end at the requester.",
+      "request": {
+        "v": "servanda/0.2",
+        "type": "recover_request",
+        "persona": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "proof": {
+          "challenge": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "sig": "d1076ec7a0e3ea6dd48c1d407e778570ead3b7fff6bfdba3354654256c24ff3f2311da7a6f42881725707c65594b7c974ebdc21a1f891776f3d272597bea0d03",
+          "rotation": {
+            "v": "servanda/0.2",
+            "type": "rotation",
+            "old": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "new": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+            "rotated_at": "2026-07-25T09:00:00Z",
+            "sig": "e37b20ebdd2d90c07dfbb3477ab32fe647a7e135141d12ec49f40cb3d91d273b2ff910d53a94f2a5643d032f042ffad8b704dae2aa5b2720d65d8e872b9b160d"
+          }
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "reason": "rotation-does-not-name-this-persona"
+      }
+    }
+  ]
+}

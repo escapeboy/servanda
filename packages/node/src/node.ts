@@ -95,12 +95,16 @@ const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
   'expiry-before-due': 'illegal-source-state',
   'acceptance-window-not-elapsed': 'acceptance-window-not-elapsed',
   'dispute-window-not-elapsed': 'illegal-source-state',
-  'malformed-edge-acceptance-window': 'illegal-source-state',
+  'malformed-edge-acceptance-window': 'malformed-edge-acceptance-window',
   'implicit-transition-not-assertable': 'illegal-source-state',
   'invalid-signature': 'illegal-source-state',
-  'terminal-state-reached': 'illegal-source-state',
+  // A backdated assertion is not an illegal transition, but §7's vocabulary has no member for
+  // it and adding one would be a second normative change for a reason a caller cannot act on
+  // differently: either way, the assertion this act would sign is refused.
+  'asserted-at-before-signers-previous': 'illegal-source-state',
+  'terminal-state-reached': 'terminal-state-reached',
   'edge-id-mismatch': 'illegal-source-state',
-  'duplicate-assertion-by-same-party': 'illegal-source-state',
+  'duplicate-assertion-by-same-party': 'duplicate-assertion-by-same-party',
 };
 
 /**
@@ -439,6 +443,20 @@ export class ServandaNode {
       // Releasing is giving up a claim, not evidencing delivery. Evidence here would record a
       // closure that never happened as though it had been performed.
       return refuse('evidence-hash-must-be-null');
+    }
+
+    // §7 (v0.2, upstream #41): `done` is refused from `disputed`.
+    //
+    // The §4.3 table has a `disputed → closed` row requiring BOTH parties, so the owner's half is
+    // a legal assertion and the chain accepted it. But no advertised act reaches the other half
+    // from `disputed` — `actionsFor` offers the counterparty only what §4.4's exits provide — so
+    // signing it recorded a closure, honestly, that can never complete. The person is told their
+    // promise is closed and the edge stays disputed forever. §4.4's exits from `disputed` are the
+    // two it names; `expired` is the one that ends the edge, and it decides nothing about the
+    // merits. This is a node-surface rule, not a table rule: the assertion remains valid if it
+    // arrives over the wire with both halves.
+    if (input.act === 'done' && this.edgeState(persona, edge.edge_id).final_state === 'disputed') {
+      return refuse('illegal-source-state');
     }
 
     const asserts = input.act === 'done' ? 'closed' : 'released';

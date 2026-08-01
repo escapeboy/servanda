@@ -75,7 +75,7 @@ describe('§6.1 hub transport', () => {
     const { withSignature } = await import('@servanda/crypto');
     const auth = withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'inbox_auth' as const,
         persona: B.personaId,
         challenge,
@@ -129,7 +129,7 @@ describe('§6.1 hub transport', () => {
     const { withSignature } = await import('@servanda/crypto');
     const auth = withSignature(
       {
-        v: 'servanda/0.1' as const,
+        v: 'servanda/0.2' as const,
         type: 'inbox_auth' as const,
         persona: B.personaId,
         challenge,

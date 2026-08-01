@@ -24,7 +24,7 @@ import {
 } from '../../dist/index.js';
 
 const DENIED = 'NETWORK_ACCESS_DENIED';
-const V = 'servanda/0.1';
+const V = 'servanda/0.2';
 const MNEMONIC =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ' +
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon ' +

@@ -171,7 +171,7 @@ export function buildEnvelope(
   const threadId = threadIdOf(parsed);
 
   return sealEnvelope({
-    v: 'servanda/0.1',
+    v: 'servanda/0.2',
     type: 'envelope',
     source: EMAIL_SOURCE,
     kind: extras.kind ?? direction.kind,

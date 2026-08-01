@@ -38,6 +38,7 @@ required=(
   transitions/invalid.json
   addressing/inbox-records.json
   addressing/oob-bootstrap.json
+  recovery/proof-of-possession.json
   node-surface/actions.json
   node-surface/act-tool.json
   node-surface/brief-slots.json
@@ -60,14 +61,14 @@ const expected = {
   "canonicalization/jcs.json": 16,
   "hashing/commitment-hash.json": 14,
   "signatures/signatures.json": 5,
-  "transitions/valid.json": 8,
-  "transitions/invalid.json": 23,
+  "transitions/valid.json": 9,
+  "transitions/invalid.json": 25,
   "addressing/inbox-records.json": 4,
   "addressing/oob-bootstrap.json": 2,
   "node-surface/actions.json": 11,
-  "node-surface/act-tool.json": 14,
+  "node-surface/act-tool.json": 17,
   "node-surface/brief-slots.json": 7,
-  "node-surface/verification-levels.json": 10,
+  "node-surface/verification-levels.json": 13,
 };
 let bad = 0;
 for (const [file, n] of Object.entries(expected)) {
