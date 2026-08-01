@@ -11,6 +11,11 @@ one so far changes derived keys. A vault does not migrate across any of them.
 
 ### Added
 
+- **The specification is frozen at v0.1** (2026-08-01, conformance suite `0.1.0`,
+  [servanda-protocol@v0.1](https://github.com/escapeboy/servanda-protocol/releases/tag/v0.1)). A
+  normative change now requires `servanda/0.2`. This package tracks the frozen text; the freeze
+  says nothing about *this* package's stability, and every 0.x release so far has broken a vault.
+
 - **§2 envelope conformance vectors, replayed here** (`packages/envelope/test/envelope-vectors.test.ts`,
   upstream `vectors/envelope/`). Until now M-19 and the §2 `id` preimage were enforced only by
   tests this project wrote about its own code — §8 said so itself, and `GOVERNANCE.md` draws the

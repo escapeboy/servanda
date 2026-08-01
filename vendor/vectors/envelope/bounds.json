@@ -1,5 +1,5 @@
 {
-  "suite_version": "0.1.0-pre",
+  "suite_version": "0.1.0",
   "protocol_version": "servanda/0.1",
   "spec_reference": "spec/02-signal-envelope.md §2 (bounds), spec/08-conformance.md M-19",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",

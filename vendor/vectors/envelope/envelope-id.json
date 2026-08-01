@@ -1,5 +1,5 @@
 {
-  "suite_version": "0.1.0-pre",
+  "suite_version": "0.1.0",
   "protocol_version": "servanda/0.1",
   "spec_reference": "spec/02-signal-envelope.md §2, spec/00-overview.md (domain separation)",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
@@ -42,7 +42,7 @@
     "id_after_removal": "aecc963ee549fe95758042ec7e2396edd67832d09c18b1e54e81481910c29ad2"
   },
   "determinism_scope": {
-    "note": "§2 says two nodes observing the same source event and emitting the same source, kind, timestamps, actor, payload and refs MUST compute the same id. That list does not name `persona`, and `received_at` is the observing node’s own clock — yet both are members of the canonical form and both reach the digest, as `differs-in-persona` and `differs-in-received-at` show. These vectors encode the construction §2 defines (sha256 over JCS of the envelope sans id) and take no position on the sentence. See the upstream issue linked from the family README.",
+    "note": "§2: two nodes compute the same id exactly when they emit the same envelope. Because `persona` and `received_at` are members of the preimage, that also means sharing a persona and recording the same receipt instant — `differs-in-persona` and `differs-in-received-at` make both consequences checkable rather than inferred. There is no cross-node identifier for \"the same observation\" in v0; whether one should exist is upstream #36, a v0.2 matter because any answer changes a preimage.",
     "members_in_preimage": [
       "v",
       "type",

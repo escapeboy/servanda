@@ -1,5 +1,5 @@
 {
-  "suite_version": "0.1.0-pre",
+  "suite_version": "0.1.0",
   "protocol_version": "servanda/0.1",
   "spec_reference": "spec/07-node-surface.md (open_loops, brief), conformance M-20",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",

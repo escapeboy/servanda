@@ -7,8 +7,11 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status: v0.4.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
-> the implementation that proves it runs.
+> **Status: v0.4.0-pre**, tracking **spec v0.1, frozen 2026-08-01**, conformance suite `0.1.0`.
+> The protocol is the product; this is the implementation that proves it runs.
+>
+> The spec being frozen does not make this release stable: a normative change now needs
+> `servanda/0.2`, but nothing stops *this* package from breaking, and every 0.x so far has.
 >
 > **A vault does not migrate across any 0.x release so far.** 0.2.0-pre took the scheduled
 > domain-separation break; 0.3.0-pre gave personas their own X25519 key; 0.4.0-pre replaced the

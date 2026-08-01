@@ -1,5 +1,5 @@
 {
-  "suite_version": "0.1.0-pre",
+  "suite_version": "0.1.0",
   "protocol_version": "servanda/0.1",
   "spec_reference": "spec/03-commitment.md §3.2, spec/00-overview.md (domain separation)",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
