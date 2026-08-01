@@ -46,6 +46,12 @@ importers:
         specifier: workspace:*
         version: link:../types
 
+  packages/client-conformance:
+    dependencies:
+      '@servanda/types':
+        specifier: workspace:*
+        version: link:../types
+
   packages/client-local:
     dependencies:
       '@servanda/client-web':
@@ -123,6 +129,15 @@ importers:
 
   packages/e2e:
     dependencies:
+      '@servanda/brief-email':
+        specifier: workspace:*
+        version: link:../brief-email
+      '@servanda/client-conformance':
+        specifier: workspace:*
+        version: link:../client-conformance
+      '@servanda/client-web':
+        specifier: workspace:*
+        version: link:../client-web
       '@servanda/connectors-claude-code':
         specifier: workspace:*
         version: link:../connectors-claude-code
@@ -147,6 +162,9 @@ importers:
       '@servanda/node':
         specifier: workspace:*
         version: link:../node
+      '@servanda/tui':
+        specifier: workspace:*
+        version: link:../tui
       '@servanda/types':
         specifier: workspace:*
         version: link:../types

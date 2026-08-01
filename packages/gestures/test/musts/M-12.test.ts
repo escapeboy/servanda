@@ -93,7 +93,7 @@ describe('M-12: a gesture card never shows a name above its evidence', () => {
   it('the check can fail: a name rendered without evidence is detectable', () => {
     // A hand-built pair, deliberately missing its evidence node — the shape the renderer must
     // never produce. If this assertion stopped failing, the test above would prove nothing.
-    const party = partyFor('stefan', '3');
+    const party = partyFor({ value: 'stefan', origin: 'attested' }, '3');
     const rogue = { tag: 'p', attrs: {}, children: [{ tag: 'span', attrs: { class: 'party' }, text: party!.display }] };
     const evidence = walk(rogue).filter((n) => String(n.attrs?.['class'] ?? '').startsWith('trust'));
     expect(evidence).toHaveLength(0);

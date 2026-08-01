@@ -5,5 +5,21 @@
     "outDir": "./dist",
     "noEmit": false
   },
-  "include": ["test/**/*"]
+  "include": [
+    "test/**/*"
+  ],
+  "references": [
+    {
+      "path": "../client-conformance"
+    },
+    {
+      "path": "../client-web"
+    },
+    {
+      "path": "../tui"
+    },
+    {
+      "path": "../brief-email"
+    }
+  ]
 }

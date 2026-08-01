@@ -208,7 +208,26 @@ export const OpenLoopItem = z.object({
    * must be able to come back.
    */
   intent_or_expect: z.string().max(500),
-  counterparty: ExternalLabel.or(PublicKeyHex).nullable(),
+  /**
+   * §7 (v0.2, upstream #39): the name AND where it came from.
+   *
+   * `attested` is a name the node asserts about a third party, and M-12 binds it — a client MUST
+   * NOT render it above its `verification_level`. `self-labelled` is an `external_label` (§3.1):
+   * a name the VIEWER typed for someone off-network, level 0 by construction and the only name
+   * that counterparty will ever have. It makes no claim about anyone, so M-12 does not reach it.
+   *
+   * v0.1 emitted a bare string and the two were indistinguishable, so a conforming client could
+   * satisfy M-12 only by suppressing both — which destroys the solo path M-10 protects — or
+   * neither. Every client chose neither. This is why M-12's client half was unenforceable rather
+   * than merely untested.
+   */
+  counterparty: z
+    .object({
+      value: ExternalLabel.or(PublicKeyHex),
+      origin: z.enum(['attested', 'self-labelled']),
+    })
+    .strict()
+    .nullable(),
   /** M-12: clients MUST display this and MUST NOT render a name above its evidence level. */
   verification_level: VerificationLevel,
   age_days: z.number().nonnegative(),

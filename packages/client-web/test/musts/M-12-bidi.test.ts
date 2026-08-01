@@ -26,13 +26,17 @@ import { NOW, everyViewAnywhere } from '../fixture.js';
 
 const RIGHT_TO_LEFT_OVERRIDE = String.fromCodePoint(0x202e);
 
-function itemWith(counterparty: string) {
+function itemWith(counterparty: string, origin: 'attested' | 'self-labelled' = 'attested') {
   return {
     kind: 'commitment' as const,
     id: 'i-bidi',
     intent_or_expect: 'Send the revised quote',
-    counterparty,
-    verification_level: '0' as const,
+    counterparty: { value: counterparty, origin },
+    // Level 2, not 0: v0.2 suppresses an ATTESTED name whose level does not carry one, so at 0
+    // there would be no name on the surface and this file would be testing the suppression rather
+    // than the isolation. The dangerous case is precisely a name the evidence DOES support —
+    // that is the one a client must render verbatim and must still contain.
+    verification_level: '2' as const,
     age_days: 3,
     due: null,
     state: 'open',

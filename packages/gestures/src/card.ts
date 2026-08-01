@@ -101,7 +101,10 @@ export const AT_MEETING_END: Delivery = { moment: 'batched', interrupts: false }
 /** A name and the evidence behind it, or nothing. M-12 has no branch that emits one alone. */
 function partyOf(speaker: { display: Quoted; verification: PartyView['trust']['level'] } | null): PartyView | null {
   if (speaker === null) return null;
-  return partyFor(speaker.display, speaker.verification);
+  // A gesture surface names whoever spoke in the channel it is embedded in — a handle the viewer
+  // sees in Slack or a PR, not a name this node attested. `self-labelled` is the honest origin,
+  // and it is why the name is shown at every level: there is no stronger claim to withhold.
+  return partyFor({ value: speaker.display, origin: 'self-labelled' }, speaker.verification);
 }
 
 /**

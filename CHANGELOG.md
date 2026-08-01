@@ -9,6 +9,37 @@ one so far changes derived keys. A vault does not migrate across any of them.
 
 ## [Unreleased]
 
+### Added
+
+- **`@servanda/client-conformance` — the client half of the suite.** §8 recorded that the client
+  halves of M-12 and M-21 were prose obligations "until a client-side conformance harness exists".
+  It exists.
+
+  It judges a **rendered fact set** — one fact per element or line, carrying tag, classes,
+  attributes, text, reading-order position and bidi/line scope — rather than a document, because
+  every violation that actually happened here happened in the last inch: a class on an element, an
+  escape byte inside a line, a border-width in a stylesheet. `toContain('relief-attested')` passed
+  for months against a page where the relief was invisible, because a substring cannot say WHICH
+  element carries a class.
+
+  Three properties, now also normative in §8: hostile twins by construction (a harness of
+  well-formed cases re-proves what the node vectors already prove); surface-plural **including the
+  stylesheet**, since a correct rank table beside a contradicting stylesheet is exactly the defect
+  that shipped; and two negative universals instead of per-case assertions — "no string reaches the
+  screen unless the client authored it or declared it as content" is a set difference and cannot be
+  passed by luck. Two limits are stated as limits: it asserts a bidi isolate is present, not that a
+  text engine honours it, and declared style, not painted pixels.
+
+- **`counterparty` carries `origin` in this implementation too.** The spec and vectors for #39
+  landed first and the implementation did not follow them until now — `partyFor` took a bare
+  string, so nothing could act on the distinction. It does now, and the change is visible: **an
+  attested name at a level that carries none is no longer rendered.** The M-12 test that asserted
+  the opposite ("shows an unconfirmed name as unconfirmed, in flat relief") encoded the v0.1
+  compromise, which was to show every name and put the level beside it — the only thing a client
+  could do when it could not tell an assertion from a viewer's own note. A self-labelled name is
+  still rendered at every level, and has its own test, because a client that passed by hiding
+  everything would break the solo path M-10 protects.
+
 ### Changed — breaking, and breaking the wire
 
 **This implementation now speaks `servanda/0.2`.** The spec was frozen at v0.1 on 2026-08-01 and

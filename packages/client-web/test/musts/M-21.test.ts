@@ -40,7 +40,7 @@ function loops(): OpenLoopsOutput {
         kind: 'commitment',
         id: 'i-1',
         intent_or_expect: HER_WORDS,
-        counterparty: 'Dana Reyes',
+        counterparty: { value: 'Dana Reyes', origin: 'attested' as const },
         verification_level: '2',
         age_days: 3,
         due: null,

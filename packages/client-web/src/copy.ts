@@ -81,6 +81,15 @@ export const COPY = {
    * interface entirely (M-12: the level is always displayed, and a name is never rendered
    * above the evidence that stands behind it).
    */
+  /**
+   * What stands where a name would, when the node sent one its evidence does not support.
+   *
+   * Client copy, and it has to be: M-21 forbids the node supplying wording, and M-12 forbids
+   * showing the name. Something must occupy the place so the card still says WHO this is about —
+   * "someone" is honest, and it is the client's own word.
+   */
+  unevidencedParty: 'someone',
+
   trust: {
     '0': 'unconfirmed name',
     '1': 'same person as before',

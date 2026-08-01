@@ -130,8 +130,15 @@ function partyView(role: string, record: ProofPartyRecord): ProofPartyView {
   // call, exactly as they do on a card, so a proof page cannot flatter a name either. A
   // party with no display name falls back to its key, which `partyFor` sets in mono and
   // never dresses up.
-  const named = record.display === null ? null : partyFor(record.display, record.verification_level);
-  const party = named ?? partyFor(record.key, record.verification_level);
+  // A proof page shows what a party's evidence supports and nothing above it, exactly as a card
+  // does. `display` on a proof record is an org-attested name where it exists at all, so it is
+  // `attested`; the key fallback is the wire identity and is never dressed up as a name.
+  const named =
+    record.display === null
+      ? null
+      : partyFor({ value: record.display, origin: 'attested' }, record.verification_level);
+  const party =
+    named ?? partyFor({ value: record.key, origin: 'self-labelled' }, record.verification_level);
   if (party === null) throw new Error('a proof party must have a key');
   return { role, key: record.key, party };
 }

@@ -229,7 +229,7 @@ describe('scenario 3 — expectation: the freelancer and the silent client', () 
     expect(item.kind).toBe('expectation');
     expect(item.id).toBe(expectationId);
     expect(item.intent_or_expect).toBe(AWAITED);
-    expect(item.counterparty).toBe(GEORGI);
+    expect(item.counterparty?.value).toBe(GEORGI);
     expect(item.age_days).toBe(DAYS_TO_DAY_9);
     expect(item.state).toBe('open');
 
@@ -307,7 +307,7 @@ describe('scenario 3 — expectation: the freelancer and the silent client', () 
     const owed = overdueLoops.items.find((i) => i.intent_or_expect === PHASE_1);
     expect(owed).toBeDefined();
     expect(owed!.due).toBe(DUE);
-    expect(owed!.counterparty).toBe(GEORGI);
+    expect(owed!.counterparty?.value).toBe(GEORGI);
 
     expect(overdueBrief.slots[0]!.headline).toBe(PHASE_1);
     expect(install.node.escalatable(alice.personaId)).toEqual([]);

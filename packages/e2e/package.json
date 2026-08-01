@@ -9,15 +9,19 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@servanda/brief-email": "workspace:*",
+    "@servanda/client-conformance": "workspace:*",
+    "@servanda/client-web": "workspace:*",
     "@servanda/connectors-claude-code": "workspace:*",
     "@servanda/connectors-github": "workspace:*",
     "@servanda/crypto": "workspace:*",
+    "@servanda/executors": "workspace:*",
     "@servanda/extraction": "workspace:*",
     "@servanda/federation": "workspace:*",
     "@servanda/identity": "workspace:*",
     "@servanda/node": "workspace:*",
+    "@servanda/tui": "workspace:*",
     "@servanda/types": "workspace:*",
-    "@servanda/vault": "workspace:*",
-    "@servanda/executors": "workspace:*"
+    "@servanda/vault": "workspace:*"
   }
 }

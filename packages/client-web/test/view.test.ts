@@ -19,7 +19,7 @@ function item(overrides: Partial<OpenLoopItem> = {}): OpenLoopItem {
     kind: 'commitment',
     id: 'i1',
     intent_or_expect: 'Send the revised quote',
-    counterparty: 'Dana Reyes',
+    counterparty: { value: 'Dana Reyes', origin: 'attested' as const },
     verification_level: '2',
     age_days: 12,
     due: null,
@@ -131,14 +131,14 @@ describe('the seal carries the state', () => {
 
 describe('a key is not a name', () => {
   it('shortens a raw key and marks it as one', () => {
-    const party = partyFor('a'.repeat(64), '1');
+    const party = partyFor({ value: 'a'.repeat(64), origin: 'attested' }, '1');
     expect(party?.isKey).toBe(true);
     expect(party?.display).toBe('aaaaaa…aaaa');
   });
 
   it('leaves a written name alone', () => {
-    expect(partyFor('Dana Reyes', '3')?.display).toBe('Dana Reyes');
-    expect(partyFor('Dana Reyes', '3')?.isKey).toBe(false);
+    expect(partyFor({ value: 'Dana Reyes', origin: 'attested' }, '3')?.display).toBe('Dana Reyes');
+    expect(partyFor({ value: 'Dana Reyes', origin: 'attested' }, '3')?.isKey).toBe(false);
   });
 
   it('has no party at all when the promise is to yourself', () => {

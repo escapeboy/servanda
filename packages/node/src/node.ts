@@ -49,6 +49,23 @@ export class M1Violation extends NodeError {
   override name = 'M1Violation';
 }
 
+/**
+ * §7 (v0.2, upstream #39): say where a counterparty's name came from.
+ *
+ * A 64-character hex value IS the persona key — the wire identity, not a name anyone asserted, and
+ * not something a client should dress up as one. Everything else reaching this node's surface today
+ * is an `external_label` (§3.1): a name the viewer typed for someone off-network. When this node
+ * grows attestation lookup, THAT is what produces `attested`; until it does, claiming the stronger
+ * origin would be a lie the client cannot check.
+ *
+ * Reporting `self-labelled` here is therefore the honest floor, not a placeholder: it is exactly
+ * what the node knows.
+ */
+function counterpartyOf(value: string | null): { value: string; origin: 'attested' | 'self-labelled' } | null {
+  if (value === null || value.trim().length === 0) return null;
+  return { value, origin: 'self-labelled' };
+}
+
 /** M-2: an owner cannot supply the counterparty's confirmation. */
 export class M2Violation extends NodeError {
   override name = 'M2Violation';
@@ -650,7 +667,7 @@ export class ServandaNode {
         // M-15: after retention the plaintext is gone but the edge remains. What the record
         // said is unrecoverable; that it existed is not.
         intent_or_expect: commitment?.intent ?? NO_LOCAL_PLAINTEXT,
-        counterparty,
+        counterparty: counterpartyOf(counterparty),
         verification_level: this.verificationLevel(persona, counterparty),
         age_days: ageDays(edge.proposed_at, now),
         due: edge.due,
@@ -671,7 +688,7 @@ export class ServandaNode {
         kind: 'commitment',
         id: hash,
         intent_or_expect: commitment.intent,
-        counterparty: commitment.owed_to,
+        counterparty: counterpartyOf(commitment.owed_to),
         verification_level: this.verificationLevel(persona, commitment.owed_to),
         age_days: ageDays(commitment.created_at, now),
         due: commitment.due,
@@ -696,7 +713,7 @@ export class ServandaNode {
           kind: 'commitment',
           id: pending.id,
           intent_or_expect: candidate.intent ?? NO_LOCAL_PLAINTEXT,
-          counterparty: candidate.owed_to ?? null,
+          counterparty: counterpartyOf(candidate.owed_to ?? null),
           verification_level: this.verificationLevel(persona, candidate.owed_to ?? null),
           age_days: ageDays(pending.queued_at, now),
           due: candidate.due ?? null,
@@ -717,7 +734,7 @@ export class ServandaNode {
         kind: 'expectation',
         id,
         intent_or_expect: expectation.expect,
-        counterparty: expectation.from,
+        counterparty: counterpartyOf(expectation.from),
         verification_level: this.verificationLevel(persona, expectation.from),
         age_days: ageDays(expectation.since, now),
         due: null,

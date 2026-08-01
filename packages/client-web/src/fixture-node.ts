@@ -94,7 +94,18 @@ export function makeFixture(size = 24, now = '2026-03-01T09:00:00Z'): FixtureSta
       kind: waiting ? 'expectation' : 'commitment',
       id: itemId,
       intent_or_expect: `${INTENTS[i % INTENTS.length]} (${i + 1})`,
-      counterparty: i % 5 === 4 ? null : (NAMES[i % NAMES.length] ?? null),
+      // v0.2 (#39): the fixture must exercise BOTH origins, or a client that ignores the
+      // distinction passes on it. Attested names sit on the name-bearing levels; the rest are
+      // labels the viewer typed, which are rendered at any level and never suppressed.
+      counterparty:
+        i % 5 === 4
+          ? null
+          : {
+              value: NAMES[i % NAMES.length] ?? 'someone',
+              origin: (levels[i % levels.length] === '2' || levels[i % levels.length] === '3'
+                ? 'attested'
+                : 'self-labelled') as 'attested' | 'self-labelled',
+            },
       verification_level: levels[i % levels.length] ?? '0',
       age_days: (i * 3) % 40,
       due: hasDue ? new Date(nowMs + dueOffsetDays * 86_400_000).toISOString().replace(/\.\d{3}Z$/u, 'Z') : null,

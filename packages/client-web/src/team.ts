@@ -95,8 +95,8 @@ function partiesOf(publication: TeamPublication): PartyView[] {
   const first = partyFor(publication.item.counterparty, publication.item.verification_level);
   if (first !== null) parties.push(first);
   const other = publication.otherParty;
-  if (other !== undefined && other !== null) {
-    const second = partyFor(other.display, other.level);
+  if (other !== undefined && other !== null && other.display !== null) {
+    const second = partyFor({ value: other.display, origin: 'attested' }, other.level);
     if (second !== null) parties.push(second);
   }
   return parties;

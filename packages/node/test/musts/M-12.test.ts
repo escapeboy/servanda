@@ -44,9 +44,9 @@ describe('M-12: the node supplies verification level and never a name above it',
     expect(fx.node.verificationLevel(fx.personas[0]!, stranger)).toBe('0');
     const item = fx.node
       .openLoops({ view: 'all', persona: null, limit: 50 })
-      .items.find((i) => i.counterparty === fx.personas[1]!);
+      .items.find((i) => i.counterparty?.value === fx.personas[1]!);
     // No display name is emitted at level 0 — the counterparty is the raw persona_id.
-    expect(item?.counterparty).toBe(fx.personas[1]!);
+    expect(item?.counterparty?.value).toBe(fx.personas[1]!);
     expect(item?.verification_level).toBe('0');
   });
 

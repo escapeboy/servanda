@@ -126,15 +126,46 @@ export function isKeyShaped(value: string): boolean {
   return KEY_SHAPE.test(value);
 }
 
-export function partyFor(counterparty: string | null, level: VerificationLevel): PartyView | null {
-  if (counterparty === null || counterparty.trim().length === 0) return null;
-  const isKey = isKeyShaped(counterparty);
+/**
+ * §7 v0.2 (#39): the name arrives with its origin, and the two are rendered differently.
+ *
+ * An `attested` name is a claim the node makes about a third party, so M-12 binds it: it MUST NOT
+ * appear above its evidence level. A `self-labelled` one is an `external_label` the viewer typed
+ * for someone off-network — level 0 by construction, no claim about anyone, and the only name that
+ * counterparty will ever have. Suppressing it would erase the person from their own register and
+ * break the solo path M-10 protects.
+ *
+ * Until v0.1 gave clients no way to tell these apart, this function rendered every name at every
+ * level, and M-12's client half was not merely untested — it was undecidable.
+ */
+export function partyFor(
+  counterparty: OpenLoopItem['counterparty'],
+  level: VerificationLevel,
+): PartyView | null {
+  if (counterparty === null || counterparty.value.trim().length === 0) return null;
+  const { value, origin } = counterparty;
+  const isKey = isKeyShaped(value);
+  // A key is the wire identity, never a name, and is shown as one at any level: shortening it is
+  // the client saying "this is a key", not dressing it up.
+  if (origin === 'attested' && !isKey && !NAME_BEARING_LEVELS.includes(level)) {
+    // The node sent a name its evidence does not support. Not `shortKey(value)` — that is for
+    // KEYS, and applying it to a name produces a mangled name rather than an absent one, which is
+    // worse than either honest answer. The client's own word stands there instead, so the card
+    // still says who this is about and the seal still says how well it is evidenced.
+    return { display: COPY.unevidencedParty, isKey: false, trust: trustFor(level) };
+  }
   return {
-    display: isKey ? shortKey(counterparty) : counterparty,
+    display: isKey ? shortKey(value) : value,
     isKey,
     trust: trustFor(level),
   };
 }
+
+/**
+ * §1.6: only an attestation carries a name. `ext` outranks continuity and carries none — a binding
+ * proof binds a key to a CHANNEL, never to a person — which is why this is not "level >= ext".
+ */
+const NAME_BEARING_LEVELS: readonly VerificationLevel[] = ['2', '3'];
 
 /**
  * The third question, answered as a fact about a date rather than a verdict about a person.

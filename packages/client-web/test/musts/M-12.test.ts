@@ -17,12 +17,19 @@ import { NOW, everySurface, everyViewAnywhere } from '../fixture.js';
 
 const LEVELS = Object.keys(VERIFICATION_LEVEL_LABELS) as VerificationLevel[];
 
-function itemAt(level: VerificationLevel, counterparty = 'Dana Reyes') {
+function itemAt(
+  level: VerificationLevel,
+  counterparty = 'Dana Reyes',
+  // v0.2 (#39): a name now arrives with its origin, and these cases are about ATTESTED names —
+  // the ones M-12 binds. The self-labelled branch has its own test, because a client that passes
+  // by suppressing everything would satisfy this file and break the offline path.
+  origin: 'attested' | 'self-labelled' = 'attested',
+) {
   return {
     kind: 'commitment' as const,
     id: `i-${level}`,
     intent_or_expect: 'Send the revised quote',
-    counterparty,
+    counterparty: { value: counterparty, origin },
     verification_level: level,
     age_days: 3,
     due: null,
@@ -81,11 +88,31 @@ describe('M-12: the level is always displayed, and a name never rises above its 
     }
   });
 
-  it('shows an unconfirmed name as unconfirmed, in flat relief', () => {
+  it('does NOT render an attested name at level 0 — v0.2 stopped showing it in flat relief', () => {
+    // This test asserted the opposite until §7 gained `counterparty.origin` (upstream #39).
+    //
+    // v0.1 emitted a bare string, so a client could not tell a name the node ASSERTS about a third
+    // party from a label the VIEWER typed for someone off-network. Suppressing both destroys the
+    // solo path M-10 protects; suppressing neither renders a name above its evidence. Every client
+    // chose neither and showed the level beside it as a compromise, which is what this file used
+    // to pin. The compromise is over: an attested name at a level that carries none falls back to
+    // its key, which is never dressed up as a name.
     const html = renderToHtml(cardEl(cardFor(itemAt('0'), NOW, false)));
     expect(html).toContain('relief-flat');
     expect(html).toContain(COPY.trust['0']);
-    expect(html).toContain('Dana Reyes');
+    expect(html).not.toContain('Dana Reyes');
+  });
+
+  it('DOES render a self-labelled name at level 0 — it is the viewer’s own note', () => {
+    // The other half, and the reason the rule is decidable rather than a choice between two
+    // wrongs. `Georgi from the warehouse` is a name this person typed for someone who will never
+    // be on the network. It claims nothing about anyone, so there is no evidence to outrun — and
+    // hiding it would erase the person from their own register.
+    const html = renderToHtml(
+      cardEl(cardFor(itemAt('0', 'Georgi from the warehouse', 'self-labelled'), NOW, false)),
+    );
+    expect(html).toContain('Georgi from the warehouse');
+    expect(html).toContain(COPY.trust['0']);
   });
 
   it('emits no name without its evidence, on any surface', async () => {
@@ -113,7 +140,7 @@ describe('M-12: the level is always displayed, and a name never rises above its 
 
   it('takes the level as its only input: there is no way to ask for more relief', () => {
     for (const level of LEVELS) {
-      const party = partyFor('Dana Reyes', level);
+      const party = partyFor({ value: 'Dana Reyes', origin: 'attested' }, level);
       expect(party?.trust.relief).toBe(RELIEF_BY_LEVEL[level]);
       expect(RELIEF_RANK[party?.trust.relief ?? 'flat']).toBeLessThanOrEqual(
         RELIEF_RANK[RELIEF_BY_LEVEL[level]],
@@ -122,7 +149,7 @@ describe('M-12: the level is always displayed, and a name never rises above its 
   });
 
   it('does not dress a raw key up as a name', () => {
-    const party = partyFor('f'.repeat(64), '0');
+    const party = partyFor({ value: 'f'.repeat(64), origin: 'attested' }, '0');
     expect(party?.isKey).toBe(true);
     expect(party?.display).not.toBe('f'.repeat(64));
     expect(renderToHtml(cardEl(cardFor(itemAt('0', 'f'.repeat(64)), NOW, false)))).toContain(

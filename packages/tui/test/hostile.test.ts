@@ -49,8 +49,13 @@ function hostileState(): FixtureState {
     ...(base.items[0] as FixtureState['items'][number]),
     id: 'hostile',
     intent_or_expect: HOSTILE_WHAT,
-    counterparty: HOSTILE_NAME,
-    verification_level: '0' as const,
+    // Attested, because that is the branch M-12 binds and the branch this file is about.
+    counterparty: { value: HOSTILE_NAME, origin: 'attested' as const },
+    // Level 2, not 0: v0.2 suppresses an ATTESTED name whose level does not carry one, so at 0
+    // there would be no name on the surface and this file would be testing the suppression rather
+    // than the isolation. The dangerous case is precisely a name the evidence DOES support —
+    // that is the one a client must render verbatim and must still contain.
+    verification_level: '2' as const,
   };
   return {
     items: [item],
