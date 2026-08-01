@@ -4,12 +4,19 @@
 
 **Every 0.x tag is a pre-release. The cryptography has not been externally reviewed.**
 
-Two things are specifically unreviewed, both tracked upstream as
-[servanda-protocol#7](https://github.com/escapeboy/servanda-protocol/issues/7):
+Upstream [servanda-protocol#7](https://github.com/escapeboy/servanda-protocol/issues/7) tracked two
+specific items and is now closed. They closed for different reasons, and the difference is the
+whole of what a reader should take from this section:
 
-- the **Ed25519 → X25519 birational map** used to derive the blind-courier encryption key from a
-  signing key, and
-- the **Argon2id parameters** the vault derives its content key with (§9.3 minimums: m=64 MiB).
+- the **Ed25519 → X25519 birational map** is **gone**, not cleared. Since 0.3.0-pre a persona holds
+  its own hardened X25519 key, and since 0.4.0-pre the transport is RFC 9180 HPKE replayed against
+  the RFC's own test vectors. There is no longer a construction here for that question to be about.
+- the **Argon2id parameters** (§9.3: m = 64 MiB, t = 3, p = 1) were **accepted by the maintainer**.
+  That is a decision, not a review. No cryptographer has signed off on this parameter set, and
+  nobody should read the closed issue as though one had.
+
+The rest of the cryptography — the identifier preimages, the domain separation, the vault format —
+has never been reviewed by anyone outside this project either.
 
 Do not use this release to protect anything whose loss would matter. The vault format, the key
 derivation and the identifier preimages will all change before v1 — see

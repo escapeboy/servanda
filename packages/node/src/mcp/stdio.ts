@@ -15,7 +15,7 @@ import type { ServandaNode } from '../node.js';
  */
 
 export const SUPPORTED_PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2024-11-05'] as const;
-export const SERVER_INFO = { name: 'servanda-node', version: '0.3.0-pre' } as const;
+export const SERVER_INFO = { name: 'servanda-node', version: '0.4.0-pre' } as const;
 
 export interface JsonRpcRequest {
   jsonrpc: '2.0';

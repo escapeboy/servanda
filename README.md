@@ -7,18 +7,21 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status: v0.3.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
+> **Status: v0.4.0-pre**, tracking spec v0 (DRAFT v0.1-pre). The protocol is the product; this is
 > the implementation that proves it runs.
 >
 > **A vault does not migrate across any 0.x release so far.** 0.2.0-pre took the scheduled
-> domain-separation break; 0.3.0-pre gave personas their own X25519 key. Each changes keys or
+> domain-separation break; 0.3.0-pre gave personas their own X25519 key; 0.4.0-pre replaced the
+> transport with HPKE and put the recipient inside the signature. Each changes keys or
 > identifiers a previous vault holds — see [CHANGELOG.md](CHANGELOG.md).
 >
-> **The cryptography has not been externally reviewed**
-> ([#7](https://github.com/escapeboy/servanda-protocol/issues/7)) — see [SECURITY.md](SECURITY.md).
-> What has changed is that #7's hardest question no longer applies here: a persona signs with one
-> key and performs key agreement with another, so the key-reuse the issue asks about is not a thing
-> this implementation does. That narrows the review; it does not replace it.
+> **The cryptography has not been externally reviewed** — see [SECURITY.md](SECURITY.md). Upstream
+> [#7](https://github.com/escapeboy/servanda-protocol/issues/7) is closed, and it is worth being
+> exact about how. Its harder half is *gone*: a persona signs with one key and performs key
+> agreement with another, so the key-reuse it asked about is not something this implementation
+> does, and the transport is now RFC 9180 HPKE replayed against the RFC's own test vectors. Its
+> other half — the Argon2id parameter set — was **accepted by the maintainer**, not cleared by a
+> cryptographer. An accepted parameter set is a decision; it is not a review.
 >
 > Read it, run it, file issues against it. Do not yet keep in it a promise you need in a year.
 
