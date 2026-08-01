@@ -12,9 +12,18 @@ import { defineConfig } from 'vitest/config';
  * badly enough that the reporter RPC timed out with `Timeout calling "onTaskUpdate"` and
  * vitest exited non-zero. A constant cannot be both a cap and a safe default.
  *
- * `- 1` leaves a core for the main process, which is the one that has to answer that RPC.
+ * `- 2` leaves a core for the main process, which is the one that has to answer that RPC — and it
+ * is `- 2` rather than `- 1` because `- 1` does not. On a 4-core GitHub runner `min(3, 4 - 1)` is
+ * 3 workers plus a main process on 4 cores: the main thread shares a core with an Argon2id worker
+ * and the reporter RPC times out. The M-suite failed exactly that way with **438 passed and zero
+ * failures**, which is the whole problem — the run reports red for a scheduling reason.
+ *
+ * `- 2` gives 2 workers on a 4-core runner and still 3 on a developer machine, so the cap is what
+ * bounds the fast case and the subtraction is what protects the small one. Those are two different
+ * jobs and one constant cannot do both, which is the same lesson the paragraph above records
+ * about the original hardcoded 4.
  */
-const MAX_WORKERS = Math.max(1, Math.min(3, availableParallelism() - 1));
+const MAX_WORKERS = Math.max(1, Math.min(3, availableParallelism() - 2));
 
 export default defineConfig({
   test: {
