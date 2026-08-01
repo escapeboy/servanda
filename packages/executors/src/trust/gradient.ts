@@ -98,9 +98,23 @@ export const SENSITIVE_PATH_GLOBS: readonly string[] = [
   '**/*credential*',
 ];
 
+/**
+ * Case-folded, and the asymmetry with `matchesGlob`'s other caller is the point.
+ *
+ * The capability lists are an ALLOWLIST: an exact match is what makes them safe, and folding case
+ * there would widen what an executor may touch. This list is a DENYLIST, so the same exactness
+ * inverts — `.ENV`, `src/AUTH/`, `Secrets/` all miss every glob and the artifact scores `routine`.
+ * On macOS and Windows those name the same files as the lowercase forms, so the check waves through
+ * exactly the file it exists to catch. A denylist that fails open is worse than no denylist,
+ * because it reports a ceiling it did not apply.
+ *
+ * Folded here rather than in `matchesGlob`, which the allowlist must keep exact. BOTH sides fold:
+ * the list itself is not all lowercase (`Jenkinsfile`), so folding only the path would drop the
+ * entries that are not — trading one silent miss for another.
+ */
 export function isSensitivePath(path: string): boolean {
-  const normalized = normalizeWorkspacePath(path);
-  return SENSITIVE_PATH_GLOBS.some((glob) => matchesGlob(normalized, glob));
+  const normalized = normalizeWorkspacePath(path).toLowerCase();
+  return SENSITIVE_PATH_GLOBS.some((glob) => matchesGlob(normalized, glob.toLowerCase()));
 }
 
 /** The ceiling for an artifact: the lower of its class's ceiling and its blast radius's. */

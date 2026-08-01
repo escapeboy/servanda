@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PersonaId, Rfc3339, Sha256Hex, VerificationLevel } from './primitives.js';
+import { ExternalLabel, PersonaId, PublicKeyHex, Rfc3339, Sha256Hex, VerificationLevel } from './primitives.js';
 import { EffectiveState } from './edge.js';
 
 /**
@@ -185,8 +185,21 @@ export type OpenLoopsInput = z.infer<typeof OpenLoopsInput>;
 export const OpenLoopItem = z.object({
   kind: z.enum(['commitment', 'expectation', 'edge']),
   id: z.string(),
-  intent_or_expect: z.string(),
-  counterparty: z.string().nullable(),
+  /**
+   * Bounded like every other §3.1 string, and these two were the exceptions.
+   *
+   * `intent` is `.max(500)` where it is written and `ExternalLabel` is `.max(200)`, but the values
+   * came back across the node surface as bare `z.string()` — unbounded and unscrubbed. A client is
+   * the last stop, and every client here renders both: a 200 KB intent, or an ANSI SGR sequence
+   * inside a counterparty name, arrived as a well-formed OpenLoopItem. Two of the M-12 defects
+   * found by adversarial testing entered through exactly this door, and were patched at the
+   * renderers; this is the door.
+   *
+   * The bounds MIRROR the write side rather than inventing numbers — a value that could be stored
+   * must be able to come back.
+   */
+  intent_or_expect: z.string().max(500),
+  counterparty: ExternalLabel.or(PublicKeyHex).nullable(),
   /** M-12: clients MUST display this and MUST NOT render a name above its evidence level. */
   verification_level: VerificationLevel,
   age_days: z.number().nonnegative(),

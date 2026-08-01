@@ -111,11 +111,22 @@ export function parseAnchorTxt(value: string): DomainAnchor | null {
   return { v: PROTOCOL_VERSION, org_root: k, hubs: [] };
 }
 
+/**
+ * The longest a DNS answer may pin a cached anchor.
+ *
+ * The TTL comes from the zone being resolved, so whoever controls that zone chooses how long this
+ * process keeps their answer. Without a ceiling, a TTL of a decade pins a poisoned anchor for the
+ * lifetime of the process and no later, honest answer is ever consulted — the cache stops being a
+ * cache and becomes a decision. A day is long enough that the cache still does its job and short
+ * enough that a correction lands the same day.
+ */
+export const MAX_ANCHOR_TTL_SECONDS = 86_400;
+
 function ttlToExpiry(now: number, ttlSeconds: number | null | undefined): number | null {
   if (typeof ttlSeconds !== 'number' || !Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
     return null;
   }
-  return now + Math.floor(ttlSeconds) * 1000;
+  return now + Math.min(Math.floor(ttlSeconds), MAX_ANCHOR_TTL_SECONDS) * 1000;
 }
 
 interface CacheEntry {

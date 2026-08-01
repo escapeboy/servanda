@@ -69,6 +69,23 @@ export const WirePayload = z.union([
 export const WireMessage = z.object({
   v: ProtocolVersion,
   type: WireMessageType,
+  /**
+   * Deliberately `unknown` here, and parsed per type at the security boundary instead.
+   *
+   * The obvious alternative is a discriminated union on `type`, so that a payload which does not
+   * match its type fails at the schema. It would be worse, and the reason is what a recipient gets
+   * to SAY about a bad message. `verifyMessage` parses the whole object; if the payload took the
+   * message down with it, a malformed `recon_response` would be reported as
+   * `signature-does-not-verify` — a lie, since the signature is fine — instead of
+   * `malformed-payload`. An operator reading a discard log needs those apart, which is the same
+   * argument that gave `addressed-to-another-persona` its own reason.
+   *
+   * So the shape is checked where the message is already being judged one at a time:
+   * `Inbox.ingest` parses each payload against its type and discards THAT message. It was casting
+   * rather than parsing for the four recon/recover types, which is how one signed message with an
+   * empty payload threw out of `ingest` and took the rest of the delivery with it. Fixed there,
+   * where it belongs — not by making the envelope stricter than it can afford to be.
+   */
   payload: z.unknown(),
   sender: PersonaId,
   /**

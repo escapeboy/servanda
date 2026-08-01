@@ -31,6 +31,16 @@ import { fromHex, toHex, utf8 } from './hash.js';
 export const ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 } as const;
 
 /**
+ * The most Argon2id memory this code will allocate to open somebody else's keyset.
+ *
+ * §9.3 fixes the cost a NEW wrap is made at; nothing bounded the cost an EXISTING one may ask for,
+ * and a keyset arrives over §6.6 recovery and over import. 16× the current parameter leaves room
+ * for a future raise (the §9.3 floor has moved once already) while keeping a hostile keyset from
+ * naming a number the machine cannot serve.
+ */
+export const MAX_UNWRAP_MEMORY_KIB = ARGON2ID_PARAMS.m * 16;
+
+/**
  * Device-key wraps derive a key rather than using the device key as one.
  *
  * §1.7 and §9.3 say a device key wraps the content key and do not say how, so this is ours to
@@ -112,11 +122,30 @@ function wrapWith(key: Uint8Array, contentKey: Uint8Array): { nonce: string; cip
   };
 }
 
+/**
+ * An empty passphrase is refused, and this is the narrowest possible line rather than a policy.
+ *
+ * M-16 is enforced structurally: a keyset must carry a passphrase wrap, so device keys cannot be
+ * sole custodian. `wrapForPassphrase(key, '')` satisfied that check while protecting nothing —
+ * anyone holding the vault opens it, and the device key IS the only custodian in every sense but
+ * the schema's. A structural guarantee that an empty string satisfies is not one.
+ *
+ * Length, composition and entropy are product decisions and the spec takes none of them, so none
+ * is taken here. Zero is not a judgement about strength; it is the case where the wrap is absent
+ * while claiming to be present.
+ */
+export class EmptyPassphrase extends Error {
+  override name = 'EmptyPassphrase';
+}
+
 export function wrapForPassphrase(
   contentKey: Uint8Array,
   passphrase: string,
   label = 'passphrase',
 ): WrappedKey {
+  if (passphrase.length === 0) {
+    throw new EmptyPassphrase('M-16: a passphrase wrap made with an empty passphrase protects nothing');
+  }
   const salt = randomBytes(SALT_BYTES);
   const kek = deriveKeyFromPassphrase(passphrase, salt);
   const { nonce, ciphertext } = wrapWith(kek, contentKey);
@@ -182,6 +211,18 @@ export function unwrapWithPassphrase(keyset: ContentKeySet, passphrase: string, 
     if (!wrap.kdf) continue;
     // The wrap's own parameters, not today's: a vault made before the cost was raised must still
     // open, and deriving with the current constants would tell its owner the passphrase is wrong.
+    //
+    // Bounded above, because a keyset is not always your own. Recovery and import paths hand this
+    // function a structure that came from somewhere else, and `m` is the memory Argon2id will
+    // allocate: a wrap declaring m = 4 GiB is a keyset-shaped way to stop the process. Reading a
+    // LOWER cost than today's is harmless — it only ever weakens a key that is already wrapped —
+    // so only the ceiling needs guarding, and it is a refusal rather than a clamp because
+    // silently deriving with different parameters is exactly the bug above.
+    if (wrap.kdf.m > MAX_UNWRAP_MEMORY_KIB) {
+      throw new Error(
+        `refusing a wrap demanding ${wrap.kdf.m} KiB of Argon2id memory; the ceiling is ${MAX_UNWRAP_MEMORY_KIB} KiB`,
+      );
+    }
     const kek = deriveKeyFromPassphrase(passphrase, fromHex(wrap.kdf.salt), wrap.kdf);
     try {
       return unwrapWith(kek, wrap);

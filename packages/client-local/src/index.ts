@@ -111,8 +111,15 @@ export function openRegister(opts: OpenVaultOptions): OpenedRegister {
       ? personas[0]
       : personas.find((p) => p.persona_id === wanted || p.label === wanted);
   if (found === undefined) {
-    const known = personas.map((p) => `${p.label} (${p.persona_id.slice(0, 8)}…)`).join(', ');
-    throw new Error(`no persona named "${wanted}" in this vault. Known: ${known}`);
+    // Deliberately does NOT enumerate the vault's personas. The old message listed every label
+    // beside a key prefix — an org identity and a personal one in one string, on a surface that
+    // reaches logs, shells and crash reporters. M-5 is about pipelines rather than error text, but
+    // the reason it exists is that these two contexts are not supposed to meet, and a typo is a
+    // poor trigger for putting them in the same sentence. The count is enough to tell "wrong name"
+    // from "empty vault", which is the only thing the message has to do.
+    throw new Error(
+      `no persona named ${JSON.stringify(wanted)} in this vault (${personas.length} present)`,
+    );
   }
 
   const node = new ServandaNode({

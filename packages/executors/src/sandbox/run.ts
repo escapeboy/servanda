@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DraftPrArtifact } from '../artifact.js';
 import type { ExecutionOutcome, FileChangeRecord } from '../artifact.js';
@@ -152,8 +152,20 @@ export function snapshotRepo(repoPath: string, capabilities: CapabilitySet): Rec
  * ever executes git.
  */
 export function readHead(repoPath: string): { commit: string; branch: string } {
-  const gitDir = join(repoPath, '.git');
+  let gitDir = join(repoPath, '.git');
   if (!existsSync(gitDir)) throw new SandboxError(`not a git repository: ${repoPath}`);
+  // In a worktree (and in a submodule) `.git` is a FILE holding `gitdir: <path>`, not a directory.
+  // Reading HEAD out of it then failed with a raw ENOTDIR from the platform — an error that names
+  // no repository and suggests no cause, out of a package whose whole point is that it never
+  // shells out to git. `--worktree` is how this repo's own agents are told to work, so the case is
+  // not exotic.
+  if (statSync(gitDir).isFile()) {
+    const pointer = readFileSync(gitDir, 'utf8').trim();
+    const match = /^gitdir:\s*(.+)$/.exec(pointer);
+    if (!match) throw new SandboxError(`.git is a file but names no gitdir: ${repoPath}`);
+    gitDir = resolve(repoPath, match[1]!.trim());
+    if (!existsSync(gitDir)) throw new SandboxError(`.git points at a missing gitdir: ${gitDir}`);
+  }
   const head = readFileSync(join(gitDir, 'HEAD'), 'utf8').trim();
   if (!head.startsWith('ref: ')) return { commit: head, branch: 'HEAD' };
   const ref = head.slice('ref: '.length).trim();

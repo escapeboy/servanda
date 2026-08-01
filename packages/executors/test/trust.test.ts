@@ -1,7 +1,8 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { readHead } from '../src/sandbox/run.js';
 import { derivePersona, mnemonicToSeed } from '@servanda/crypto';
 import { Vault } from '@servanda/vault';
 import {
@@ -273,5 +274,44 @@ describe('trust store — history persisted in the vault, per persona', () => {
     const raw = readFileSync(join(vault.dir, 'personas', persona, 'trust', 'tests.json'), 'utf8');
     expect(raw).toContain('"ciphertext"');
     expect(raw).not.toContain('"streak"');
+  });
+});
+
+describe('the sensitive-path list is a denylist, so it must not fail open', () => {
+  it('catches a sensitive path whatever its case', () => {
+    // On a case-insensitive filesystem `.ENV` and `.env` are the same file. An exact-case check
+    // scores the artifact `routine` and hands back a ceiling it never applied.
+    for (const p of ['.ENV', 'src/AUTH/token.ts', 'Secrets/prod.yaml', 'deploy/PRIVATE.PEM', 'a/.GitHub/ci.yml']) {
+      expect(isSensitivePath(p), p).toBe(true);
+    }
+  });
+
+  it('still leaves an ordinary path alone', () => {
+    for (const p of ['src/index.ts', 'README.md', 'packages/api/handler.ts']) {
+      expect(isSensitivePath(p), p).toBe(false);
+    }
+  });
+
+  it('lowers the ceiling for an upper-cased sensitive path', () => {
+    expect(ceilingFor('routine', ['src/AUTH/token.ts'])).toBe(ceilingFor('routine', ['src/auth/token.ts']));
+  });
+});
+
+describe('readHead works where this repo tells its own agents to work', () => {
+  it('follows a `.git` FILE to the real gitdir', () => {
+    // A worktree and a submodule both put a `gitdir:` pointer file where a directory is expected.
+    // Before this, `readHead` handed the platform's raw ENOTDIR to the caller — an error naming no
+    // repository, from the one package that deliberately never runs git.
+    const dir = mkdtempSync(join(tmpdir(), 'servanda-worktree-'));
+    const real = join(dir, 'real.git');
+    mkdirSync(join(real, 'refs', 'heads'), { recursive: true });
+    writeFileSync(join(real, 'HEAD'), 'ref: refs/heads/main\n');
+    writeFileSync(join(real, 'refs', 'heads', 'main'), `${'a'.repeat(40)}\n`);
+    const work = join(dir, 'work');
+    mkdirSync(work);
+    writeFileSync(join(work, '.git'), `gitdir: ${real}\n`);
+
+    expect(readHead(work)).toEqual({ commit: 'a'.repeat(40), branch: 'main' });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   });
 });

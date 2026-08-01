@@ -87,6 +87,13 @@ export interface BriefView {
   readonly empty: string;
   readonly cards: readonly CardView[];
   readonly belowTheLine: string | null;
+  /**
+   * Slots the brief ranked that this view could not render, because `open_loops` did not return
+   * the item behind them. With `persona: null` that is every slot of every non-active persona —
+   * §7 lets `brief` rank across personas and does not let `open_loops` fetch across them. A
+   * surface that shows nothing about them presents a partial ranking as the whole one.
+   */
+  readonly unresolved: number;
   /** For the email subject line, which needs counts before it has cards. */
   readonly counts: { readonly owe: number; readonly waiting: number };
 }
@@ -254,12 +261,21 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
   const cards: CardView[] = [];
   let owe = 0;
   let waiting = 0;
+  let unresolved = 0;
 
   for (const slot of brief.slots) {
     const item = byId.get(slot.item_id);
     if (item === undefined) {
       // A slot with no matching item cannot answer all three questions; showing a headline
       // with nothing behind it would be worse than leaving it out.
+      //
+      // This is NOT the rare case it reads as. §7's `brief` with `persona: null` ranks across
+      // every persona — that is the one place cross-org ordering is allowed — while `open_loops`
+      // with `persona: null` resolves to the ACTIVE persona alone, deliberately, because it
+      // returns content and a second mixing point is what M-5 forbids. So every slot belonging to
+      // any other persona lands here, on the ordinary path, and vanished without trace.
+      // Counting them is not a UI decision; leaving the count at zero was the bug.
+      unresolved++;
       continue;
     }
     const wait = isWaiting(item);
@@ -285,6 +301,7 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
     cards,
     belowTheLine:
       brief.below_the_line_count > 0 ? COPY.brief.belowTheLine(brief.below_the_line_count) : null,
+    unresolved,
     counts: { owe, waiting },
   };
 }

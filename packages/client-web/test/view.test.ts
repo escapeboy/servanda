@@ -179,6 +179,18 @@ describe('the brief is a projection of the register, not a second one', () => {
     expect(brief.cards).toEqual([]);
   });
 
+  it('says how many slots it could not resolve instead of dropping them in silence', () => {
+    // Not the rare case it reads as. §7 lets `brief` rank across every persona — the one place
+    // cross-org ordering is allowed — while `open_loops` with `persona: null` resolves to the
+    // ACTIVE persona alone, because it returns content and a second mixing point is what M-5
+    // forbids. So on the ordinary multi-persona path every slot of every other persona lands in
+    // that branch. Showing four of nine and calling it the brief is a partial ranking presented
+    // as the whole one; the count is what makes the difference visible.
+    const fixture = makeFixture(4, NOW);
+    expect(buildBrief(fixture.brief, { items: [] }, NOW).unresolved).toBe(fixture.brief.slots.length);
+    expect(buildBrief(fixture.brief, { items: [...fixture.items] }, NOW).unresolved).toBe(0);
+  });
+
   it('counts what is below the line without turning it into a nudge', () => {
     const fixture = makeFixture(24, NOW);
     const brief = buildBrief(fixture.brief, { items: [...fixture.items] }, NOW);

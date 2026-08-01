@@ -41,6 +41,30 @@ export function writeSealed(path: string, contentKey: Uint8Array, kind: string, 
   writeFileSync(path, `${JSON.stringify(sealRecord(contentKey, kind, value), null, 2)}\n`, 'utf8');
 }
 
+/**
+ * Write only if the path does not exist, decided by the filesystem rather than by us.
+ *
+ * `existsSync` followed by a write is two operations, and an append-only chain is exactly where
+ * the gap between them matters: two processes on one vault — a CLI and a running node, or two
+ * terminals — both count the same N files, both pick `000N.json`, and the second silently
+ * overwrites the first's assertion. Both wrote a signed statement; only one survives, and the
+ * chain that remains is well-formed, so nothing downstream can tell.
+ *
+ * `wx` makes the check and the write one syscall. The loser gets EEXIST and can be told the truth.
+ */
+export function writeSealedExclusive(
+  path: string,
+  contentKey: Uint8Array,
+  kind: string,
+  value: unknown,
+): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(sealRecord(contentKey, kind, value), null, 2)}\n`, {
+    encoding: 'utf8',
+    flag: 'wx',
+  });
+}
+
 export function readSealed<T>(path: string, contentKey: Uint8Array): T {
   const record = JSON.parse(readFileSync(path, 'utf8')) as SealedRecord;
   return openRecord<T>(contentKey, record);

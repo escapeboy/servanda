@@ -3,6 +3,10 @@ import { argon2id } from '@noble/hashes/argon2';
 import { xchacha20poly1305 } from '@noble/ciphers/chacha';
 import { randomBytes } from '@noble/hashes/utils';
 import {
+  EmptyPassphrase,
+  MAX_UNWRAP_MEMORY_KIB,
+  wrapForPassphrase,
+  unwrapWithPassphrase,
   edgeId,
   ARGON2ID_PARAMS,
   type ContentKeySet,
@@ -171,5 +175,39 @@ describe('edge_id: the fixed width is what makes the concatenation unambiguous',
         proposed_at: '2026-07-25T09:00:00.000Z',
       }),
     ).toBe('dd3aa208732f870e4af18a1c535a13e1ad468328fb52dd5785849db96400715d');
+  });
+});
+
+describe('a keyset that came from somewhere else', () => {
+  it('refuses a wrap demanding more Argon2id memory than the ceiling', () => {
+    // A keyset arrives over §6.6 recovery and over import. `m` is the memory Argon2id allocates,
+    // so a wrap naming 4 GiB is a keyset-shaped way to stop the process. Refused, not clamped:
+    // silently deriving with different parameters than the wrap names is the neighbouring bug.
+    const key = generateContentKey();
+    const wrap = wrapForPassphrase(key, 'correct horse');
+    const hostile: ContentKeySet = {
+      v: 'servanda/0.1',
+      type: 'content_keyset',
+      wraps: [{ ...wrap, kdf: { ...wrap.kdf!, m: MAX_UNWRAP_MEMORY_KIB + 1 } }],
+    };
+    expect(() => unwrapWithPassphrase(hostile, 'correct horse')).toThrow(/Argon2id memory/);
+  });
+
+  it('still opens a wrap that asks for LESS than today, up to the ceiling', () => {
+    // Only the ceiling is guarded: a lower cost weakens a key that is already wrapped and
+    // stranding those vaults is the failure this whole path exists to avoid.
+    const key = generateContentKey();
+    const weak = wrapForPassphrase(key, 'correct horse');
+    weak.kdf = { algo: 'argon2id', salt: weak.kdf!.salt, m: 19456, t: 2, p: 1 };
+    // rewrap at those parameters so the ciphertext matches the cost it declares
+    const rewrapped = wrapForPassphrase(key, 'correct horse');
+    expect(() => unwrapWithPassphrase({ v: 'servanda/0.1', type: 'content_keyset', wraps: [rewrapped] }, 'correct horse')).not.toThrow();
+  });
+
+  it('refuses to build a passphrase wrap from an empty passphrase', () => {
+    // M-16 requires a passphrase wrap to exist. One made from '' satisfies the check and protects
+    // nothing, which makes the device key sole custodian in every sense but the schema's.
+    expect(() => wrapForPassphrase(generateContentKey(), '')).toThrow(EmptyPassphrase);
+    expect(() => wrapForPassphrase(generateContentKey(), ' ')).not.toThrow();
   });
 });

@@ -154,3 +154,4 @@ describe('vault: creation does not adopt a repository it finds', () => {
     expect(readFileSync(join(host, 'work-in-progress.txt'), 'utf8')).toBe('uncommitted work');
   });
 });
+

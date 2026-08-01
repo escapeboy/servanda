@@ -41,6 +41,7 @@ import {
   removeFile,
   writeJson,
   writeSealed,
+  writeSealedExclusive,
 } from './store.js';
 
 /**
@@ -312,10 +313,18 @@ export class Vault {
     const dir = join(this.edgeDir(persona, assertion.edge_id), 'assertions');
     const seq = listFiles(dir).length;
     const path = join(dir, `${String(seq).padStart(4, '0')}.json`);
-    if (existsSync(path)) {
-      throw new VaultError(`assertion chain is append-only; ${path} already exists`);
+    // Exclusive create: the filesystem decides, not a preceding `existsSync`. Counting the files
+    // and then writing is two steps, and a second process on the same vault counts the same N
+    // between them — both pick `000N.json` and the later write replaces a signed assertion with
+    // another one. The survivor is well-formed, so an append-only chain quietly loses a link.
+    try {
+      writeSealedExclusive(path, this.contentKey, 'assertion', assertion);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
+        throw new VaultError(`assertion chain is append-only; ${path} already exists`);
+      }
+      throw err;
     }
-    writeSealed(path, this.contentKey, 'assertion', assertion);
     this.commit(`feat(assertion): ${assertion.state} on ${assertion.edge_id.slice(0, 12)}`);
     return seq;
   }

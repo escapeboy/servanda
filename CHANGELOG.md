@@ -9,6 +9,60 @@ one so far changes derived keys. A vault does not migrate across any of them.
 
 ## [Unreleased]
 
+### Fixed — the rest of what adversarial testing found
+
+Everything the five passes surfaced that could be fixed without a normative change. What could
+not is filed upstream and named at the end.
+
+- **A hostile keyset could demand 4 GiB of Argon2id memory.** A wrap is opened with the
+  parameters it records, which is what lets an old vault still open — but a keyset arrives over
+  §6.6 recovery and over import, so `m` is somebody else's number. Now bounded above (16× the
+  §9.3 value, leaving room for a future raise) and **refused rather than clamped**: silently
+  deriving with parameters other than the ones the wrap names is the neighbouring bug.
+- **An empty passphrase satisfied M-16 while protecting nothing.** M-16 is enforced structurally
+  — a keyset must carry a passphrase wrap — and `wrapForPassphrase(key, '')` passed that check,
+  leaving the device key sole custodian in every sense but the schema's. Only the empty string is
+  refused; length and composition are product decisions the spec does not take, and neither does
+  this.
+- **`edge_id` collided across field boundaries.** §4.1's `||` encoding is ratified as implemented
+  and is unchanged; what was missing is that the three hex fields must be exactly 64 octets, which
+  is the sole reason the concatenation is unambiguous. Asserted against the pre-guard digest: no
+  valid identifier moves.
+- **An append to an assertion chain was two steps.** `existsSync` then write — two processes on
+  one vault count the same N and the second replaces the first's signed assertion. The survivor is
+  well-formed, so an append-only chain loses a link in silence. The filesystem arbitrates now
+  (`wx`).
+- **The sensitive-path denylist failed open.** `.ENV`, `src/AUTH/` and `Secrets/` matched nothing
+  and scored `routine` — on a case-insensitive filesystem, the same files as the lowercase forms.
+  Folded on both sides, and deliberately NOT in `matchesGlob`, which the capability **allowlist**
+  needs exact.
+- **`readHead` threw a raw ENOTDIR inside a git worktree**, where `.git` is a pointer file. This
+  repo tells its own agents to work in worktrees.
+- **A typo enumerated the vault.** `client-local`'s unknown-persona error listed every label
+  beside a key prefix — an org identity and a personal one in one string, on a surface that
+  reaches logs and crash reporters.
+- **`intent_or_expect` and `counterparty` crossed §7 unbounded.** `intent` is `.max(500)` where
+  it is written and `ExternalLabel` is `.max(200)`; the values came back as bare `z.string()`.
+  Two of the M-12 defects entered through this door and were patched at the renderers. This is
+  the door.
+- **A DNS TTL could pin a poisoned anchor for the process lifetime.** Capped at a day.
+- **The brief dropped slots in silence.** §7 lets `brief` rank across personas and lets
+  `open_loops` fetch only the active one, so on any multi-persona vault every other persona's
+  slots hit the "nothing behind it" branch and vanished. `BriefView.unresolved` counts them; a
+  partial ranking presented as the whole one is the defect, not the dropping.
+
+### Not fixed, on purpose
+
+- **`WireMessage.payload` stays `z.unknown()`.** A discriminated union on `type` was proposed and
+  would be worse: a malformed payload would take the whole message down at the schema, so a
+  recipient would report `signature-does-not-verify` — a lie — instead of `malformed-payload`.
+  The shape is checked where messages are already judged one at a time. Now documented there.
+- **One finding did not survive verification.** A persona label containing newlines was reported
+  as forging a second entry in the vault's git log. It cannot: `git log --format=%s` collapses a
+  single newline to a space and a blank line separates the body, verified empirically both ways —
+  and `logMessages` has no production consumer. The guard written for it was removed rather than
+  kept as insurance against a scenario that does not exist.
+
 ### Added
 
 - **The specification is frozen at v0.1** (2026-08-01, conformance suite `0.1.0`,
