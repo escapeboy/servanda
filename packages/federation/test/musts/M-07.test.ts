@@ -58,7 +58,7 @@ describe('M-7: plaintext never appears in a wire object', () => {
     const stored = hub.visibleState();
     expect(stored).toHaveLength(1);
     expect(Object.keys(stored[0]!.envelope).sort()).toEqual([...HUB_VISIBLE_FIELDS].sort());
-    expect(Object.keys(stored[0]!.envelope.sealed).sort()).toEqual(['ciphertext', 'epk', 'nonce', 'v']);
+    expect(Object.keys(stored[0]!.envelope.sealed).sort()).toEqual(['ciphertext', 'epk', 'v']);
   });
 
   it('§6.3: neither plaintext, nor sender, nor edge_id is derivable from what the hub holds', () => {

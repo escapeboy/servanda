@@ -207,6 +207,10 @@ export class ServandaNode {
         type: 'propose',
         payload: { edge, assertion },
         sender: persona,
+        // §6.2: signed, not merely routed. The outbox already carries `recipient` for delivery,
+        // but a delivery field binds nothing — a recipient could re-seal this to a third party
+        // and the signature would still verify there.
+        recipient,
         sent_at: this.now().toISOString(),
       },
       this.vault.getPersona(persona).private_key,

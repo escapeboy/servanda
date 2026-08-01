@@ -3,7 +3,7 @@ import type { Assertion, Edge, VerificationLevel, WireMessage } from '@servanda/
 import { AssertPayload, ProposePayload } from '@servanda/types';
 import type { Vault } from '@servanda/vault';
 import type { ProposalBudget } from './antispam.js';
-import { verifyMessage } from './messages.js';
+import { edgeIdOf, verifyMessage } from './messages.js';
 import { applyReconResponse, type ReconApplyResult, type ReconRequest, type ReconResponse } from './recon.js';
 import type { RecoverRequest, RecoverResponse } from './recovery.js';
 import { isParty } from './serve.js';
@@ -23,6 +23,8 @@ import { isParty } from './serve.js';
 
 export type DiscardReason =
   | 'signature-does-not-verify'
+  /** §6.2: it verifies, and it was signed for somebody else. Not the same failure. */
+  | 'addressed-to-another-persona'
   | 'malformed-payload'
   | 'not-addressed-to-this-persona'
   | 'proposer-is-not-the-owner'
@@ -83,6 +85,19 @@ export class Inbox {
       const message = verifyMessage(raw as unknown);
       if (!message) {
         result.discarded.push({ type: 'unknown', edge_id: null, reason: 'signature-does-not-verify' });
+        continue;
+      }
+      // §6.2, and it gets its own reason rather than being folded into the line above: a message
+      // that verifies perfectly and is addressed to somebody else is a re-sealed message, not a
+      // corrupt one, and an operator reading a discard log needs to be able to tell those apart.
+      // Checked before the type is even looked at, so it holds for every type there will ever be
+      // — including the ones whose payload carries no party of its own.
+      if (message.recipient !== this.persona) {
+        result.discarded.push({
+          type: message.type,
+          edge_id: edgeIdOf(message),
+          reason: 'addressed-to-another-persona',
+        });
         continue;
       }
       switch (message.type) {

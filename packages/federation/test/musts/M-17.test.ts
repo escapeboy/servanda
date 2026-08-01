@@ -88,6 +88,7 @@ describe('M-17: a record is believed only when its own persona signed it', () =>
         type: 'inbox' as const,
         persona: alice.personaId,
         hubs: ['https://hub.example/servanda'],
+        dh_key: alice.dhPublicKey,
         issued_at: '2026-07-25T09:00:00Z',
       },
       alice.privateKey,
@@ -118,6 +119,7 @@ describe('§6.7: what a verified record then authorizes', () => {
           type: 'inbox' as const,
           persona: alice.personaId,
           hubs: ['https://first.example/servanda', 'https://second.example/servanda'],
+          dh_key: alice.dhPublicKey,
           issued_at: '2026-07-25T09:00:00Z',
         },
         alice.privateKey,
@@ -169,12 +171,12 @@ describe('§6.7: delivering to declared hubs, in the declared order', () => {
 
   const signedRecord = (by: { personaId: string; privateKey: string }, persona = alice.personaId) =>
     withSignature(
-      { v: 'servanda/0.1' as const, type: 'inbox' as const, persona, hubs: HUBS, issued_at: ISSUED },
+      { v: 'servanda/0.1' as const, type: 'inbox' as const, persona, hubs: HUBS, dh_key: alice.dhPublicKey, issued_at: ISSUED },
       by.privateKey,
     );
 
   const message = () =>
-    signMessage('propose', { hello: 'world' }, alice.personaId, ISSUED, alice.privateKey);
+    signMessage('propose', { hello: 'world' }, alice.personaId, bob.personaId, ISSUED, alice.privateKey);
 
   /** Records what was tried, in order, and fails whichever hubs the caller names. */
   function courier(failing: readonly string[]) {
@@ -295,12 +297,17 @@ describe('§6.3: a sealing key is only usable from a record that verifies', () =
     expect(dhKeyFrom(record(alice), DAY(INBOX_RECORD_LIFETIME_DAYS + 1))).toBeNull();
   });
 
-  it('hands back nothing from a record that predates the field', () => {
+  it('refuses a record with no dh_key at all', () => {
+    // `dh_key` was optional while upstream #33 was a proposal and the vendored vectors predated
+    // it. It is merged and required now, so a record without one is malformed rather than merely
+    // unsealable — and `verifyInboxRecord` says so instead of reporting a signature problem.
     const { dh_key: _omitted, ...withoutKey } = record(alice);
     const resigned = withSignature(withoutKey, alice.privateKey);
-    // It still VERIFIES — the oracle's four cases have no dh_key and must keep passing.
-    expect(verifyInboxRecord(resigned).accepted).toBe(true);
-    // It is simply not sealable-to.
+    expect(verifyInboxRecord(resigned)).toEqual({
+      accepted: false,
+      rejection_reason: 'malformed-record',
+      actual_signer: null,
+    });
     expect(dhKeyFrom(resigned, DAY(1))).toBeNull();
   });
 
@@ -317,7 +324,7 @@ describe('§6.3: a sealing key is only usable from a record that verifies', () =
       resolveDhKey: () => null,
       now: () => new Date(DAY(1)),
     });
-    expect(() => client.sealFor(bob.personaId, signMessage('propose', {}, alice.personaId, ISSUED, alice.privateKey)))
+    expect(() => client.sealFor(bob.personaId, signMessage('propose', {}, alice.personaId, bob.personaId, ISSUED, alice.privateKey)))
       .toThrow(NoRecipientKey);
     expect(hub.visibleState()).toHaveLength(0);
   });

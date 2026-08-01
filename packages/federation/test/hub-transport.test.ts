@@ -34,7 +34,7 @@ function stack(opts: { ttlDays?: number } = {}) {
 }
 
 const note = (from: { personaId: string; privateKey: string }) =>
-  signMessage('recon_request', { edges: [] }, from.personaId, '2026-07-25T09:00:00.000Z', from.privateKey);
+  signMessage('recon_request', { edges: [] }, from.personaId, B.personaId, '2026-07-25T09:00:00.000Z', from.privateKey);
 
 describe('§6.1 hub transport', () => {
   it('delivers and reads back through the documented routes', async () => {

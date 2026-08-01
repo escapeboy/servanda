@@ -76,6 +76,7 @@ describe('M-2: a proposal is not a promise until the counterparty signs — acro
       'assert',
       { assertion },
       pair.a.personaId,
+      pair.b.personaId,
       '2026-07-25T10:00:00.000Z',
       pair.a.privateKey,
     );

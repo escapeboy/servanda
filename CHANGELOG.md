@@ -9,6 +9,41 @@ one so far changes derived keys. A vault does not migrate across any of them.
 
 ## [Unreleased]
 
+### Changed — breaking
+
+Everything the upstream v0.1-freeze resolutions asked for
+([servanda-protocol#35](https://github.com/escapeboy/servanda-protocol/pull/35), closing #3, #6,
+#30, #31, #32, #33).
+
+- **The transport is HPKE (RFC 9180) Base mode** — DHKEM(X25519, HKDF-SHA256) / HKDF-SHA256 /
+  ChaCha20-Poly1305 — implemented on the `@noble` primitives already here, so no dependency was
+  added to a package whose narrow graph is itself a security property. §6.3 used to say "ECDH then
+  an AEAD" and leave the KDF, the context binding and the nonce derivation unstated, which is the
+  assembly RFC 9180 exists to prevent.
+
+  **The gain is an oracle.** `packages/crypto/test/hpke-rfc9180.test.ts` replays Appendix A.2 and
+  checks every intermediate — Encap, Decap, the key schedule, the ciphertext — against numbers
+  written by people who have never seen this protocol. The hand-assembled construction could never
+  have that: its correctness was whatever the implementation happened to do.
+
+  **No nonce travels any more.** HPKE derives it from the key schedule, so a sender cannot choose,
+  reuse or leak one, and the sealed envelope is one field smaller.
+
+- **A wire message names its recipient, inside the signature.** Without it a signature said who
+  wrote a message and nothing about whom they wrote it to, so any recipient could re-seal a
+  validly-signed message to a third party and it verified there unchanged. The inbox refuses it
+  with its own reason — `addressed-to-another-persona`, not `signature-does-not-verify`, because a
+  forwarded message and a corrupt one are different events and an operator needs to tell them
+  apart. `recon_request` and `recover_request` had no party check of their own, which is what made
+  this worth fixing at the envelope rather than per type.
+
+- **`disputed → expired` after a 30-day window.** Both resolutions require both parties, so
+  disputing was a unilateral act that froze an edge permanently. Expiry decides nothing about the
+  merits and the rejection reason says so — `dispute-window-not-elapsed` names a window, never a
+  verdict.
+
+- **`dh_key` is required in the §6.7 inbox record**, now that #33 is merged rather than proposed.
+
 ### Fixed
 
 - **`ItemAction` and `BriefSlot` reject an unknown member instead of stripping it.** zod strips by

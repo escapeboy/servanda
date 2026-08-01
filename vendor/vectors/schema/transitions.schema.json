@@ -63,6 +63,7 @@
                         "due-is-null",
                         "expiry-before-due",
                         "acceptance-window-not-elapsed",
+                        "dispute-window-not-elapsed",
                         "implicit-transition-not-assertable",
                         "duplicate-assertion-by-same-party",
                         "malformed-edge-acceptance-window"

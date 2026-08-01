@@ -543,6 +543,202 @@
       "expected_final_state": "open"
     },
     {
+      "name": "dispute-expiry-before-the-window-elapsed",
+      "description": "§4.4: the dispute window is what stops `expired` becoming a way to walk away from a dispute the moment it is raised. Expiring early would hand the disputed party a unilateral exit — the mirror of the freeze the window exists to prevent.",
+      "edge": {
+        "v": "servanda/0.1",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "disputed",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": "c9c5c840b98e0fd564d63f51753590effce04001f271792f547518bc29ba0687",
+          "sig": "6b8e26321087385070ea837e81da5db7af5f29532a59185d339b4b83b31a5ff411ede7bddc1f1cef7e762400ec813921258257be9cffc8fe585883abc0660908"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "expired",
+          "asserted_at": "2026-09-01T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "e6e251608dba906fa4964fe7ddc9acf5fec7d913a2e708e3c83f73e5a35036941c2161621477f2f2d6d23afed6cbd9b160468099a1c21784590345bcef572f0d"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 2,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 3,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 4,
+          "accepted": false,
+          "rejection_reason": "dispute-window-not-elapsed"
+        }
+      ],
+      "expected_final_state": "disputed"
+    },
+    {
+      "name": "dispute-expiry-by-a-non-party",
+      "description": "§4.4 says EITHER PARTY, and a stranger is neither. The window makes the timing public, so without this an onlooker could end an edge simply by waiting for it.",
+      "edge": {
+        "v": "servanda/0.1",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "disputed",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": "c9c5c840b98e0fd564d63f51753590effce04001f271792f547518bc29ba0687",
+          "sig": "6b8e26321087385070ea837e81da5db7af5f29532a59185d339b4b83b31a5ff411ede7bddc1f1cef7e762400ec813921258257be9cffc8fe585883abc0660908"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "expired",
+          "asserted_at": "2026-09-02T12:00:01Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "4aea0051c94604bee3fa8c9501eefa31b43f83aa8a199c1ce41f41424cdd6fafb85e6fae0bcbd7399cc77a80a7c83c8052227ae98d1aabf633d542121ea6260a"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 2,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 3,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 4,
+          "accepted": false,
+          "rejection_reason": "signer-not-a-party"
+        }
+      ],
+      "expected_final_state": "disputed"
+    },
+    {
       "name": "disputed-without-evidence",
       "description": "§4.3: evidence_hash is REQUIRED on a dispute.",
       "edge": {

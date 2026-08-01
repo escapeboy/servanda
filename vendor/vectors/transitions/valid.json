@@ -377,6 +377,104 @@
       "expected_final_state": "expired"
     },
     {
+      "name": "disputed-then-expired-after-the-window",
+      "description": "§4.4: a dispute that goes silent does not freeze the edge forever. Once `dispute_window` (P30D) has run from the disputing assertion, EITHER party may assert `expired`. This resolves nothing — the dispute and its evidence stay in the chain — it ends a dead edge.",
+      "edge": {
+        "v": "servanda/0.1",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "9ca68c8dc49544af0e3c49348cf7165072fe66c624c7e8bb9ee82d4ee204a8d5cf0764eedba24fed7a08a929c14b748e87672f50b604f0169c20af03ab975a0a"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "250621900a247428523ac53b2c004d654061b9567fe5ddb96cb5149353d236adc349aeaffcc846cfdea5f1cae32aab8314ad0fd92409609428245f3ddd136a09"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "648dbf4098169bd60bf58002e8a1dd4f8b5dd9acc505e2f03637db040155a22841736c28a8525039395c47d85718ac6818bd09f6c942461915c0faef673a580b"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "disputed",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": "c9c5c840b98e0fd564d63f51753590effce04001f271792f547518bc29ba0687",
+          "sig": "6b8e26321087385070ea837e81da5db7af5f29532a59185d339b4b83b31a5ff411ede7bddc1f1cef7e762400ec813921258257be9cffc8fe585883abc0660908"
+        },
+        {
+          "v": "servanda/0.1",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "expired",
+          "asserted_at": "2026-09-02T12:00:01Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "bfe712de7d8c85ef3bfaed9881f5c228c36e6dcaf7298c71c35fb1e7ac7388e1f5a812ab3d1f6f34f5c10ef6a228fe894d0a6816753a5922229bff1532034c08"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 2,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 3,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 4,
+          "accepted": true,
+          "rejection_reason": null
+        }
+      ],
+      "expected_final_state": "expired"
+    },
+    {
       "name": "disputed-then-mutual-close",
       "description": "§4.3: dispute carries evidence; v0 defines the exit as mutual closure — both parties assert.",
       "edge": {

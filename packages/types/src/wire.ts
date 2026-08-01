@@ -5,7 +5,7 @@ import { Attestation, Revocation, Rotation } from './identity.js';
 import { Publish, Unpublish } from './scope.js';
 
 /**
- * §6.2 Wire messages. All messages: { v, type, payload, sender, sent_at, sig }.
+ * §6.2 Wire messages. All messages: { v, type, payload, sender, recipient, sent_at, sig }.
  */
 
 export const WireMessageType = z.enum([
@@ -71,6 +71,19 @@ export const WireMessage = z.object({
   type: WireMessageType,
   payload: z.unknown(),
   sender: PersonaId,
+  /**
+   * §6.2 — who the message is FOR, inside the signed preimage.
+   *
+   * Without it a signature says "this persona wrote this" and nothing about whom they wrote it
+   * to, so any recipient can re-seal a validly-signed message to a third party and it verifies
+   * there unchanged. §6.3's courier is anonymous by design and authenticates nobody, so the
+   * signature is the only place the binding can live.
+   *
+   * A recipient MUST discard a message whose `recipient` is not itself, before anything else.
+   * `propose` and `assert` have their own party checks, but those are per-type rules each new
+   * message type has to remember to re-derive; this one holds for every type there will ever be.
+   */
+  recipient: PersonaId,
   sent_at: Rfc3339,
   sig: SignatureHex,
 });
@@ -106,14 +119,10 @@ export const InboxRecord = z.object({
    * Rotation comes free with the record's 30-day life: publish a new one, and senders stop using
    * the old key when the old record expires.
    *
-   * OPTIONAL, and only because upstream #33 is a proposal rather than merged text. The four
-   * vendored `addressing/inbox-records.json` cases predate it, and a vector is never edited to
-   * suit an implementation — so a record without the field still parses and still verifies over
-   * exactly the canonical form the oracle pins. What it cannot do is receive anything: sealing
-   * requires the key, so a record lacking one is simply not sealable-to. Required in effect,
-   * optional in schema, until the spec catches up.
+   * Required as of upstream #33. It was optional while that was a proposal, because the vendored
+   * vectors predated it and a vector is never edited to suit an implementation. They carry it now.
    */
-  dh_key: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  dh_key: z.string().regex(/^[0-9a-f]{64}$/),
   issued_at: Rfc3339,
   sig: SignatureHex,
 });
@@ -126,8 +135,15 @@ export const HubEnvelope = z.object({
   recipient: PersonaId,
   sealed: z.object({
     v: ProtocolVersion,
+    /** The HPKE encapsulated key — an ephemeral X25519 public key (RFC 9180 §4.1). */
     epk: z.string().regex(/^[0-9a-f]{64}$/),
-    nonce: z.string().regex(/^[0-9a-f]{48}$/),
+    /**
+     * No `nonce`. HPKE derives it from the key schedule (RFC 9180 §5.1), so it never travels and
+     * cannot be chosen, reused or tampered with by whoever assembles the envelope. The
+     * hand-rolled construction carried a 24-byte random one because it had no schedule to derive
+     * from — one fewer field on the wire is one fewer thing a courier sees and a sender can get
+     * wrong.
+     */
     ciphertext: z.string().regex(/^[0-9a-f]+$/),
   }),
   sent_at: Rfc3339,

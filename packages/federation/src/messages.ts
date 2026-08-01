@@ -16,11 +16,12 @@ export function signMessage(
   type: WireMessageType,
   payload: unknown,
   sender: string,
+  recipient: string,
   sentAt: string,
   privateKeyHex: string,
 ): WireMessage {
   return withSignature(
-    { v: PROTOCOL_VERSION, type, payload, sender, sent_at: sentAt },
+    { v: PROTOCOL_VERSION, type, payload, sender, recipient, sent_at: sentAt },
     privateKeyHex,
   ) as WireMessage;
 }

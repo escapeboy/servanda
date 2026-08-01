@@ -46,6 +46,7 @@ beforeAll(async () => {
       'recon_request',
       { edges: [] },
       sender.personaId,
+      B.personaId,
       '2026-07-25T09:00:00.000Z',
       sender.privateKey,
     );
@@ -82,7 +83,11 @@ describe('M-11: a hub MUST NOT compute or serve cross-party fulfillment statisti
     const delivered = await clientFor(B).receive(B.personaId);
     expect(delivered).toHaveLength(2);
     for (const message of delivered) {
-      expect(Object.keys(message).sort()).toEqual(['payload', 'sender', 'sent_at', 'sig', 'type', 'v']);
+      // `recipient` is inside the signed message (§6.2). It widens nothing a hub sees — the
+      // whole message is sealed, and the hub already routes by a recipient on the outer envelope.
+      expect(Object.keys(message).sort()).toEqual(
+        ['payload', 'recipient', 'sender', 'sent_at', 'sig', 'type', 'v'],
+      );
     }
     // The recipient learns the senders — that is local pairwise knowledge, which M-11 permits.
     // The hub, which relayed the same two messages, did not.
@@ -121,6 +126,7 @@ describe('M-11: a hub MUST NOT compute or serve cross-party fulfillment statisti
         'recon_response',
         { edges: [{ edge_id: foreign.edge_id, assertions: [] }] },
         A.personaId,
+        solo.personaId,
         '2026-07-25T09:00:00Z',
         A.privateKey,
       ),

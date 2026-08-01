@@ -294,6 +294,7 @@ describe('scenario 5 — cross-org: one edge outward, three inward, a hash that 
           'propose',
           { edge, assertion },
           studioGroup.personaId,
+          acme.personaId,
           at,
           studioGroup.privateKey,
         ),

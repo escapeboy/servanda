@@ -8,7 +8,7 @@
 #      came from the trap rather than from an absent network;
 #   2. a hub learns nothing — the hub-visible envelope carries exactly the §6.3 fields, and
 #      neither plaintext nor sender is derivable from the whole of what a hub holds;
-#   3. invalid assertions arriving over the wire are discarded (M-14), using the same 21
+#   3. invalid assertions arriving over the wire are discarded (M-14), using the same 23
 #      negative vectors the node gate uses, delivered as wire messages;
 #   4. a §6.6 recovery response carries no plaintext (M-7);
 #   5. every MUST this layer owns has a named test, and repo-wide coverage stays complete.
@@ -34,7 +34,7 @@ const got = JSON.parse(readFileSync(`${dir}/transitions/invalid.json`, "utf8")).
 // to do with federation. The count is still pinned rather than counted, because a family that
 // silently SHRINKS is the failure the oracle exists to catch; the two numbers just have to move
 // together.
-if (got !== 21) { console.error(`FAIL: transitions/invalid.json has ${got} cases, expected 21`); process.exit(1); }
+if (got !== 23) { console.error(`FAIL: transitions/invalid.json has ${got} cases, expected 23`); process.exit(1); }
 console.log(`    transitions/invalid.json: ${got} cases (reused as wire input)`);
 '
 

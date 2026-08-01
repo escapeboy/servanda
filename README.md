@@ -103,7 +103,7 @@ The vectors in `vendor/vectors/` are the oracle, vendored from the protocol repo
 `vendor/vectors/.SOURCE_COMMIT`. They are read-only here. **A failing vector is never fixed by
 editing the vector.**
 
-The 21 negative transition vectors matter more than the positive ones. A verifier that accepts a
+The 23 negative transition vectors matter more than the positive ones. A verifier that accepts a
 `confirmed` assertion signed by the owner rather than the counterparty has silently discarded the
 entire confirm-first guarantee — and would still pass every positive test.
 

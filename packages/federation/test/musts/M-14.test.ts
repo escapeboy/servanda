@@ -12,7 +12,7 @@ import { forgetEdge, makeSolo, persona, type Solo } from '../support/fixture.js'
  * the wire is the one input a node does not control, and a federation layer that "helpfully"
  * stored what a peer sent would defeat the table without failing a single L1 test.
  *
- * The oracle is reused verbatim — the 21 negative vectors in
+ * The oracle is reused verbatim — the 23 negative vectors in
  * `vendor/vectors/transitions/invalid.json` are delivered AS WIRE MESSAGES, over both inbound
  * paths this layer offers (a §6.4 `recon_response` and a §6.2 `assert`), and the vectors'
  * expected rejection reasons and final states must come out unchanged.
@@ -34,7 +34,7 @@ const OWNER = persona(0);
 const COUNTERPARTY = persona(1);
 
 beforeAll(() => {
-  expect(cases).toHaveLength(21);
+  expect(cases).toHaveLength(23);
   for (const c of cases) {
     expect(c.edge.owner).toBe(OWNER.personaId);
     expect(c.edge.owed_to).toBe(COUNTERPARTY.personaId);
@@ -72,6 +72,7 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
         'recon_response',
         { edges: [{ edge_id: c.edge.edge_id, assertions: c.assertions }] },
         COUNTERPARTY.personaId,
+        solo.personaId,
         '2026-07-25T12:00:00Z',
         COUNTERPARTY.privateKey,
       );
@@ -107,6 +108,7 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
             'assert',
             { assertion },
             COUNTERPARTY.personaId,
+            solo.personaId,
             '2026-07-25T12:00:00Z',
             COUNTERPARTY.privateKey,
           ),
@@ -127,6 +129,7 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
           'propose',
           { edge: c.edge, assertion: c.assertions[0] },
           OWNER.personaId,
+          solo.personaId,
           '2026-07-25T12:00:00Z',
           OWNER.privateKey,
         ),
@@ -149,6 +152,7 @@ describe('M-14: invalid assertions arriving over the wire are discarded', () => 
         'recon_response',
         { edges: [{ edge_id: c.edge.edge_id, assertions: c.assertions }] },
         COUNTERPARTY.personaId,
+        solo.personaId,
         '2026-07-25T12:00:00Z',
         COUNTERPARTY.privateKey,
       );

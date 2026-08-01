@@ -50,6 +50,8 @@ interface ChainState {
   superseded_by: Set<string>;
   /** §4.3 `disputed → closed` requires both parties (interpretation #6). */
   dispute_closed_by: Set<string>;
+  /** §4.4: `asserted_at` of the accepted `disputed` assertion — when `dispute_window` starts. */
+  disputed_at: string | null;
   resolved_at: string | null;
 }
 
@@ -70,6 +72,14 @@ function windowElapsed(edge: Edge, openedAt: string, assertedAt: string): boolea
   const window = edge.acceptance_window as string;
   return Date.parse(assertedAt) >= addDuration(new Date(Date.parse(openedAt)), window).getTime();
 }
+
+/**
+ * §4.4: `dispute_window` is a protocol CONSTANT, not an edge member.
+ *
+ * A per-edge value would let one party choose the window that suits them, and the party who
+ * benefits from a long freeze is precisely the party who disputes.
+ */
+export const DISPUTE_WINDOW = 'P30D';
 
 /** Applies one assertion. Returns null on acceptance (mutating `ctx`), or the rejection reason. */
 function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null {
@@ -167,6 +177,21 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
     }
 
     case 'expired': {
+      // §4.4: the third exit from `disputed` — it ENDS the edge without resolving it. Both
+      // resolutions require both parties, so without this a unilateral dispute freezes an edge
+      // permanently against an owner who may have genuinely fulfilled it. It finds for nobody:
+      // the dispute and its evidence stay in the chain, and the rejection below names a window,
+      // never a verdict.
+      if (ctx.state === 'disputed') {
+        if (ctx.disputed_at === null) return 'illegal-source-state';
+        const windowEnds = addDuration(new Date(Date.parse(ctx.disputed_at)), DISPUTE_WINDOW);
+        if (Date.parse(a.asserted_at) < windowEnds.getTime()) {
+          return 'dispute-window-not-elapsed';
+        }
+        ctx.state = 'expired';
+        ctx.resolved_at = a.asserted_at;
+        return null;
+      }
       if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
       // §3.1: undated commitments MUST NOT time-escalate. With no `due` there is no expiry.
       if (edge.due === null) return 'due-is-null';
@@ -181,6 +206,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
       if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
       if (a.evidence_hash === null) return 'evidence-hash-required';
       ctx.state = 'disputed';
+      ctx.disputed_at = a.asserted_at;
       return null;
     }
 
@@ -238,6 +264,7 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
     window_opened_at: null,
     superseded_by: new Set(),
     dispute_closed_by: new Set(),
+    disputed_at: null,
     resolved_at: null,
   };
 

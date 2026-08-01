@@ -44,9 +44,9 @@ function run(c: VectorCase) {
   return verifyAssertionChain(edge, assertions);
 }
 
-describe('§4.3 transition table — valid chains (7 vectors)', () => {
+describe('§4.3 transition table — valid chains (8 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(validCases).toHaveLength(7);
+    expect(validCases).toHaveLength(8);
   });
 
   for (const c of validCases) {
@@ -61,9 +61,9 @@ describe('§4.3 transition table — valid chains (7 vectors)', () => {
   }
 });
 
-describe('M-14: assertions violating the transition table are discarded (21 vectors)', () => {
+describe('M-14: assertions violating the transition table are discarded (23 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(invalidCases).toHaveLength(21);
+    expect(invalidCases).toHaveLength(23);
   });
 
   for (const c of invalidCases) {
@@ -94,6 +94,7 @@ describe('M-14: assertions violating the transition table are discarded (21 vect
     // If a vector ever stops exercising a reason, this makes the coverage loss visible.
     expect([...reasons].sort()).toEqual([
       'acceptance-window-not-elapsed',
+      'dispute-window-not-elapsed',
       'due-is-null',
       'duplicate-assertion-by-same-party',
       'edge-id-mismatch',

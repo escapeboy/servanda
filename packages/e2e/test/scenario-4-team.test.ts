@@ -364,6 +364,7 @@ describe('scenario 4 — team: the promise nobody had to chase', () => {
         'propose',
         { edge: newEdge, assertion: ivoProposes },
         ivo.personaId,
+        stefan.personaId,
         FRIDAY,
         ivo.privateKey,
       ),

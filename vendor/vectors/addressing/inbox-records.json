@@ -3,7 +3,7 @@
   "protocol_version": "servanda/0.1",
   "spec_reference": "spec/06-reconciliation-federation.md §6.7, conformance M-17",
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
-  "description": "Inbox records `{ v, type:\"inbox\", persona, hubs, issued_at, sig }`. Verification rule: the signature MUST verify against the key named in `persona`. `known_keys` exists only so a verifier can report WHICH other key signed a rejected record; a verifier without it still rejects, as `invalid-signature`.",
+  "description": "Inbox records `{ v, type:\"inbox\", persona, hubs, dh_key, issued_at, sig }`. Verification rule: the signature MUST verify against the key named in `persona`. `dh_key` is what §6.3 seals to, which is why this record is guarded: a forged one does not merely misroute a persona's mail, it hands the forger the key to read it. `known_keys` exists only so a verifier can report WHICH other key signed a rejected record; a verifier without it still rejects, as `invalid-signature`.",
   "verification_rule": "ed25519_verify(sig, sha256(JCS(record minus \"sig\")), public_key = hex_decode(record.persona))",
   "known_keys": [
     {
@@ -39,10 +39,11 @@
         "hubs": [
           "https://hub.example/servanda"
         ],
+        "dh_key": "e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f",
         "issued_at": "2026-07-25T09:00:00Z",
-        "sig": "f4891d7f2358eb179a648c5877504cce9634ca704612060aca98d58ba20cb9ef55d7885608eae75362758fd4c6982ff0ff4456103ab53d43826c70d485cdd909"
+        "sig": "a27a8c35d759f6f8610e073ea45c05a56be7ab9848e6702b047a2fac4198d2a6a7faaba9248b2df1692ba6d1cf3981fe78b8442a80a782e8611a665f7514e709"
       },
-      "canonical": "{\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:00:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f\",\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:00:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
       "expected": {
         "accepted": true,
         "rejection_reason": null,
@@ -64,10 +65,11 @@
           "https://hub.example/servanda",
           "https://backup.hub.example/servanda"
         ],
+        "dh_key": "c035f514e4bf0d5841bf94de8c96ffb7b3ce5cb20b56218a5d57788b080a4b73",
         "issued_at": "2026-07-25T09:05:00Z",
-        "sig": "809756f2f37dbe0cc73ddda55c78eb29e5013189a87c5635e3caeaea3cd8334e943f8a55a292581b3daab909cac0080d9eec97b29f79976d7625078fbfe8080d"
+        "sig": "61223f6ce05ac13717a408a95cfd75c406d65922633719b42ae19728b62978f7e0e3e8d6effbd91d001fe89bd64323ea0a6e75ee42dae42b0cc11d1002527a02"
       },
-      "canonical": "{\"hubs\":[\"https://hub.example/servanda\",\"https://backup.hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:05:00Z\",\"persona\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"c035f514e4bf0d5841bf94de8c96ffb7b3ce5cb20b56218a5d57788b080a4b73\",\"hubs\":[\"https://hub.example/servanda\",\"https://backup.hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:05:00Z\",\"persona\":\"72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
       "expected": {
         "accepted": true,
         "rejection_reason": null,
@@ -76,7 +78,7 @@
     },
     {
       "name": "invalid-signed-by-hub",
-      "description": "THE negative case for M-17. The record names Alice as the persona but is signed by a hub key, rewriting her hub list to a hub she never chose. §6.7: \"Only the persona key may change its own hubs (a hub cannot 'move' its users).\" A verifier that accepts this lets any hub silently redirect another hub's users — the addressing equivalent of forging an edge. MUST be rejected.",
+      "description": "THE negative case for M-17, and it now carries a second attack in the same object. The record names Alice but is signed by a hub key: it rewrites her hub list to a hub she never chose, AND advertises a `dh_key` the hub holds the private half of. §6.7: \"Only the persona key may change its own hubs (a hub cannot 'move' its users).\" A verifier that accepts this lets any hub redirect another hub's users — and, since §6.3 seals to the key in this record, read everything addressed to them. MUST be rejected.",
       "signed_by": {
         "label": "hub-operator",
         "persona_id": "2469c261d1628b3ac044a3543d7e85c6482dcc774223e7fd1030a1beccfc6a97"
@@ -88,10 +90,11 @@
         "hubs": [
           "https://hub.attacker.example/servanda"
         ],
+        "dh_key": "9d89e90bde5f57ab92958fc5c48de8fca332db37c8ab89602d3e8b2bdf419946",
         "issued_at": "2026-07-25T09:10:00Z",
-        "sig": "4da2c6e8a5fb1bda347b21bd8503f1f049185380e7f123ee28801af4c329a49629724641c36a9693e65d5c5349a6c86d0253a8bef25f45f09180aea3d8fc6702"
+        "sig": "daa6c510c7b5f895955bd9cd2d949cc64cdfa116d580aa6824eef7ed043581db17b7c433eec336e70133dadcd709ed80a0aef7c5e9126fd45152fc459246a90a"
       },
-      "canonical": "{\"hubs\":[\"https://hub.attacker.example/servanda\"],\"issued_at\":\"2026-07-25T09:10:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"9d89e90bde5f57ab92958fc5c48de8fca332db37c8ab89602d3e8b2bdf419946\",\"hubs\":[\"https://hub.attacker.example/servanda\"],\"issued_at\":\"2026-07-25T09:10:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
       "expected": {
         "accepted": false,
         "rejection_reason": "signer-is-not-the-persona",
@@ -112,10 +115,11 @@
         "hubs": [
           "https://hub.example/servanda"
         ],
+        "dh_key": "e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f",
         "issued_at": "2026-07-25T09:15:00Z",
-        "sig": "0936230319f95d2252baba97ac44285ee46ba70bc2791146adbb22d5ef2fa6b9c2f0b37ca27332dedb8c15cd965595ad01476b0e222950baff9303235b188a02"
+        "sig": "020ae02ca76dce1c4fa274888a4d494867c4ed8c9a53595a924c3124cf30b62d52b682bdd660d6473283ce4d81357305478d09e9e0fdd55527b134fd08577a03"
       },
-      "canonical": "{\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:15:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
+      "canonical": "{\"dh_key\":\"e69c71e957ba1c3e075e4ca79668edfa62a75b5ef560bc38d35f4a0a8625301f\",\"hubs\":[\"https://hub.example/servanda\"],\"issued_at\":\"2026-07-25T09:15:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox\",\"v\":\"servanda/0.1\"}",
       "expected": {
         "accepted": false,
         "rejection_reason": "invalid-signature",

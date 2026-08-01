@@ -55,7 +55,7 @@
           },
           "message": {
             "type": "object",
-            "required": ["v", "type", "payload", "sender", "sent_at", "sig"],
+            "required": ["v", "type", "payload", "sender", "recipient", "sent_at", "sig"],
             "additionalProperties": false,
             "properties": {
               "v": {
@@ -76,6 +76,10 @@
                 }
               },
               "sender": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              },
+              "recipient": {
+                "description": "§6.2: inside the signed preimage, so a signature binds who the message was FOR and not only who wrote it.",
                 "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
               },
               "sent_at": {

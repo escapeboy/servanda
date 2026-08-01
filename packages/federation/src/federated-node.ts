@@ -51,17 +51,25 @@ export class FederatedNode {
     });
   }
 
-  private sign(type: WireMessage['type'], payload: unknown): WireMessage {
+  // §6.2: the recipient is signed, so signing and addressing happen in one place. Separating
+  // them is how a message ends up signed for one persona and sent to another.
+  private sign(type: WireMessage['type'], recipient: string, payload: unknown): WireMessage {
     return signMessage(
       type,
       payload,
       this.persona,
+      recipient,
       this.clock().toISOString(),
       this.vault.getPersona(this.persona).private_key,
     );
   }
 
   private async emit(recipient: string, message: WireMessage): Promise<boolean> {
+    if (message.recipient !== recipient) {
+      // Belt and braces on the invariant above: a message signed for one persona must never be
+      // handed to a transport addressed to another.
+      throw new Error(`§6.2: message signed for ${message.recipient} cannot be sent to ${recipient}`);
+    }
     const id = messageId(message);
     if (this.sent.has(id)) return false;
     this.sent.add(id);
@@ -99,7 +107,7 @@ export class FederatedNode {
         if (assertion.by !== this.persona) continue;
         if (this.sentAssertions.has(assertion.sig)) continue;
         this.sentAssertions.add(assertion.sig);
-        if (await this.emit(counterparty, this.sign('assert', { assertion }))) n++;
+        if (await this.emit(counterparty, this.sign('assert', counterparty, { assertion }))) n++;
       }
     }
 
@@ -116,7 +124,7 @@ export class FederatedNode {
   /** §6.4: ask a counterparty for anything we are missing on our shared open edges. */
   async requestRecon(counterparty: string): Promise<ReconRequest> {
     const request = buildReconRequest(this.vault, this.persona, counterparty);
-    await this.emit(counterparty, this.sign('recon_request', request));
+    await this.emit(counterparty, this.sign('recon_request', counterparty, request));
     await this.transport.sync();
     return request;
   }
@@ -127,7 +135,7 @@ export class FederatedNode {
     for (const { from, request } of requests) {
       const response = answerReconRequest(this.vault, this.persona, from, request);
       if (response.edges.length === 0) continue;
-      if (await this.emit(from, this.sign('recon_response', response))) n++;
+      if (await this.emit(from, this.sign('recon_response', from, response))) n++;
     }
     await this.transport.sync();
     return n;

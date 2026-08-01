@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Attestation, type Publish } from '@servanda/types';
-import { signMessage } from '../../src/messages.js';
+import { signMessage, verifyMessage } from '../../src/messages.js';
 import { answerReconRequest, buildReconRequest, latestAssertionHash } from '../../src/recon.js';
 import { RecoveryResponder, signChallenge } from '../../src/recovery.js';
 import { mayServeEdge } from '../../src/serve.js';
@@ -162,12 +162,17 @@ describe('M-4: a node MUST NOT serve an edge to a non-party, non-scope-member', 
           'propose',
           { edge, assertion },
           pair.a.personaId,
+          pair.b.personaId,
           '2026-07-25T12:00:00Z',
           pair.a.privateKey,
         ),
       ]);
       expect(result.discarded).toEqual([
-        { type: 'propose', edge_id: edgeId, reason: 'not-addressed-to-this-persona' },
+        // `addressed-to-another-persona`, not `not-addressed-to-this-persona`: §6.2's envelope
+        // check now fires BEFORE the payload is examined, so a re-sealed message is refused
+        // without the node ever reading whose edge it is about. M-4a's payload rule still
+        // stands behind it for the case where recipient and `owed_to` disagree.
+        { type: 'propose', edge_id: edgeId, reason: 'addressed-to-another-persona' },
       ]);
       expect(solo.vault.getEdge(solo.personaId, edgeId)).toBeNull();
     } finally {
@@ -181,5 +186,64 @@ describe('M-4: a node MUST NOT serve an edge to a non-party, non-scope-member', 
     expect(buildReconRequest(pair.a.vault, pair.a.personaId, pair.b.personaId).edges.map((e) => e.edge_id)).toEqual([
       edgeId,
     ]);
+  });
+});
+
+/**
+ * §6.2 — a signature binds who a message was FOR, not only who wrote it.
+ *
+ * Filed upstream as #31 and resolved there. Before it, the courier authenticated nobody (that is
+ * §6.3 working as intended) and the signature named only its author, so any recipient could take
+ * a validly-signed message and re-seal it to a third party, where it verified unchanged. What
+ * stopped harm was a party check inside each message type — a rule every new type has to remember
+ * to re-derive, and the two request types did not have one at all.
+ */
+describe('§6.2: a re-sealed message is refused, whatever its type', () => {
+  it('a message signed for one persona is discarded by another', () => {
+    const solo = makeSolo(2);
+    const pair = makePair();
+    const forThirdParty = signMessage(
+      'recon_request',
+      { edges: [] },
+      pair.a.personaId,
+      pair.b.personaId,
+      '2026-07-25T12:00:00Z',
+      pair.a.privateKey,
+    );
+
+    // The signature is perfectly good — this is not a forgery, it is a forward.
+    expect(verifyMessage(forThirdParty)).not.toBeNull();
+
+    const result = solo.inbox.ingest([forThirdParty]);
+    expect(result.discarded).toEqual([
+      { type: 'recon_request', edge_id: null, reason: 'addressed-to-another-persona' },
+    ]);
+    // And the payload never reached the handler: no request was surfaced to answer.
+    expect(result.reconRequests).toEqual([]);
+
+    solo.cleanup();
+    pair.cleanup();
+  });
+
+  it('`recon_request` had no party check of its own — which is the point', () => {
+    // The type that made this worth fixing at the envelope. `propose` is bound by `edge.owed_to`
+    // and `assert` by party membership; a request carries neither, so before §6.2 gained
+    // `recipient` its only protection was the responder filtering what it answered with.
+    const solo = makeSolo(2);
+    const pair = makePair();
+    const addressed = signMessage(
+      'recon_request',
+      { edges: [] },
+      pair.a.personaId,
+      solo.personaId,
+      '2026-07-25T12:00:00Z',
+      pair.a.privateKey,
+    );
+    const result = solo.inbox.ingest([addressed]);
+    expect(result.discarded).toEqual([]);
+    expect(result.reconRequests).toEqual([{ from: pair.a.personaId, request: { edges: [] } }]);
+
+    solo.cleanup();
+    pair.cleanup();
   });
 });

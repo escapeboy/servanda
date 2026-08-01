@@ -68,6 +68,7 @@ describe('§6.1 git transport', () => {
       'recon_request',
       { edges: [] },
       pair.a.personaId,
+      pair.b.personaId,
       '2026-07-25T11:00:00Z',
       pair.a.privateKey,
     );

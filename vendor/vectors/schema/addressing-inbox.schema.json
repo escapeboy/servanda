@@ -67,7 +67,7 @@
           },
           "record": {
             "type": "object",
-            "required": ["v", "type", "persona", "hubs", "issued_at", "sig"],
+            "required": ["v", "type", "persona", "hubs", "dh_key", "issued_at", "sig"],
             "additionalProperties": false,
             "properties": {
               "v": {
@@ -81,6 +81,10 @@
                 "type": "array",
                 "minItems": 1,
                 "items": { "type": "string", "pattern": "^https://" }
+              },
+              "dh_key": {
+                "description": "§6.7: the persona's X25519 public key — what a sender seals to under §6.3. It rides in this record because M-17 already guards it: a hub able to publish a key it holds could read everything addressed to that persona.",
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
               },
               "issued_at": {
                 "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"

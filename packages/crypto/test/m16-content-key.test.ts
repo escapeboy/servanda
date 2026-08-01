@@ -136,9 +136,11 @@ describe('§6.3 blind courier', () => {
     expect(alice.dhPublicKey).not.toBe(bob.dhPublicKey);
   });
 
-  it('exposes nothing but an ephemeral key, nonce and ciphertext to the hub', () => {
+  it('exposes nothing but an ephemeral key and ciphertext to the hub', () => {
     const sealed = sealToPersona(bob.personaId, bob.dhPublicKey, utf8('confidential intent text'));
-    expect(Object.keys(sealed).sort()).toEqual(['ciphertext', 'epk', 'nonce', 'v']);
+    // No `nonce`: HPKE derives it from the key schedule (RFC 9180 §5.1), so it never travels
+    // and a sender cannot choose or reuse it.
+    expect(Object.keys(sealed).sort()).toEqual(['ciphertext', 'epk', 'v']);
     expect(JSON.stringify(sealed)).not.toContain('confidential');
     // The sender's persona is not derivable from the envelope: the sender key is ephemeral.
     expect(sealed.epk).not.toBe(alice.personaId);

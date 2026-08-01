@@ -178,6 +178,8 @@ export const RejectionReason = z.enum([
   'due-is-null',
   'expiry-before-due',
   'acceptance-window-not-elapsed',
+  /** §4.4: `disputed → expired` before `dispute_window` ran. Names a window, never a verdict. */
+  'dispute-window-not-elapsed',
   'malformed-edge-acceptance-window',
   'implicit-transition-not-assertable',
   'invalid-signature',
