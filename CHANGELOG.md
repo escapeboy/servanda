@@ -7,6 +7,24 @@ All notable changes to this project are documented here. The format follows
 Version numbers below 1.0.0 carry no compatibility promise, and these releases have used it: every
 one so far changes derived keys. A vault does not migrate across any of them.
 
+## [Unreleased]
+
+### Fixed
+
+- **`ItemAction` and `BriefSlot` reject an unknown member instead of stripping it.** zod strips by
+  default, so a `label` arriving from another node was silently dropped: this node would never
+  emit one, and a client using these types to read someone else's `brief` could never *detect*
+  one either. Stripping is not rejecting, and the normative schema says
+  `additionalProperties: false`. Found by the new `node-surface/brief-slots.json` oracle
+  (servanda-protocol#34, closing #29) on its first replay — the family exists because nothing
+  pinned a `brief` slot, and it earned its place immediately.
+- **`ItemAction` consults the act→tool binding table.** `{act: 'supersede', tool: 'act'}` parsed
+  happily: an advertised call to a tool that signs nothing, which is M-20's whole subject. The
+  table lives in the same module, so the schema reads it rather than restating it.
+- Gate G0's required-family list gained `node-surface/brief-slots.json`. It reported PASS in the
+  gap between the vectors landing and the list being updated — a family absent from that list is
+  invisible to all three of G0's checks, which is why it is written out rather than globbed.
+
 ## [0.3.0-pre] — 2026-07-31
 
 Everything here comes out of pre-reviewing the upstream cryptographic gate

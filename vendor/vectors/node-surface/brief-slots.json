@@ -1,0 +1,191 @@
+{
+  "suite_version": "0.1.0-pre",
+  "protocol_version": "servanda/0.1",
+  "spec_reference": "spec/07-node-surface.md (brief), conformance M-20 / M-21",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "One `brief` slot, and whether a node may emit it. M-21 says no user-facing copy crosses the node surface: a client authors the wording of every control it renders, so a slot carries an ACT and never a label. `headline` is the exception that proves it — a person's own recorded words are content, not copy, and travel verbatim. The invalid cases are the substance: `open_loops` was already pinned while `brief` was not, so an implementation could ship node-supplied button text and pass the entire suite.",
+  "slot_members": [
+    "headline",
+    "item_id",
+    "primary_action",
+    "persona"
+  ],
+  "act_vocabulary": [
+    "done",
+    "release",
+    "supersede",
+    "delegate",
+    "ping",
+    "confirm",
+    "dismiss",
+    "propose"
+  ],
+  "act_tool_bindings": [
+    {
+      "act": "done",
+      "tool": "act"
+    },
+    {
+      "act": "release",
+      "tool": "act"
+    },
+    {
+      "act": "supersede",
+      "tool": null
+    },
+    {
+      "act": "delegate",
+      "tool": null
+    },
+    {
+      "act": "ping",
+      "tool": null
+    },
+    {
+      "act": "confirm",
+      "tool": "confirm"
+    },
+    {
+      "act": "dismiss",
+      "tool": "confirm"
+    },
+    {
+      "act": "propose",
+      "tool": null
+    }
+  ],
+  "cases": [
+    {
+      "name": "valid-owner-open-edge",
+      "description": "The owner of an open edge. `done` is the leading act that signs, so it is the primary action; `headline` is the commitment intent as the person wrote it, which is CONTENT and travels verbatim.",
+      "slot": {
+        "headline": "pull staging data for the repro",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "primary_action": {
+          "act": "done",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "act": "done"
+          }
+        }
+      },
+      "expected": {
+        "valid": true,
+        "rejection_reason": null
+      }
+    },
+    {
+      "name": "valid-no-action-is-null-not-absent",
+      "description": "A slot with nothing a viewer may sign carries `primary_action: null`. Null says \"nothing to do here\"; omitting the member would say \"this node forgot\", and a client cannot tell those apart.",
+      "slot": {
+        "headline": "a promise already closed",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "primary_action": null
+      },
+      "expected": {
+        "valid": true,
+        "rejection_reason": null
+      }
+    },
+    {
+      "name": "invalid-label-on-the-primary-action",
+      "description": "THE case this family exists for. `label` is a node telling a client what to write on a button, which is exactly what M-21 forbids and exactly the shape #20 reported. A slot carrying one MUST be rejected.",
+      "slot": {
+        "headline": "pull staging data for the repro",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "primary_action": {
+          "act": "done",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "act": "done"
+          },
+          "label": "Mark done"
+        }
+      },
+      "expected": {
+        "valid": false,
+        "rejection_reason": "copy-bearing-member"
+      }
+    },
+    {
+      "name": "invalid-copy-on-the-slot",
+      "description": "Copy smuggled one level up. `headline` is the only string a slot may carry, because it is the person’s own recorded words; anything else a node writes for a client to render is the same violation wearing a different key.",
+      "slot": {
+        "headline": "pull staging data for the repro",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "subtitle": "Overdue — act now",
+        "primary_action": {
+          "act": "done",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "act": "done"
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "rejection_reason": "copy-bearing-member"
+      }
+    },
+    {
+      "name": "invalid-act-outside-the-vocabulary",
+      "description": "An act no client can map. The vocabulary is shared precisely so a client owns the wording for every act it may meet; an act outside it forces the client either to invent copy or to render something it cannot name.",
+      "slot": {
+        "headline": "pull staging data for the repro",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "primary_action": {
+          "act": "nudge_harder",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a"
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "rejection_reason": "act-not-in-vocabulary"
+      }
+    },
+    {
+      "name": "invalid-unbound-act-named-a-tool",
+      "description": "M-20 at slot level: `supersede` binds to no tool in v0, so naming one advertises a call that produces no assertion — a person told they acted when they did not.",
+      "slot": {
+        "headline": "pull staging data for the repro",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "primary_action": {
+          "act": "supersede",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a"
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "rejection_reason": "tool-not-bound-to-act"
+      }
+    },
+    {
+      "name": "invalid-args-on-an-unbound-act",
+      "description": "`tool: null` means there is no call to make, so there are no arguments to make it with. Arguments alongside a null tool are a call in waiting.",
+      "slot": {
+        "headline": "pull staging data for the repro",
+        "item_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "primary_action": {
+          "act": "ping",
+          "tool": null,
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a"
+          }
+        }
+      },
+      "expected": {
+        "valid": false,
+        "rejection_reason": "args-must-be-empty"
+      }
+    }
+  ]
+}

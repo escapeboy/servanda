@@ -24,7 +24,9 @@ fi
 # connectors-email's no-network audit: a family that lands upstream and is never added here is a
 # family nothing checks, and the gate still reports green. It went from six entries to eleven when
 # §6.7 addressing and the §7 node-surface families arrived — the addressing ones had already been
-# upstream for days without being noticed missing.
+# upstream for days without being noticed missing. It went to twelve when `brief-slots` landed,
+# and the gate reported PASS in between: a family absent from this list is invisible to all three
+# checks below, which is the whole reason the list is written out rather than globbed.
 required=(
   canonicalization/jcs.json
   hashing/commitment-hash.json
@@ -36,6 +38,7 @@ required=(
   addressing/oob-bootstrap.json
   node-surface/actions.json
   node-surface/act-tool.json
+  node-surface/brief-slots.json
   node-surface/verification-levels.json
 )
 for f in "${required[@]}"; do
@@ -61,6 +64,7 @@ const expected = {
   "addressing/oob-bootstrap.json": 2,
   "node-surface/actions.json": 11,
   "node-surface/act-tool.json": 14,
+  "node-surface/brief-slots.json": 7,
   "node-surface/verification-levels.json": 10,
 };
 let bad = 0;

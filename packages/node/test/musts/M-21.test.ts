@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BriefSlot, ItemAction } from '@servanda/types';
+import { ACT_TOOL_BINDINGS, BriefSlot, ItemAction } from '@servanda/types';
 import { actionsFor, type ViewerRole } from '../../src/actions.js';
 import { makeFixture, type Fixture } from '../support/fixture.js';
 
@@ -136,5 +136,60 @@ describe('M-21: the node surface carries acts, never copy', () => {
     }
 
     fx.cleanup();
+  });
+});
+
+/**
+ * The `brief-slots.json` oracle, replayed — M-21's node half on the surface it was reported against.
+ *
+ * This family did not exist when M-21 was first implemented here. `actions.json` pinned
+ * `open_loops` and nothing pinned `brief`, so an implementation could ship slots carrying
+ * node-supplied button text and pass the entire conformance suite. Filed upstream as #29 while
+ * reviewing #28, and closed by servanda-protocol#34.
+ *
+ * The judge below is the SCHEMA, not a re-reading of the file's verdict: `BriefSlot` is what this
+ * node emits through, so if it accepts a slot the oracle calls invalid, this node would emit one.
+ */
+describe('M-21: the brief-slot oracle', () => {
+  const VECTORS = 'vendor/vectors/node-surface/brief-slots.json';
+
+  interface SlotCase {
+    name: string;
+    slot: Record<string, unknown>;
+    expected: { valid: boolean; rejection_reason: string | null };
+  }
+  const suite = JSON.parse(readFileSync(VECTORS, 'utf8')) as {
+    slot_members: string[];
+    act_tool_bindings: { act: string; tool: string | null }[];
+    cases: SlotCase[];
+  };
+
+  it('replays every case the oracle states', () => {
+    expect(suite.cases).toHaveLength(7);
+    // A family with no negatives cannot catch the regression it exists for.
+    expect(suite.cases.filter((c) => !c.expected.valid).length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('the schema accepts exactly the slots the oracle calls valid', () => {
+    for (const c of suite.cases) {
+      const parsed = BriefSlot.safeParse(c.slot);
+      expect(parsed.success, `${c.name} (${c.expected.rejection_reason ?? 'valid'})`).toBe(
+        c.expected.valid,
+      );
+    }
+  });
+
+  it('the members a slot may carry are the members the schema knows', () => {
+    // If the oracle ever widens what a slot may hold, this fails rather than the schema quietly
+    // stripping the new member and every case still passing.
+    const known = Object.keys(BriefSlot.shape).sort();
+    expect(known).toEqual([...suite.slot_members].sort());
+  });
+
+  it('the act→tool table this node ships is the table the oracle pins', () => {
+    for (const { act, tool } of suite.act_tool_bindings) {
+      expect(ACT_TOOL_BINDINGS[act as keyof typeof ACT_TOOL_BINDINGS], act).toBe(tool);
+    }
+    expect(Object.keys(ACT_TOOL_BINDINGS)).toHaveLength(suite.act_tool_bindings.length);
   });
 });

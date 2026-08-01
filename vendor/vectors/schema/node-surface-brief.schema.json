@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/node-surface-brief.schema.json",
+  "title": "§7 brief slots — M-21's node half",
+  "description": "One `brief` slot per case, and whether a node may emit it. `slot` is deliberately loose: an invalid slot is DATA to be judged, not something this schema pre-filters, or the negative half could not be expressed at all.",
+  "type": "object",
+  "required": [
+    "suite_version",
+    "protocol_version",
+    "spec_reference",
+    "description",
+    "slot_members",
+    "act_vocabulary",
+    "act_tool_bindings",
+    "cases"
+  ],
+  "properties": {
+    "suite_version": { "type": "string" },
+    "protocol_version": { "type": "string" },
+    "spec_reference": { "type": "string" },
+    "generated_by": { "type": "string" },
+    "description": { "type": "string" },
+    "slot_members": {
+      "type": "array",
+      "description": "Every member a slot may carry. Anything else is copy or metadata a client did not ask for.",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "act_vocabulary": { "type": "array", "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/act" } },
+    "act_tool_bindings": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/actTooling" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "slot", "expected"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "slot": { "type": "object" },
+          "expected": {
+            "type": "object",
+            "required": ["valid", "rejection_reason"],
+            "additionalProperties": false,
+            "properties": {
+              "valid": { "type": "boolean" },
+              "rejection_reason": {
+                "type": ["string", "null"],
+                "enum": [
+                  "copy-bearing-member",
+                  "act-not-in-vocabulary",
+                  "tool-not-bound-to-act",
+                  "args-must-be-empty",
+                  null
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "description": "A valid slot has no reason to reject, and an invalid one must name why.",
+                "if": { "properties": { "valid": { "const": true } }, "required": ["valid"] },
+                "then": { "properties": { "rejection_reason": { "type": "null" } } },
+                "else": { "properties": { "rejection_reason": { "type": "string" } } }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

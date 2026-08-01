@@ -142,11 +142,37 @@ export type ActOutput = z.infer<typeof ActOutput>;
  * act to its own wording. `tool: null` means the act is real but v0 binds it to nothing — the
  * client may show it and MUST NOT invent a binding.
  */
-export const ItemAction = z.object({
-  act: Act,
-  tool: z.enum(['act', 'confirm']).nullable(),
-  args: z.record(z.unknown()),
-});
+export const ItemAction = z
+  .object({
+    act: Act,
+    tool: z.enum(['act', 'confirm']).nullable(),
+    args: z.record(z.unknown()),
+  })
+  /**
+   * STRICT, and the oracle is why. zod strips unknown keys by default, so a `label` arriving from
+   * another node was silently dropped: this node would never emit one, and a client using these
+   * types to read someone else's brief could never DETECT one either. Stripping is not rejecting.
+   * `node-surface/brief-slots.json` requires the slot to be refused, and the normative schema says
+   * `additionalProperties: false`.
+   */
+  .strict()
+  /**
+   * The binding table is the authority, so the schema consults it rather than restating it.
+   *
+   * Without this, `{act: 'supersede', tool: 'act'}` parsed happily — an advertised call to a tool
+   * that signs nothing, which is M-20's whole subject. Unlike the acceptance-window rule, this one
+   * belongs in the schema: `ACT_TOOL_BINDINGS` lives in this module and no transition table has a
+   * better claim to own it.
+   */
+  .refine((a) => a.tool === ACT_TOOL_BINDINGS[a.act], {
+    message: 'M-20: an act must name the tool it is bound to, or null',
+    path: ['tool'],
+  })
+  /** §7: where `tool` is null there is no call to make, so there is nothing to make it with. */
+  .refine((a) => a.tool !== null || Object.keys(a.args).length === 0, {
+    message: '§7: an act bound to no tool carries no arguments',
+    path: ['args'],
+  });
 export type ItemAction = z.infer<typeof ItemAction>;
 
 export const OpenLoopsInput = z.object({
@@ -198,7 +224,9 @@ export const BriefSlot = z.object({
   primary_action: ItemAction.nullable(),
   /** M-5 audit trail: which persona's pipeline produced this slot's content. */
   persona: PersonaId.optional(),
-});
+})
+  /** Strict for the same reason `ItemAction` is: copy one level up is the same violation. */
+  .strict();
 export type BriefSlot = z.infer<typeof BriefSlot>;
 
 export const BriefOutput = z.object({

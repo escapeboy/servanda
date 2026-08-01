@@ -19,6 +19,7 @@ addressing/inbox-records.json       4 cases   §6.7 inbox records; hub-signed re
 addressing/oob-bootstrap.json       2 cases   §6.7 URL/QR bootstrap payload, encode→decode→verify
 node-surface/actions.json          11 cases   §7 advertised acts per (state, viewer role) — M-20
 node-surface/act-tool.json         14 cases   §7 `act` calls: accepted, or refused with a reason
+node-surface/brief-slots.json       7 cases   §7 `brief` slot shape; a copy-bearing slot is rejected — M-21
 node-surface/verification-levels.json 10 cases §1.6 ladder order and name gating — M-12
 schema/*.schema.json                          JSON Schemas, validated in CI
 ```
@@ -56,6 +57,11 @@ requires reading the generator to understand.
 - **node-surface/act-tool** — make the `act` call in `call.input` as `call.caller` against that
   edge and state. `expected.accepted` and `expected.rejection_reason` are the contract;
   `expected.asserts` is the assertion state the node signs when it accepts.
+- **node-surface/brief-slots** — judge one `slot` against the rule, and compare your judgement to
+  `expected`. A slot may carry only the members in `slot_members`; a `primary_action` may carry only
+  `act`, `tool` and `args`; the act must be in the vocabulary and its tool must match
+  `act_tool_bindings`; and `tool: null` means `args` is empty. **Do not read `expected.valid` and
+  agree with it** — that proves only that JSON parses.
 - **node-surface/verification-levels** — grade `evidence` to a level and a display name.
   `level_rank` is the total order; `expected.display_name` is `null` at every level below `2`,
   including cases where a name was available.
@@ -119,6 +125,18 @@ viewer, and `must_not_advertise` names every act it must **not** offer. The shar
 that looks like it worked. A node that quietly maps `release` onto a local dismissal produces
 exactly the failure M-20 exists to prevent — a control that reports success while the counterparty
 is never told.
+
+`node-surface/brief-slots.json` closes the half of M-21 that was open longest. `actions.json` pinned
+`open_loops`, and nothing pinned `brief` — so an implementation could ship slots carrying
+node-supplied button text and pass the entire suite. The load-bearing case is
+`invalid-label-on-the-primary-action`: a `label` is a node telling a client what to write, which is
+what M-21 forbids and the exact shape that was reported against `brief`. The rest of the negatives
+close the ways the same thing arrives wearing a different key — copy one level up on the slot, an
+act outside the shared vocabulary, an unbound act naming a tool, arguments beside a null tool.
+
+`headline` is the deliberate exception, and it is worth understanding rather than memorising: a
+person's own recorded words are CONTENT and travel verbatim. What M-21 forbids is a node writing
+the words a client puts on its own controls.
 
 `node-surface/verification-levels.json` pins the M-12 ladder: the total order `0 < 1 < ext < 2 < 3`,
 the case where a binding proof and an attestation are both present (`2` wins — self-assertion does
