@@ -32,9 +32,13 @@ function privateKeyFor(personaId: string): string {
 }
 
 describe('G0 signatures (§00 Conventions, §4.2)', () => {
-  it('targets the signing rule the vectors state', () => {
+  it('targets the signing rule the vectors state, and a family that can fail', () => {
     expect(vectors.signing_rule).toBe('ed25519_sign(sha256(JCS(object minus "sig")), private_key)');
-    expect(vectors.cases.length).toBe(5);
+    // Not a count. The family carried five positives and NO verdict until v0.2, which a
+    // `return true` verifier passed in full — over the primitive M-2, M-14 and §6.2 all reduce
+    // to. Pinning the number would have re-frozen that; what matters is that both kinds exist.
+    expect(vectors.cases.some((c: { verifies: boolean }) => c.verifies)).toBe(true);
+    expect(vectors.cases.some((c: { verifies: boolean }) => !c.verifies)).toBe(true);
   });
 
   for (const c of vectors.cases) {
@@ -44,25 +48,30 @@ describe('G0 signatures (§00 Conventions, §4.2)', () => {
         expect(signingPreimageHex(c.unsigned_object)).toBe(c.sha256_preimage);
       });
 
-      it('verifies the vector signature against the signer key', () => {
-        expect(verifyObject(c.signed_object, c.signer.persona_id)).toBe(true);
+      it(`reaches the verdict the vector pins (verifies=${c.verifies})`, () => {
+        expect(verifyObject(c.signed_object, c.signer.persona_id)).toBe(c.verifies);
+        // A refusal names a reason; an acceptance names none. "Rejected everything" and
+        // "rejected the right thing" are different implementations and only one conforms.
+        expect(c.reason === null).toBe(c.verifies);
       });
 
-      it('signing reproduces the vector signature byte for byte (Ed25519 is deterministic)', () => {
-        expect(signObject(c.unsigned_object, privateKeyFor(c.signer.persona_id))).toBe(c.signature);
-      });
+      if (c.verifies) {
+        it('signing reproduces the vector signature byte for byte (Ed25519 is deterministic)', () => {
+          expect(signObject(c.unsigned_object, privateKeyFor(c.signer.persona_id))).toBe(c.signature);
+        });
+      }
 
       it('the sig field is excluded from its own preimage', () => {
         expect(signingPreimageHex(c.signed_object)).toBe(c.sha256_preimage);
         expect(unsigned(c.signed_object)).toEqual(c.unsigned_object);
       });
 
-      it('rejects a tampered object', () => {
+      it.skipIf(!c.verifies)('rejects a tampered object', () => {
         const tampered = { ...c.signed_object, asserted_at: '2099-01-01T00:00:00Z', issued_at: '2099-01-01T00:00:00Z' };
         expect(verifyObject(tampered, c.signer.persona_id)).toBe(false);
       });
 
-      it('rejects verification against a different persona key', () => {
+      it.skipIf(!c.verifies)('rejects verification against a different persona key', () => {
         const other = derivation.personas.find((p) => p.persona_id !== c.signer.persona_id);
         expect(verifyObject(c.signed_object, other!.persona_id)).toBe(false);
       });

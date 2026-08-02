@@ -3,15 +3,27 @@
   "$id": "https://servanda.dev/schema/signatures.schema.json",
   "title": "Ed25519 signature vectors",
   "type": "object",
-  "allOf": [{ "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner" }],
-  "required": ["description", "signing_rule", "cases"],
+  "allOf": [
+    {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/banner"
+    }
+  ],
+  "required": [
+    "description",
+    "signing_rule",
+    "cases"
+  ],
   "properties": {
     "suite_version": {},
     "protocol_version": {},
     "spec_reference": {},
     "generated_by": {},
-    "description": { "type": "string" },
-    "signing_rule": { "type": "string" },
+    "description": {
+      "type": "string"
+    },
+    "signing_rule": {
+      "type": "string"
+    },
     "cases": {
       "type": "array",
       "minItems": 1,
@@ -25,34 +37,59 @@
           "canonical",
           "sha256_preimage",
           "signature",
-          "signed_object"
+          "signed_object",
+          "verifies",
+          "reason"
         ],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-          "description": { "type": "string", "minLength": 1 },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
           "signer": {
             "type": "object",
-            "required": ["persona_id", "derivation_path"],
+            "required": [
+              "persona_id",
+              "derivation_path"
+            ],
             "additionalProperties": false,
             "properties": {
               "persona_id": {
                 "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
               },
-              "derivation_path": { "type": "string", "pattern": "^m(/\\d+')+$" }
+              "derivation_path": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           },
           "unsigned_object": {
             "type": "object",
-            "required": ["v", "type"],
-            "not": { "required": ["sig"] },
+            "required": [
+              "v",
+              "type"
+            ],
+            "not": {
+              "required": [
+                "sig"
+              ]
+            },
             "properties": {
               "v": {
                 "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
               }
             }
           },
-          "canonical": { "type": "string" },
+          "canonical": {
+            "type": "string"
+          },
           "sha256_preimage": {
             "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
           },
@@ -61,15 +98,95 @@
           },
           "signed_object": {
             "type": "object",
-            "required": ["v", "type", "sig"],
+            "required": [
+              "v",
+              "type",
+              "sig"
+            ],
             "properties": {
               "sig": {
                 "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
               }
             }
+          },
+          "verifies": {
+            "type": "boolean",
+            "description": "The verdict. Pinned because the family carried five positives and none until v0.2, so a `return true` verifier passed every case — over the one primitive M-2, M-14 and §6.2 all reduce to."
+          },
+          "reason": {
+            "description": "Why a refused case is refused. Non-null exactly when `verifies` is false: 'rejected everything' and 'rejected the right thing' are different implementations and only one conforms.",
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "enum": [
+                  "signature-does-not-verify",
+                  "signature-does-not-cover-this-object",
+                  "signature-by-another-key"
+                ]
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "description": "A refusal names a reason; an acceptance names none.",
+            "if": {
+              "properties": {
+                "verifies": {
+                  "const": false
+                }
+              },
+              "required": [
+                "verifies"
+              ]
+            },
+            "then": {
+              "properties": {
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "reason": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "description": "At least one case must verify.",
+          "contains": {
+            "properties": {
+              "verifies": {
+                "const": true
+              }
+            },
+            "required": [
+              "verifies"
+            ]
+          }
+        },
+        {
+          "description": "At least one case must NOT verify — a positive-only family cannot fail.",
+          "contains": {
+            "properties": {
+              "verifies": {
+                "const": false
+              }
+            },
+            "required": [
+              "verifies"
+            ]
           }
         }
-      }
+      ]
     }
   }
 }

@@ -60,7 +60,7 @@ const dir = process.env.SERVANDA_VECTORS ?? "vendor/vectors";
 const expected = {
   "canonicalization/jcs.json": 16,
   "hashing/commitment-hash.json": 14,
-  "signatures/signatures.json": 5,
+  "signatures/signatures.json": 9,
   "transitions/valid.json": 9,
   "transitions/invalid.json": 25,
   "addressing/inbox-records.json": 4,
