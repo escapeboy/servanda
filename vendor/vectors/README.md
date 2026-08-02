@@ -9,19 +9,23 @@ byte of drift. To change a vector, change [`tools/vectors-gen/`](../tools/vector
 `npm run generate`.
 
 ```
-canonicalization/jcs.json          16 cases   RFC 8785 canonical form + sha256
-hashing/commitment-hash.json       14 cases   §3.2 five-field commitment_hash
-signatures/signatures.json          5 cases   Ed25519 over sha256(JCS(obj sans sig))
-derivation/persona-keys.json        5 personas BIP-39 → SLIP-0010 m/7391'/{i}'
-transitions/valid.json              7 cases   sequences a node MUST accept
-transitions/invalid.json           19 cases   sequences a node MUST reject (M-14)
-addressing/inbox-records.json       4 cases   §6.7 inbox records; hub-signed record rejected (M-17)
-addressing/oob-bootstrap.json       2 cases   §6.7 URL/QR bootstrap payload, encode→decode→verify
-node-surface/actions.json          11 cases   §7 advertised acts per (state, viewer role) — M-20
-node-surface/act-tool.json         14 cases   §7 `act` calls: accepted, or refused with a reason
-node-surface/brief-slots.json       7 cases   §7 `brief` slot shape; a copy-bearing slot is rejected — M-21
-node-surface/verification-levels.json 10 cases §1.6 ladder order and name gating — M-12
-schema/*.schema.json                          JSON Schemas, validated in CI
+canonicalization/jcs.json               16 cases    RFC 8785 canonical form + sha256
+hashing/commitment-hash.json            14 cases    §3.2 five-field commitment_hash
+envelope/envelope-id.json               12 cases    §2 envelope `id` preimage — which members reach the digest
+envelope/bounds.json                    19 cases    §2 bounds, each with a case on both sides — M-19
+signatures/signatures.json               5 cases    Ed25519 over sha256(JCS(obj sans sig))
+derivation/persona-keys.json             5 personas BIP-39 → SLIP-0010 m/7391'/{i}'
+transitions/valid.json                   9 cases    sequences a node MUST accept
+transitions/invalid.json                25 cases    sequences a node MUST reject (M-14)
+addressing/inbox-records.json            4 cases    §6.7 inbox records; hub-signed record rejected (M-17)
+addressing/oob-bootstrap.json            2 cases    §6.7 URL/QR bootstrap payload, encode→decode→verify
+recovery/proof-of-possession.json        6 cases    §6.6 a bare published rotation is NOT a proof — #37
+node-surface/actions.json               11 cases    §7 advertised acts per (state, viewer role) — M-20
+node-surface/act-tool.json              17 cases    §7 `act` calls: accepted, or refused with a reason
+node-surface/brief-slots.json            7 cases    §7 `brief` slot shape; a copy-bearing slot is rejected — M-21
+node-surface/verification-levels.json   13 cases    §1.6 ladder, name gating and `counterparty.origin` — M-12
+schema/*.schema.json                                JSON Schemas, validated in CI
+                                       165 cases total, across 15 families
 ```
 
 ## How to consume them

@@ -159,8 +159,8 @@
       }
     },
     {
-      "name": "a-second-release-is-named-a-duplicate",
-      "description": "§7 (v0.2, #41): \"you already signed this one\" is not \"the transition is illegal\". A person told the latter about their own repeated act learns nothing they can act on.",
+      "name": "a-second-release-hits-a-terminal-edge",
+      "description": "§7 (v0.2, #41): a repeat of `release` reaches an edge the first one already released, so the caller is told `terminal-state-reached` — which is the true reason, and the reason duplication is never considered. This case was named `…-is-named-a-duplicate` when it was written, and named the outcome its author expected rather than the one it produces: an independent implementation reading the name and the expectation together found they disagreed. A case whose name asserts more than its expectation is a check that cannot fail, in the suite itself.",
       "edge": {
         "v": "servanda/0.2",
         "type": "edge",
