@@ -580,14 +580,6 @@
       "window_elapsed": false,
       "expected_actions": [
         {
-          "act": "release",
-          "tool": "act",
-          "args": {
-            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
-            "act": "release"
-          }
-        },
-        {
           "act": "supersede",
           "tool": null,
           "args": {}
@@ -595,6 +587,7 @@
       ],
       "must_not_advertise": [
         "done",
+        "release",
         "delegate",
         "ping",
         "confirm",

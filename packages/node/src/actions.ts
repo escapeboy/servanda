@@ -52,7 +52,18 @@ export function actionsFor(input: {
         : [bind('release', { id: edgeId, act: 'release' }), bind('ping'), bind('supersede')];
 
     case 'pending-acceptance':
-      if (role === 'owed_to') return [bind('release', { id: edgeId, act: 'release' }), bind('supersede')];
+      // NOT `release`. §4.3 gives `pending-acceptance` three rows and `released` is not among
+      // them, so M-20 forbids offering it — and `release` is tool-bound, so the gate reaches it.
+      //
+      // §4.4's `contested-closure` does accept a `released` here, but only one dated at or before
+      // the owner's evidence assertion: a CONCURRENT act, made without sight of it. Anything a
+      // client signs now is dated now, which is later, which is refused. Advertising it would tell
+      // the counterparty they may forgive a debt and then discard the assertion — the exact
+      // failure M-20 exists to prevent.
+      //
+      // What §4.3 gives them here, explicit acceptance and dispute, has no act in §7's closed
+      // vocabulary, so there is nothing tool-bound to offer. §7 now names that gap.
+      if (role === 'owed_to') return [bind('supersede')];
       // The owner may record tacit acceptance only once the window has run. Before that, offering
       // `done` would advertise the exact forgery §4.4 exists to prevent.
       return windowElapsed
