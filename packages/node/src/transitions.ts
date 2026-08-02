@@ -80,6 +80,8 @@ interface ChainState {
   /** §4.3: both parties must assert to leave `contested-closure`, exactly as with `disputed`. */
   contest_closed_by: Set<string>;
   contest_superseded_by: Set<string>;
+  /** §4.4: when the contest was recorded — the instant `dispute_window` runs from. */
+  contested_at: string | null;
   /** §4.4: `asserted_at` of the accepted `disputed` assertion — when `dispute_window` starts. */
   disputed_at: string | null;
   /**
@@ -221,6 +223,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
     const fault = unilateralExitFault(edge, a, ctx.now);
     if (fault !== null) return fault;
     ctx.state = 'contested-closure';
+    ctx.contested_at = a.asserted_at;
     ctx.resolved_at = a.asserted_at;
     return null;
   }
@@ -252,6 +255,33 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
         ctx.state = 'superseded';
         ctx.resolved_at = a.asserted_at;
       }
+      return null;
+    }
+    // §4.4's third exit, and this state needs it for exactly the reason `disputed` does.
+    //
+    // Both resolutions above require BOTH parties, so without this a contest is a unilateral act
+    // that freezes an edge permanently — which is the trap §4.4 already names and already refused
+    // to build: "a counterparty who disputes and then goes silent leaves an owner who may have
+    // genuinely fulfilled the commitment holding an edge that can never close, never expire and
+    // never be superseded."
+    //
+    // It was worse here than there. `disputed` costs the counterparty an `evidence_hash` and
+    // carries this escape; a contest reached by backdating a `released` cost nothing and had no
+    // escape at all, so it was a STRICTLY stronger, evidence-free, permanent freeze. The comment
+    // above that reasoned "backdating buys nothing, because `disputed` blocks just as firmly" was
+    // wrong on both counts, and is true only now that this exit exists.
+    //
+    // It decides nothing about the merits, exactly as §4.4 says of the `disputed` case: both acts
+    // stay in the chain, and the rejection below names a window and never a verdict.
+    if (a.state === 'expired') {
+      if (ctx.contested_at === null) return 'illegal-source-state';
+      const windowEnds = addDuration(new Date(Date.parse(ctx.contested_at)), DISPUTE_WINDOW);
+      if (Date.parse(a.asserted_at) < windowEnds.getTime()) return 'dispute-window-not-elapsed';
+      if (ctx.now !== null && Date.parse(a.asserted_at) > ctx.now + EXPIRY_SKEW_MS) {
+        return 'expiry-dated-in-the-future';
+      }
+      ctx.state = 'expired';
+      ctx.resolved_at = a.asserted_at;
       return null;
     }
     return 'illegal-source-state';
@@ -442,6 +472,7 @@ export function verifyAssertionChain(
     exit: null,
     contest_closed_by: new Set(),
     contest_superseded_by: new Set(),
+    contested_at: null,
     disputed_at: null,
     resolved_at: null,
     latest_by_signer: new Map(),

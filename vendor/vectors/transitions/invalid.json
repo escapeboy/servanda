@@ -141,6 +141,105 @@
       "expected_unverifiable": true
     },
     {
+      "name": "contested-closure-expiry-before-the-window-elapsed",
+      "description": "§4.4: the escape is not immediate. `dispute_window` runs from the contest, and until it has elapsed the edge stays where both parties put it — otherwise contesting and then expiring would be one move, and the state would resolve nothing.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-evidence",
+        "acceptance_window": null,
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "released",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "09ba10cdbc632726d58fc811fa1667da1dee4bdf92891386f2ced1ad42890968e461ccd48323129770d1dc088081e297d735940e12f00c8d88af54c276295600"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "expired",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "7011743d1a7d4f74a29fc81917eaaa0e2c2acfe11fed41fcdd4f1a2bd76f08e9ce0464b81b335ce8139407e4770efdac2b2a34517aa1e2b7248ed19131c46807"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 2,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 3,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 4,
+          "accepted": false,
+          "rejection_reason": "dispute-window-not-elapsed"
+        }
+      ],
+      "expected_final_state": "contested-closure",
+      "expected_unverifiable": false
+    },
+    {
       "name": "a-later-release-does-not-contest-it-answers",
       "description": "§4.4: **only a concurrent act contests.** This `released` is dated AFTER the owner’s evidence assertion, so it could have been a response to it — and §4.3 already says what the answers to an evidence assertion are: accept it, or dispute it. Reaching `contested-closure` here would let a party who waited claim the position of one who did not, and would reverse the `pending-acceptance` restriction the table states. The comparison is between two self-written timestamps, which is sound only because backdating buys nothing: `disputed` is legal from `pending-acceptance` and blocks the closure just as firmly, with an `evidence_hash` attached.",
       "edge": {

@@ -142,6 +142,36 @@ describe('§4.3 two legal unilateral exits, taken concurrently', () => {
     });
   }
 
+  it('has the third exit §4.4 gives `disputed`, and for the same reason', () => {
+    // Both resolutions above need BOTH parties, so without this a contest is a unilateral act
+    // that freezes an edge for ever — the trap §4.4 already names and already refused to build.
+    // It was worse here: reaching a contest costs no `evidence_hash`, where `disputed` does.
+    const edge = edgeWith('on-evidence');
+    const contested = [...[proposed, confirmed], ownerCloses, creditorReleases];
+
+    const tooSoon = state(edge, [...contested, assert('expired', OWNER, '2026-08-01T09:00:00Z')]);
+    expect(tooSoon.outcomes.at(-1)!.rejection_reason).toBe('dispute-window-not-elapsed');
+    expect(tooSoon.final_state).toBe('contested-closure');
+
+    // P30D from the contest, by EITHER party, and it decides nothing about the merits.
+    const freed = state(edge, [...contested, assert('expired', OWNER, '2026-08-27T09:00:00Z')]);
+    expect(freed.final_state).toBe('expired');
+    expect(state(edge, [...contested, assert('expired', OWED_TO, '2026-08-27T09:00:00Z')]).final_state).toBe(
+      'expired',
+    );
+  });
+
+  it('and both acts are still in the chain after it — expiry appends, it never erases', () => {
+    const edge = edgeWith('on-evidence');
+    const chain = [
+      ...[proposed, confirmed],
+      ownerCloses,
+      creditorReleases,
+      assert('expired', OWNER, '2026-08-27T09:00:00Z'),
+    ];
+    expect(state(edge, chain).outcomes.every((o) => o.accepted)).toBe(true);
+  });
+
   it('an ILLEGAL second exit is refused for its own fault, not swallowed as a contest', () => {
     // The rule turns on the second act having been LEGAL when it was made. Here the creditor
     // asserts `expired` before `due` — different party, different destination, so it reaches the

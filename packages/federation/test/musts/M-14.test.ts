@@ -57,9 +57,9 @@ const OWNER = persona(0);
 const COUNTERPARTY = persona(1);
 
 beforeAll(() => {
-  expect(allCases).toHaveLength(33);
+  expect(allCases).toHaveLength(34);
   for (const name of NOT_REPLAYABLE) expect(allCases.map((c) => c.name)).toContain(name);
-  expect(cases).toHaveLength(30);
+  expect(cases).toHaveLength(31);
   for (const c of cases) {
     expect(c.edge.owner).toBe(OWNER.personaId);
     expect(c.edge.owed_to).toBe(COUNTERPARTY.personaId);
