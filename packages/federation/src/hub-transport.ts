@@ -1,4 +1,5 @@
 import { canonicalBytes, openSealed, sealToPersona, withSignature } from '@servanda/crypto';
+import { HubEnvelope as HubEnvelopeSchema } from '@servanda/types';
 import type { HubEnvelope, WireMessage } from '@servanda/types';
 import { PROTOCOL_VERSION } from '@servanda/types';
 import type { FetchLike, Transport } from './transport.js';
@@ -179,7 +180,19 @@ export class HubClient implements Transport {
   }
 
   private open(raw: unknown): WireMessage | null {
-    const envelope = raw as HubEnvelope;
+    // §00: "a node can refuse rather than misinterpret" — and the recipient could not, because
+    // this cast the envelope instead of parsing it. `HubEnvelope`'s `v` literal was enforced only
+    // by `MemoryHub.deliver`, which is the COURIER: §6.3's untrusted party, checking a version on
+    // the recipient's behalf. And `hubEnvelopeAad` hardcodes `PROTOCOL_VERSION` rather than
+    // reading the envelope, so a relabelled envelope reproduced the same associated data and
+    // decrypted unchanged.
+    //
+    // The inner wire message is still version-checked, so nothing was ever misinterpreted. What
+    // was missing is the recipient's own ability to refuse — which is the whole of what §00 says
+    // the field is for.
+    const parsed = HubEnvelopeSchema.safeParse(raw);
+    if (!parsed.success) return null;
+    const envelope = parsed.data;
     try {
       const plaintext = openSealed(
         this.dhPrivateKey,
