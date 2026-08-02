@@ -323,11 +323,31 @@ export function applyRecoverResponse(vault: Vault, persona: string, response: Re
       discarded.push({ edge_id: edge.edge_id, index: -1, reason: bound });
       continue;
     }
-    vault.putEdge(persona, edge);
     const local = vault.getAssertions(persona, edge.edge_id);
     const held = new Set(local.map((a) => a.sig));
     const incoming = assertions.filter((a) => !held.has(a.sig)).sort(inWireOrder);
     const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming]);
+
+    // M-1 / M-14: an edge exists because its OWNER proposed it, and that proposal is signed.
+    // The edge object itself is not — §4.2 puts every signature on the assertions, and `edge_id`
+    // is a digest its minter computes — so storing the edge before the chain is judged accepts a
+    // promise on nothing but the responder's word. A recovery responder returned two fabricated
+    // edges with empty chains and both were stored, one naming the requester as OWNER: a promise
+    // the victim never made, in the victim's own vault, bypassing the propose path, M-14 and the
+    // §6.5 budget together.
+    //
+    // The check is the same one `propose` applies, asked of the whole restored chain rather than
+    // of one message: is there an ACCEPTED `proposed` signed by this edge's owner?
+    const candidate = [...local, ...incoming];
+    const proposedByOwner = candidate.some(
+      (a, i) => outcomes[i]?.accepted && a.state === 'proposed' && a.by === edge.owner,
+    );
+    if (!proposedByOwner) {
+      discarded.push({ edge_id: edge.edge_id, index: -1, reason: 'no-accepted-proposal-by-the-owner' });
+      continue;
+    }
+
+    vault.putEdge(persona, edge);
     for (let i = 0; i < incoming.length; i++) {
       const outcome = outcomes[local.length + i]!;
       if (outcome.accepted) vault.appendAssertion(persona, incoming[i]!);
