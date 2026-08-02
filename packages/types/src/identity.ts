@@ -76,16 +76,23 @@ export type PersonaLink = z.infer<typeof PersonaLink>;
  * §1.7 Rotation. With the old key's signature, continuity transfers automatically:
  * verifiers MUST treat `new` as the successor for all open edges of `old`.
  *
- * SPEC CONTRADICTION (filed upstream). §1.7 names the fields `sig_old` / `sig_new?`, but the
- * universal signing rule — `ed25519_sign(sha256(JCS(object minus "sig")), key)` (§00
- * Conventions, restated as the vectors' `signing_rule`) — excludes only a field literally
- * named `sig`. Under §1.7's field names the signing preimage is undefined: neither signature
- * can exclude itself, and each would have to cover the other. The conformance vectors resolve
- * this by emitting a single `sig` signed by the OLD key.
+ * RESOLVED UPSTREAM, and the resolution is worth keeping because it changed twice.
  *
- * Narrowest reading implemented here: accept both encodings, require at least one signature
- * by the old key, and never invent a preimage rule the spec does not state. `sig` is the form
- * this implementation emits, because it is the only one with a defined signing preimage.
+ * §1.7 originally named the fields `sig_old` / `sig_new?` while §0's signing rule excluded only
+ * a member literally named `sig`. Under those field names the preimage was undefined: neither
+ * signature could exclude itself and each would have covered the other. This file therefore
+ * accepted both encodings and emitted the single-`sig` form as the only one with a defined
+ * preimage.
+ *
+ * BOTH halves of that reasoning have since moved. §0 now removes every member named `sig` or
+ * beginning with `sig_`, so `sig_old` HAS a defined preimage — the same bytes `sig` covers. And
+ * §1.7 withdrew the `sig_old`/`sig_new` encoding outright, on the ground that under the §0 rule
+ * `sig_new` proves nothing `sig_old` does not and neither commits to the other's presence.
+ *
+ * What remains here is interoperability with objects written before the withdrawal, and nothing
+ * more: `sig` is what this implementation emits and what §1.7 makes a MUST, `sig_old` parses so
+ * that a legacy statement can be REPORTED rather than mistaken for corrupt, and accepting it
+ * requires an explicit opt-in (`verifyRotation`'s `acceptLegacySigOld`).
  */
 const RotationBase = z.object({
   v: ProtocolVersion,
@@ -98,7 +105,7 @@ const RotationBase = z.object({
 export const Rotation = RotationBase.extend({
   /** The conformance-oracle encoding: one signature by `old`, over the object minus `sig`. */
   sig: SignatureHex.optional(),
-  /** The §1.7 encoding. Retained for interoperability; see the note above. */
+  /** The withdrawn §1.7 encoding. Parsed for interoperability only; see the note above. */
   sig_old: SignatureHex.optional(),
   sig_new: SignatureHex.optional(),
 }).refine(
@@ -107,6 +114,6 @@ export const Rotation = RotationBase.extend({
 );
 export type Rotation = z.infer<typeof Rotation>;
 
-/** The encoding this implementation emits: single `sig`, the only one with a defined preimage. */
+/** The encoding §1.7 makes a MUST and this implementation emits: a single `sig` by `old`. */
 export const RotationCanonical = RotationBase.extend({ sig: SignatureHex });
 export type RotationCanonical = z.infer<typeof RotationCanonical>;

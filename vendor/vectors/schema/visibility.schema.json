@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://servanda.dev/schema/visibility.schema.json",
+  "title": "\u00a75.3 visibility matrix (M-4)",
+  "type": "object",
+  "required": [
+    "suite_version",
+    "protocol_version",
+    "spec_reference",
+    "generated_by",
+    "description",
+    "note",
+    "cases"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "suite_version": {
+      "type": "string"
+    },
+    "protocol_version": {
+      "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+    },
+    "spec_reference": {
+      "type": "string"
+    },
+    "generated_by": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "rule",
+          "input",
+          "expected"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rule": {
+            "enum": [
+              "M-4a",
+              "M-4b",
+              "M-4c",
+              "\u00a75.2"
+            ],
+            "description": "Which \u00a75.3 clause the case exists for. Named so a reader can tell a rule with one case from a rule with none."
+          },
+          "input": {
+            "type": "object",
+            "required": [
+              "now",
+              "holder",
+              "requester",
+              "edge",
+              "publishes",
+              "attestations",
+              "revocations"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "now": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+              },
+              "holder": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              },
+              "requester": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+              },
+              "edge": {
+                "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/edge"
+              },
+              "publishes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/publish"
+                }
+              },
+              "attestations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/attestation"
+                }
+              },
+              "revocations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/revocation"
+                }
+              }
+            }
+          },
+          "expected": {
+            "type": "object",
+            "description": "A refusal names no scope and a grant always names the rule that produced it, so \"served\" can never be reported without a reason.",
+            "oneOf": [
+              {
+                "required": [
+                  "serve",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "serve": {
+                    "const": false
+                  },
+                  "reason": {
+                    "const": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+                  }
+                }
+              },
+              {
+                "required": [
+                  "serve",
+                  "via"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "serve": {
+                    "const": true
+                  },
+                  "via": {
+                    "const": "party"
+                  }
+                }
+              },
+              {
+                "required": [
+                  "serve",
+                  "via",
+                  "scope"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "serve": {
+                    "const": true
+                  },
+                  "via": {
+                    "const": "scope"
+                  },
+                  "scope": {
+                    "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "publish": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "edge_id",
+        "scope",
+        "published_at",
+        "by",
+        "sig"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+        },
+        "type": {
+          "const": "publish"
+        },
+        "edge_id": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "scope": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "published_at": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+        },
+        "by": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "sig": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+        }
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "org",
+        "subject",
+        "subject_kind",
+        "claims",
+        "issued_at",
+        "expires_at",
+        "sig"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+        },
+        "type": {
+          "const": "attestation"
+        },
+        "org": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "subject": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "subject_kind": {
+          "enum": [
+            "persona",
+            "group"
+          ]
+        },
+        "claims": {
+          "type": "object"
+        },
+        "issued_at": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+        },
+        "expires_at": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+        },
+        "sig": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+        }
+      }
+    },
+    "revocation": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "org",
+        "subject",
+        "revoked_at",
+        "sig"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/protocolVersion"
+        },
+        "type": {
+          "const": "revocation"
+        },
+        "org": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "subject": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+        },
+        "revoked_at": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/rfc3339"
+        },
+        "sig": {
+          "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex128"
+        }
+      }
+    }
+  }
+}

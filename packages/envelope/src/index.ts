@@ -68,9 +68,11 @@ export function compact(o: Record<string, unknown>): Record<string, unknown> {
  * that the sender emitted something §2 forbids.
  *
  * This implementation has no ingress for foreign envelopes — its connectors are libraries called
- * in-process, the divergence from §2's `emit_envelope` recorded in the README — so nothing calls
- * `acceptEnvelope` today. It exists because the obligation is on the node, not on the connector,
- * and a rule with no callable form is a rule nothing can be held to.
+ * in-process — so nothing calls `acceptEnvelope` today. That used to be a recorded divergence,
+ * because §2 required connectors to be MCP servers; §2 has since withdrawn the requirement, and
+ * how a connector delivers an envelope is implementation-defined. The function exists because the
+ * obligation is on the NODE rather than on the connector, and a rule with no callable form is a
+ * rule nothing can be held to.
  */
 export class EnvelopeBoundsExceeded extends RangeError {
   override name = 'EnvelopeBoundsExceeded';

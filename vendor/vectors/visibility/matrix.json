@@ -1,0 +1,579 @@
+{
+  "suite_version": "0.2.0-pre",
+  "protocol_version": "servanda/0.2",
+  "spec_reference": "spec/05-scopes-visibility.md §5.2–§5.3, spec/08-conformance.md M-4",
+  "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
+  "description": "The §5.3 visibility matrix: whether a node serves an edge to a requester. §8 named this family as v0 suite scope for months while it did not exist, which is how M-4 came to be presented as covered. Every input is a document and the decision has observable output — a §6.4 recon response either carries the edge or does not — which is why M-4 is vectorable where M-5 and M-11 are not.",
+  "note": "The rule is stated in the negative: a node serves only when it can NAME the grant, and the default is refusal. Built the other way round — refuse when a rule forbids it — an implementation is one missing rule away from serving somebody else’s relationships to a stranger, and every positive case here would still pass.",
+  "cases": [
+    {
+      "name": "a-party-is-served-without-any-publish",
+      "description": "§5.3: visibility follows PARTICIPATION. The counterparty to an edge needs no publish record, no scope and no attestation — being one of the two people the promise is between is the whole grant.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [],
+        "attestations": [],
+        "revocations": [],
+        "requester": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f"
+      },
+      "expected": {
+        "serve": true,
+        "via": "party"
+      }
+    },
+    {
+      "name": "the-owner-asking-its-own-holder-is-served",
+      "description": "The mirror of the case above, which exists because \"party\" is a two-sided test and a verifier that checked only `owed_to` would pass every other case in this family.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [],
+        "attestations": [],
+        "revocations": [],
+        "requester": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+      },
+      "expected": {
+        "serve": true,
+        "via": "party"
+      }
+    },
+    {
+      "name": "a-stranger-is-refused-when-nothing-is-published",
+      "description": "M-4a in its bare form: neither a party nor a member of any scope the edge is published in, because it is published nowhere.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [],
+        "attestations": [],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    },
+    {
+      "name": "a-scope-member-is-refused-an-UNPUBLISHED-edge",
+      "description": "M-4b, and the case the rule exists for: \"Scope membership grants NO visibility by itself into unpublished edges of members.\" CAROL holds a valid, unexpired, unrevoked attestation into the org, and ALICE holds an edge, and CAROL still sees nothing — because ALICE never published it. An implementation that resolved membership first and looked for a publish second would serve this, and would pass every positive case here.",
+      "rule": "M-4b",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "879070a145f8bcec81248ecee0e1a087bf47034ac4f7cf052207a986b30b2d7a8189cffb49008fa759396e108844efcd8ed8ac2a64f07eb7b775c2c291eaef0b"
+          }
+        ],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    },
+    {
+      "name": "a-scope-member-is-served-a-published-edge",
+      "description": "The positive that makes the refusal above meaningful. Same attestation, same requester, same edge — one publish record is the entire difference.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "015e45dcc5c44ea5575af0567265a798560432aef8edeb0aebd9faa70e7a47ffd8b403459eb5094d92e998646a610b16ada0f22ca37e5e6cff3dd657f2b55009"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "879070a145f8bcec81248ecee0e1a087bf47034ac4f7cf052207a986b30b2d7a8189cffb49008fa759396e108844efcd8ed8ac2a64f07eb7b775c2c291eaef0b"
+          }
+        ],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": true,
+        "via": "scope",
+        "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020"
+      }
+    },
+    {
+      "name": "the-scope-key-itself-is-served",
+      "description": "A scope is identified by its controlling key (§5.1), so the holder of that key is a member of it by identity and needs no attestation naming itself.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "015e45dcc5c44ea5575af0567265a798560432aef8edeb0aebd9faa70e7a47ffd8b403459eb5094d92e998646a610b16ada0f22ca37e5e6cff3dd657f2b55009"
+          }
+        ],
+        "attestations": [],
+        "revocations": [],
+        "requester": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020"
+      },
+      "expected": {
+        "serve": true,
+        "via": "scope",
+        "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020"
+      }
+    },
+    {
+      "name": "team-membership-does-not-open-an-org-published-edge",
+      "description": "M-4c: \"No inheritance: org-scope membership does not imply team-scope visibility or vice versa.\" The edge is published into the ORG scope and CAROL is attested into a TEAM scope. Both are real memberships and neither reaches the other. Matching scopes by exact key is what makes this structural rather than a rule someone has to remember.",
+      "rule": "M-4c",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "015e45dcc5c44ea5575af0567265a798560432aef8edeb0aebd9faa70e7a47ffd8b403459eb5094d92e998646a610b16ada0f22ca37e5e6cff3dd657f2b55009"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "2469c261d1628b3ac044a3543d7e85c6482dcc774223e7fd1030a1beccfc6a97",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "3d76221aa6af2680aa5da1dfc7c0b8d3e9438a35270a1a5d7dc0bb85614415ec0a079df9e3136b6b15030dad7a109d75e4e67999fd5e8fdadca8fb66f52f0b06"
+          }
+        ],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    },
+    {
+      "name": "an-expired-attestation-is-not-membership",
+      "description": "The attestation named the right scope and has run out. Serving on it would make `expires_at` decoration.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "015e45dcc5c44ea5575af0567265a798560432aef8edeb0aebd9faa70e7a47ffd8b403459eb5094d92e998646a610b16ada0f22ca37e5e6cff3dd657f2b55009"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2026-07-15T00:00:00Z",
+            "sig": "1c0838c54cf58cbf18e9e937a876505d43eeb9eb1b70e78fbcf651c9576b66112473f214a11010b876b48bffbd216e835cba957a072007dba0e5718824a73d00"
+          }
+        ],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    },
+    {
+      "name": "a-revoked-member-is-not-served",
+      "description": "§1.3 says edges SIGNED before `revoked_at` remain valid — offboarding does not unwind what a departed member committed to. That is a rule about the validity of their signatures, not about what they may still be shown, and reading it the second way would leave every scope permanently readable by everyone who was ever in it.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "015e45dcc5c44ea5575af0567265a798560432aef8edeb0aebd9faa70e7a47ffd8b403459eb5094d92e998646a610b16ada0f22ca37e5e6cff3dd657f2b55009"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "879070a145f8bcec81248ecee0e1a087bf47034ac4f7cf052207a986b30b2d7a8189cffb49008fa759396e108844efcd8ed8ac2a64f07eb7b775c2c291eaef0b"
+          }
+        ],
+        "revocations": [
+          {
+            "v": "servanda/0.2",
+            "type": "revocation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "revoked_at": "2026-07-20T00:00:00Z",
+            "sig": "ad6583d62a083c67e24f62e115b632b164418ba7126e820e1a796c8e4a22f66975bc074c16c0fb2d1528ed3966af16376bf17b32b5b4f434136b3410823db208"
+          }
+        ],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    },
+    {
+      "name": "a-revocation-dated-in-the-future-does-not-apply-yet",
+      "description": "Announced offboarding. The comparison is against `now`, so a scheduled revocation is not an immediate one — and a verifier that treated the mere PRESENCE of a revocation as disqualifying would pass the case above for the wrong reason.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "015e45dcc5c44ea5575af0567265a798560432aef8edeb0aebd9faa70e7a47ffd8b403459eb5094d92e998646a610b16ada0f22ca37e5e6cff3dd657f2b55009"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "879070a145f8bcec81248ecee0e1a087bf47034ac4f7cf052207a986b30b2d7a8189cffb49008fa759396e108844efcd8ed8ac2a64f07eb7b775c2c291eaef0b"
+          }
+        ],
+        "revocations": [
+          {
+            "v": "servanda/0.2",
+            "type": "revocation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "revoked_at": "2026-09-01T00:00:00Z",
+            "sig": "4fb26173ec9f59dc78a0b9e024d0f8e4ec21fee7f3884fe2a9aac7e84e37c043d281a7f92e984834e92e3f651b457e6c110c236a9ee9937ebb1845c1bb7e9107"
+          }
+        ],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": true,
+        "via": "scope",
+        "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020"
+      }
+    },
+    {
+      "name": "a-publish-signed-by-a-non-party-is-not-a-grant",
+      "description": "§5.2: \"Only a party to the edge may publish it.\" CAROL publishes ALICE and BOB's edge into a scope CAROL belongs to, and the record is perfectly well-formed and correctly signed — by the wrong person. Without this check, publishing is an act anyone can perform on anyone else's relationship.",
+      "rule": "§5.2",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "sig": "f4fcc86030a129ebe35c4a40e041faf4a6705bb1c9e42564a9c1d72a6836b9aa18fd23088519adf6a3161998a4202acd125309bfa0f81031a58f928858bb7108"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "879070a145f8bcec81248ecee0e1a087bf47034ac4f7cf052207a986b30b2d7a8189cffb49008fa759396e108844efcd8ed8ac2a64f07eb7b775c2c291eaef0b"
+          }
+        ],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    },
+    {
+      "name": "a-publish-for-a-different-edge-is-not-a-grant",
+      "description": "ALICE holds two edges with the same counterparty and has published the OTHER one. The record is entirely valid and CAROL is entirely a member; it just is not about this edge. A node that matched on the scope and forgot to match on the edge would hand over every edge it holds to anyone entitled to one of them — which is the failure mode a real deployment reaches first, since publishing one edge into a team is the normal case.",
+      "rule": "M-4a",
+      "input": {
+        "now": "2026-08-01T12:00:00Z",
+        "holder": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "edge": {
+          "v": "servanda/0.2",
+          "type": "edge",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+          "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "proposed_at": "2026-07-25T09:00:00Z",
+          "due": "2026-08-01T00:00:00Z",
+          "closure_policy": "on-acceptance",
+          "acceptance_window": "P5D",
+          "blocked_by": [],
+          "supersedes": null
+        },
+        "publishes": [
+          {
+            "v": "servanda/0.2",
+            "type": "publish",
+            "edge_id": "10dd2a4c067d4073f8f772e6d1b5612f08370ebcdbdf6aee408dc8ac4cf44838",
+            "scope": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "published_at": "2026-07-26T09:00:00Z",
+            "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+            "sig": "1846c1807c40e3357e970e50317c69dacd590db889b86921f6536b5dc75ec0ce70b70c0a3d2be0138c24a2288296d94fee8f295482351aedd7d5066dd03a7d0a"
+          }
+        ],
+        "attestations": [
+          {
+            "v": "servanda/0.2",
+            "type": "attestation",
+            "org": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020",
+            "subject": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+            "subject_kind": "persona",
+            "claims": {},
+            "issued_at": "2026-07-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sig": "879070a145f8bcec81248ecee0e1a087bf47034ac4f7cf052207a986b30b2d7a8189cffb49008fa759396e108844efcd8ed8ac2a64f07eb7b775c2c291eaef0b"
+          }
+        ],
+        "revocations": [],
+        "requester": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9"
+      },
+      "expected": {
+        "serve": false,
+        "reason": "not-a-party-and-not-published-to-a-scope-you-belong-to"
+      }
+    }
+  ]
+}

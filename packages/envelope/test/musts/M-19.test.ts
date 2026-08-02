@@ -193,7 +193,7 @@ describe('M-19: a clipped envelope says so', () => {
 
 describe('M-19: a node rejects an out-of-bounds envelope rather than canonicalizing it', () => {
   // The node half. This implementation has no ingress for foreign envelopes — its connectors are
-  // libraries called in-process, the §2 `emit_envelope` divergence recorded in the README — so
+  // libraries called in-process, which §2 permits since it withdrew the MCP-server requirement — so
   // the guard is exercised here directly. A rule whose only statement is prose is a rule nothing
   // can be held to.
   const oversize = () =>

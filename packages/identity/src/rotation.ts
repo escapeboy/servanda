@@ -5,19 +5,22 @@ import { PROTOCOL_VERSION, Rotation, RotationCanonical } from '@servanda/types';
  * §1.7 — rotation. The object with the largest blast radius in the protocol: a rotation that
  * verifies moves every open edge of `old` onto `new`. Everything here fails closed.
  *
- * SPEC CONTRADICTION (filed upstream as servanda-protocol#17; see the long note on `Rotation`
- * in @servanda/types). §1.7 names the signature fields `sig_old` / `sig_new?`, but the
- * universal signing rule excludes only a field literally named `sig`, so a `sig_old` has no
- * defined preimage: it would have to cover itself. Consequences implemented here:
+ * RESOLVED UPSTREAM (servanda-protocol#17), and both halves of the original problem moved.
  *
- *   - the form this implementation EMITS is a single `sig` by the old key — the only encoding
- *     with a preimage the spec actually defines;
- *   - a rotation carrying only `sig_old` PARSES (interoperability) but does not verify by
- *     default. It is reported as `legacy-sig-old-encoding-unverifiable`, not silently trusted;
- *   - a caller who has out-of-band reason to accept the legacy form must opt in explicitly
- *     (`acceptLegacySigOld`), which selects a documented, non-normative preimage: the rotation
- *     core with every signature field removed. That is an interpretation, not a spec rule, and
- *     it is off by default so no continuity ever transfers on it by accident.
+ * §1.7 named the signature fields `sig_old` / `sig_new?` while §0's rule excluded only a field
+ * literally named `sig`, so `sig_old` had no defined preimage — it would have covered itself.
+ * §0 now removes every member named `sig` or beginning with `sig_`, which gives `sig_old` the
+ * same preimage `sig` has; and §1.7 has withdrawn the two-field encoding outright.
+ *
+ * So the "documented, non-normative preimage" this opt-in used to select is now simply the
+ * normative one, and the behaviour below is no longer an interpretation — it is interoperability
+ * with statements written before the withdrawal:
+ *
+ *   - the form this implementation EMITS is a single `sig` by the old key, which §1.7 makes a MUST;
+ *   - a rotation carrying only `sig_old` PARSES so that it can be REPORTED rather than mistaken
+ *     for corrupt, and does not verify by default — `legacy-sig-old-encoding-unverifiable`;
+ *   - accepting it requires an explicit opt-in (`acceptLegacySigOld`), still off by default, so
+ *     no continuity ever transfers on a withdrawn encoding by accident.
  *
  * `sig_new` is never sufficient on its own under any option. A rotation signed only by the
  * key it hands control TO is the takeover this object exists to prevent.
@@ -36,7 +39,7 @@ export type RotationRejection =
 
 export interface VerifyRotationOptions {
   /**
-   * Accept the §1.7 `sig_old` encoding under the documented non-normative preimage above.
+   * Accept the withdrawn §1.7 `sig_old` encoding, under the §0 preimage described above.
    * OFF by default. Turning it on widens what can move your open edges.
    */
   readonly acceptLegacySigOld?: boolean;
@@ -58,8 +61,11 @@ export type RotationVerdict =
     };
 
 /**
- * The rotation core: every field except the signature fields. Used as the preimage carrier for
- * the opt-in legacy `sig_old` path — sha256(JCS(core)) — which is NOT a spec rule; see above.
+ * The rotation core: every field except the signature fields — which is what §0's rule produces
+ * for this object, since it strips `sig` and every `sig_*`. Kept as a named function because the
+ * opt-in legacy path needs to name the preimage it verifies against, and because writing it out
+ * shows that the legacy and current encodings cover identical bytes, which is the whole reason
+ * §1.7 could withdraw one of them.
  */
 export function rotationCore(r: Rotation): {
   v: typeof PROTOCOL_VERSION;
@@ -109,8 +115,9 @@ export function verifyRotation(input: unknown, options: VerifyRotationOptions = 
     };
   }
 
-  // sha256(JCS(core)) is exactly what `verifyObject` hashes for an object whose only extra
-  // field is `sig`, so the interpretation is expressed without a second signing implementation.
+  // sha256(JCS(core)) is exactly what `verifyObject` hashes for an object whose only extra field
+  // is `sig` — and, since §0's rule now strips `sig_*` too, exactly what it hashes for the legacy
+  // object as it stands. No second signing implementation, and no preimage invented here.
   if (!verifyObject({ ...rotationCore(r), sig: r.sig_old }, r.old)) {
     return {
       ok: false,
