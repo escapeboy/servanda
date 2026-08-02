@@ -102,7 +102,32 @@ export function judgeName(surface: Surface, name: NameUnderTest): Verdict[] {
     return out;
   }
 
-  const carrying = surface.facts.filter((f) => f.text.includes(name.value));
+  // A name is carried by a fact that contains it, OR by a SCOPE whose facts spell it out between
+  // them. Checking facts alone let `Maria Ivanova` be split across two `<span>`s and vanish from
+  // the judge entirely — `carrying` came back empty, the early return below fired, and the client
+  // passed at every level including one that carries no name at all. A reader sees the name; the
+  // harness saw two fragments.
+  //
+  // Concatenated in reading order, which is the order a person takes them in. This does not model
+  // what CSS might do to that order — declared style, not painted pixels, is the limit §8 states
+  // and it holds here too.
+  const spelledOut = (facts: readonly RenderedFact[]) =>
+    facts.some((f) => f.text.includes(name.value)) ||
+    facts
+      .slice()
+      .sort((x, y) => x.ordinal - y.ordinal)
+      .map((f) => f.text)
+      .join('')
+      .includes(name.value);
+
+  const scopesCarrying = new Set(
+    [...new Set(surface.facts.map((f) => f.scope))].filter((sc) =>
+      spelledOut(surface.facts.filter((f) => f.scope === sc)),
+    ),
+  );
+  const carrying = surface.facts.filter(
+    (f) => f.text.includes(name.value) || scopesCarrying.has(f.scope),
+  );
   if (carrying.length === 0) return out; // not rendered at all is always safe
 
   if (!name.nameBearingLevels.includes(name.level)) {
@@ -115,8 +140,17 @@ export function judgeName(surface: Surface, name: NameUnderTest): Verdict[] {
     return out;
   }
 
+  // Scopes are paths, so two of them are in one another's reach when one is a PREFIX of the other.
+  // Exact equality punished the shipped fix: `client-web` wraps a name in `bdi` to contain a bidi
+  // override, that opens a nested scope, and the evidence one level out stopped counting — so
+  // doing the right thing failed and doing nothing passed. A `bdi` inside a card is still inside
+  // the card, and a reader takes in the group the name sits in.
+  //
+  // Both directions, because evidence may sit in a container of its own beside the name.
+  const related = (a: string, b: string) => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+
   for (const fact of carrying) {
-    const inScope = surface.facts.filter((f) => f.scope === fact.scope);
+    const inScope = surface.facts.filter((f) => related(f.scope, fact.scope));
     const evidenceShown = inScope.some((f) =>
       name.levelMarkers.some((m) => f.text.includes(m) || f.classes.includes(m) || Object.values(f.attrs).includes(m)),
     );

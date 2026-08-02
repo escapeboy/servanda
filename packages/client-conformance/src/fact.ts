@@ -66,9 +66,21 @@ export function factsFromTree(
     const tag = read.tag(node);
     const classes = (attrs['class'] ?? '').split(/\s+/u).filter((c) => c.length > 0);
 
-    // A `bdi` (or an explicit `dir`) starts a new bidi scope, which is the whole reason the fix
-    // for the reordering defect was containment rather than censorship.
-    const opensScope = tag === 'bdi' || attrs['dir'] !== undefined;
+    // What counts as a scope, and why it is more than bidi.
+    //
+    // A `bdi` (or an explicit `dir`) starts a bidi scope, which is why the fix for the reordering
+    // defect was containment rather than censorship. But scope is also what M-12's "in the same
+    // scope" means for evidence, and bidi alone made a whole PAGE one scope: a name in the `h1`
+    // was satisfied by a level marker in the footer, and — perversely — wrapping the name in
+    // `bdi`, the shipped fix, was what made a client FAIL. A model that punishes the correct
+    // behaviour is worse than no model.
+    //
+    // So a scope also opens at the containers a reader actually groups by. This is a claim about
+    // structure, not about pixels, and it is exactly as strong as that: two things inside one
+    // `article` are read together; two things in different `section`s are not, whatever a
+    // stylesheet does to place them.
+    const GROUPING = new Set(['article', 'section', 'li', 'tr', 'aside', 'header', 'footer', 'nav', 'main', 'form']);
+    const opensScope = tag === 'bdi' || attrs['dir'] !== undefined || GROUPING.has(tag);
     const here = opensScope ? `${scope}/${tag}#${ordinal}` : scope;
 
     const text = read.text(node);
