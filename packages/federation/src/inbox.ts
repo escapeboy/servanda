@@ -1,3 +1,4 @@
+import { edgeIdBindsBody, hashCanonical } from '@servanda/crypto';
 import { verifyAssertionChain } from '@servanda/node';
 import type { Assertion, Edge, VerificationLevel, WireMessage } from '@servanda/types';
 import { AssertPayload, ProposePayload } from '@servanda/types';
@@ -35,6 +36,10 @@ export type DiscardReason =
   | 'malformed-payload'
   | 'not-addressed-to-this-persona'
   | 'proposer-is-not-the-owner'
+  /** §4.1: the identifier is not the digest of the body it arrived attached to. */
+  | 'edge-id-does-not-bind-body'
+  /** §4.1: an identifier is bound to the first body accepted for it, and this is not it. */
+  | 'edge-body-differs-from-held'
   | 'unknown-edge'
   | 'sender-is-not-a-party'
   | `transition-table:${string}`;
@@ -49,6 +54,24 @@ export interface IngestResult {
   recoverRequests: { from: string; request: RecoverRequest }[];
   /** Result of applying any `recon_response` in this batch. */
   recon: ReconApplyResult;
+}
+
+/**
+ * §4.1: "A node MUST bind an `edge_id` to the first edge body it accepts for that identifier,
+ * and MUST reject any subsequent edge body bearing the same `edge_id` whose other members
+ * differ, with the whole body discarded rather than merged."
+ *
+ * The two failures are reported apart because they are different events. The first is a
+ * fabricated identifier and can only be hostile — nothing honest produces one. The second is
+ * what a party sees when the counterparty's body and its own have drifted, which §4.1 makes an
+ * M-8 unverifiability rather than an accusation.
+ */
+export function edgeBindingFailure(vault: Vault, persona: string, edge: Edge): DiscardReason | null {
+  if (!edgeIdBindsBody(edge)) return 'edge-id-does-not-bind-body';
+  const held = vault.getEdge(persona, edge.edge_id);
+  if (!held) return null;
+  const canon = (e: Edge) => hashCanonical(e as unknown as Record<string, unknown>);
+  return canon(held) === canon(edge) ? null : 'edge-body-differs-from-held';
 }
 
 export interface InboxOptions {
@@ -165,6 +188,18 @@ export class Inbox {
     return result;
   }
 
+  /**
+   * §4.1 body binding, as the two ways it can fail. Null means the edge may be read.
+   *
+   * Shared with `applyRecoverResponse` below rather than duplicated: a §6.6 responder chooses
+   * what it hands back, so an edge arriving through recovery is exactly as unattested as one
+   * arriving through a propose — and the restoring node, having lost its own copy, has nothing
+   * to compare against except the identifier.
+   */
+  private bindingFailure(edge: Edge): DiscardReason | null {
+    return edgeBindingFailure(this.vault, this.persona, edge);
+  }
+
   private ingestPropose(message: WireMessage, result: IngestResult): void {
     const parsed = ProposePayload.safeParse(message.payload);
     if (!parsed.success) {
@@ -172,6 +207,16 @@ export class Inbox {
       return;
     }
     const { edge, assertion } = parsed.data as { edge: Edge; assertion: Assertion };
+
+    // §4.1, before any other rule about this edge, because every one of them reads the body to
+    // decide — and until the identifier is known to digest the body, "the body" is whatever the
+    // sender wanted the checks to see. An unbound edge passed M-1 and M-4a on its own members
+    // while its chain was filed under somebody else's identifier.
+    const bound = this.bindingFailure(edge);
+    if (bound) {
+      result.discarded.push({ type: 'propose', edge_id: edge.edge_id, reason: bound });
+      return;
+    }
 
     // M-4a: a proposal is addressed to the counterparty named in the edge. Delivery to anyone
     // else — by a curious hub, a shared repository, or a hostile sender — stores nothing.
@@ -206,7 +251,7 @@ export class Inbox {
       }
     }
 
-    if (!this.vault.getEdge(this.persona, edge.edge_id)) this.vault.putEdge(this.persona, edge);
+    this.vault.putEdge(this.persona, edge);
     if (!this.vault.getAssertions(this.persona, edge.edge_id).some((a) => a.sig === assertion.sig)) {
       this.vault.appendAssertion(this.persona, assertion);
     }
@@ -270,7 +315,15 @@ export function applyRecoverResponse(vault: Vault, persona: string, response: Re
   const discarded: { edge_id: string; index: number; reason: string }[] = [];
   for (const { edge, assertions } of response.edges) {
     if (!isParty(edge, persona)) continue;
-    if (!vault.getEdge(persona, edge.edge_id)) vault.putEdge(persona, edge);
+    // §4.1 before the chain is even looked at. A responder chooses what it returns, and a node
+    // that lost its vault is in the worst position to notice: it holds nothing to compare the
+    // body against, so the identifier digesting its own body is the only check left standing.
+    const bound = edgeBindingFailure(vault, persona, edge);
+    if (bound) {
+      discarded.push({ edge_id: edge.edge_id, index: -1, reason: bound });
+      continue;
+    }
+    vault.putEdge(persona, edge);
     const local = vault.getAssertions(persona, edge.edge_id);
     const held = new Set(local.map((a) => a.sig));
     const incoming = assertions.filter((a) => !held.has(a.sig)).sort(inWireOrder);

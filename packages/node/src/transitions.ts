@@ -1,4 +1,4 @@
-import { verifyObject } from '@servanda/crypto';
+import { edgeIdBindsBody, verifyObject } from '@servanda/crypto';
 import type { Assertion, AssertionOutcome, Edge, EffectiveState, RejectionReason } from '@servanda/types';
 import {
   NON_ASSERTABLE_STATES,
@@ -27,8 +27,24 @@ import { addDuration } from './duration.js';
  * §4.2's assertion schema has no field able to carry the successor `edge_id`.
  */
 
-/** Source states that count as "the edge is live" — §4.3's `open` row plus its sub-states. */
-const OPEN_FAMILY: readonly EffectiveState[] = ['open', 'pending-acceptance'] as const;
+/**
+ * §4.3 licenses exactly one source-state equivalence: `confirmed` ≡ `open`, so "wherever `open`
+ * appears as a source state, an edge whose latest valid assertion is `confirmed` satisfies it".
+ * `ctx.state` records that collapse already — accepting `confirmed` sets `open` — so the `open`
+ * rows are matched by comparing to `open` and nothing else.
+ *
+ * `pending-acceptance` is NOT part of that family, and reading it as one was a real over-permit.
+ * The table gives it three rows (`closed` by owed_to, `closed` by the owner after the window,
+ * `disputed` by either party); sharing a constant with `open` silently added `released`,
+ * `expired` and `superseded` to them. The damaging one is `expired`: terminal, unilateral, and
+ * available to the creditor the moment `due` passes — so the answer to a debtor's evidence
+ * assertion could be to end the edge outright rather than accept or dispute it, which is the
+ * §4.4 acceptance window read backwards.
+ *
+ * Only the `disputed` row spans both, and it says so where it is used rather than through a
+ * constant that invites the next transition to join it.
+ */
+const DISPUTABLE_FROM: readonly EffectiveState[] = ['open', 'pending-acceptance'] as const;
 
 export interface ChainVerification {
   outcomes: AssertionOutcome[];
@@ -177,7 +193,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
     }
 
     case 'released': {
-      if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
+      if (ctx.state !== 'open') return 'illegal-source-state';
       // §4.3: unilateral forgiveness by the creditor. An owner releasing themselves would let
       // anyone discharge their own debt.
       if (!isOwedTo) return 'wrong-signer-for-transition';
@@ -202,7 +218,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
         ctx.resolved_at = a.asserted_at;
         return null;
       }
-      if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
+      if (ctx.state !== 'open') return 'illegal-source-state';
       // §3.1: undated commitments MUST NOT time-escalate. With no `due` there is no expiry.
       if (edge.due === null) return 'due-is-null';
       if (Date.parse(a.asserted_at) < Date.parse(edge.due)) return 'expiry-before-due';
@@ -213,7 +229,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
     }
 
     case 'disputed': {
-      if (!OPEN_FAMILY.includes(ctx.state)) return 'illegal-source-state';
+      if (!DISPUTABLE_FROM.includes(ctx.state)) return 'illegal-source-state';
       if (a.evidence_hash === null) return 'evidence-hash-required';
       ctx.state = 'disputed';
       ctx.disputed_at = a.asserted_at;
@@ -221,7 +237,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
     }
 
     case 'superseded': {
-      if (!OPEN_FAMILY.includes(ctx.state) && ctx.state !== 'disputed') {
+      if (ctx.state !== 'open' && ctx.state !== 'disputed') {
         return 'illegal-source-state';
       }
       // §4.5: both parties of the OLD edge must sign. One party signing twice is not two
@@ -282,12 +298,23 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
   // A malformed edge accepts no assertions at all — not "the offending one", every one. The edge
   // is the object both parties signed against; if its own closure terms are incoherent there is
   // nothing for an assertion to be valid *about*, so the chain never leaves `none`.
-  if (acceptanceWindowMalformed(edge)) {
+  //
+  // §4.1's binding rule is first, ahead of the closure terms, because it is what makes the rest
+  // of the body worth reading: the identifier digests both parties and the commitment, so an
+  // unbound edge can satisfy every signer check on its own terms while its chain sits under
+  // somebody else's identifier. The vault refuses to store one, so this is the wire-facing half
+  // of the same rule rather than a second opinion about it.
+  const edgeMalformed = !edgeIdBindsBody(edge)
+    ? ('edge-id-does-not-bind-body' as const)
+    : acceptanceWindowMalformed(edge)
+      ? ('malformed-edge-acceptance-window' as const)
+      : null;
+  if (edgeMalformed) {
     return {
       outcomes: assertions.map((_a, index) => ({
         index,
         accepted: false,
-        rejection_reason: 'malformed-edge-acceptance-window' as const,
+        rejection_reason: edgeMalformed,
       })),
       final_state: 'none',
       resolved_at: null,

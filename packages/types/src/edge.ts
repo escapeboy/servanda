@@ -181,6 +181,12 @@ export const RejectionReason = z.enum([
   /** §4.4: `disputed → expired` before `dispute_window` ran. Names a window, never a verdict. */
   'dispute-window-not-elapsed',
   'malformed-edge-acceptance-window',
+  /**
+   * §4.1: the identifier is not the digest of the body it names. Distinct from
+   * `edge-id-mismatch`, which is an assertion pointing at a different edge — here the EDGE
+   * is the thing that does not hold together, so no assertion in the chain is valid.
+   */
+  'edge-id-does-not-bind-body',
   /** v0.2 (§4.3, upstream #38): `asserted_at` is non-decreasing per signer within a chain. */
   'asserted-at-before-signers-previous',
   'implicit-transition-not-assertable',

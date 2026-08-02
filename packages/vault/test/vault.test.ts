@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import { derivePersona, edgeId, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Assertion, type Commitment, type Edge } from '@servanda/types';
 import { GIT_CONFIG, logMessages, ScopeViolation, Vault, VaultGitError, type PersonaRecord } from '../src/index.js';
 
@@ -70,15 +70,22 @@ function commitment(intent: string): Commitment {
   };
 }
 
-function edge(edgeIdHex: string): Edge {
-  return {
-    v: PROTOCOL_VERSION,
-    type: 'edge',
-    edge_id: edgeIdHex,
+/**
+ * §4.1: an `edge_id` is the digest of its own body, and `putEdge` refuses one that is not — so
+ * a literal stand-in id no longer names an edge any vault would store.
+ */
+function edge(): Edge {
+  const body = {
     commitment_hash: 'a'.repeat(64),
     owner: p0.personaId,
     owed_to: p1.personaId,
     proposed_at: '2026-07-25T09:00:00Z',
+  };
+  return {
+    v: PROTOCOL_VERSION,
+    type: 'edge',
+    edge_id: edgeId(body),
+    ...body,
     due: null,
     closure_policy: 'on-acceptance',
     acceptance_window: 'P5D',
@@ -158,8 +165,9 @@ describe('vault: git-backed', () => {
 describe('vault: append-only assertion chains (§4.2)', () => {
   it('appends in order and never overwrites', () => {
     const { dir, vault } = newVault();
-    const id = 'b'.repeat(64);
-    vault.putEdge(p0.personaId, edge(id));
+    const e = edge();
+    const id = e.edge_id;
+    vault.putEdge(p0.personaId, e);
     expect(vault.appendAssertion(p0.personaId, assertion(id, 'proposed'))).toBe(0);
     expect(vault.appendAssertion(p0.personaId, assertion(id, 'confirmed'))).toBe(1);
     expect(vault.getAssertions(p0.personaId, id).map((a) => a.state)).toEqual([

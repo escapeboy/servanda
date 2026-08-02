@@ -97,6 +97,7 @@
                         "implicit-transition-not-assertable",
                         "duplicate-assertion-by-same-party",
                         "malformed-edge-acceptance-window",
+                        "edge-id-does-not-bind-body",
                         "asserted-at-before-signers-previous"
                       ]
                     }

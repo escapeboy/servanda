@@ -113,6 +113,13 @@ const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
   'acceptance-window-not-elapsed': 'acceptance-window-not-elapsed',
   'dispute-window-not-elapsed': 'illegal-source-state',
   'malformed-edge-acceptance-window': 'malformed-edge-acceptance-window',
+  // Unreachable through `act`, which reads an edge this node HOLDS, and the vault refuses to
+  // store an edge whose identifier does not digest its body (§4.1). The map is total over
+  // `RejectionReason`, so the entry exists; it projects to the catch-all rather than to
+  // `malformed-edge-acceptance-window`, which names a different defect and would be a lie,
+  // and rather than to a new §7 member, which would be a normative change for a value no
+  // caller can observe.
+  'edge-id-does-not-bind-body': 'illegal-source-state',
   'implicit-transition-not-assertable': 'illegal-source-state',
   'invalid-signature': 'illegal-source-state',
   // A backdated assertion is not an illegal transition, but §7's vocabulary has no member for

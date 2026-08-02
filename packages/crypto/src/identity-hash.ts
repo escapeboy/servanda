@@ -123,3 +123,31 @@ export function edgeId(input: {
     ),
   );
 }
+
+/**
+ * Does this edge's `edge_id` digest this edge's own body?
+ *
+ * §4.1 defines `edge_id` as the digest of four members, and until this existed nothing ever
+ * recomputed it: `edgeId` had no caller outside edge creation, so an `edge_id` arriving over
+ * the wire was a name its sender chose rather than a digest of what its sender sent. An
+ * `edge_id` is what an assertion chain is filed under, which is what makes the difference
+ * matter — a stranger proposing a self-consistent edge under somebody else's identifier got
+ * their assertion appended to somebody else's chain.
+ *
+ * Returns a verdict rather than throwing, because every caller is a security boundary reading
+ * untrusted bytes: an unbound edge is an expected condition on the wire, not an exception.
+ * `edgeId` still throws on a malformed field, and that is caught here for the same reason.
+ */
+export function edgeIdBindsBody(edge: {
+  edge_id: string;
+  commitment_hash: string;
+  owner: string;
+  owed_to: string;
+  proposed_at: string;
+}): boolean {
+  try {
+    return edgeId(edge) === edge.edge_id;
+  } catch {
+    return false;
+  }
+}

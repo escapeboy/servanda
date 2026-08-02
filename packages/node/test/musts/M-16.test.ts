@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -63,6 +63,38 @@ describe('M-16: a device key is never sole custodian of the content key', () => 
     const key = generateContentKey();
     const wrap = wrapForPassphrase(key, 'a passphrase');
     expect(wrap.kdf).toMatchObject({ algo: 'argon2id', m: 65536, t: 3, p: 1 });
+  });
+
+  /**
+   * The API-surface case below proves that no code path here BUILDS a device-only keyset. It
+   * cannot prove anything about a keyset that already exists, and `keyset.json` is plain,
+   * unsigned JSON in a directory its owner can write. Deleting the passphrase wrap left a file
+   * that satisfies every schema and violates M-16, and opening it with the device key worked —
+   * because the rule was a constructor check and M-16 is stated as a property of custody, which
+   * a vault has at rest and not only at the instant it is created.
+   */
+  it('a keyset stripped of its passphrase wrap does not open, whatever key is offered', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'servanda-m16-strip-'));
+    try {
+      Vault.create({
+        dir,
+        passphrase: TEST_PASSPHRASE,
+        deviceKeys: [{ label: 'laptop', keyHex: DEVICE_KEY }],
+      });
+      const path = join(dir, 'keyset.json');
+      const keyset = JSON.parse(readFileSync(path, 'utf8')) as { wraps: { kind: string }[] };
+      keyset.wraps = keyset.wraps.filter((w) => w.kind !== 'passphrase');
+      writeFileSync(path, JSON.stringify(keyset));
+
+      expect(() => Vault.open({ dir, deviceKey: { keyHex: DEVICE_KEY, label: 'laptop' } })).toThrow(
+        M16Violation,
+      );
+      // And the check is on custody, not on which key was offered: the same file is refused
+      // before a passphrase is even tried.
+      expect(() => Vault.open({ dir, passphrase: TEST_PASSPHRASE })).toThrow(M16Violation);
+    } finally {
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+    }
   });
 
   it('the vault exposes no path to a keyset that bypasses sealContentKey', () => {

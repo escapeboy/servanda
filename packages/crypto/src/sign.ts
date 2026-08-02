@@ -9,10 +9,28 @@ import { fromHex, sha256, toHex } from './hash.js';
  * M-7: signatures cover hashes, never plaintext.
  */
 
-/** The object as it enters the hash: everything except `sig`. */
+/**
+ * The object as it enters the hash: §0's `O` — every member named `sig`, and every member whose
+ * name begins with `sig_`, removed.
+ *
+ * The `sig_` half is what makes a multi-signature object work. §1.6's `link` carries `sig_A` and
+ * `sig_B`; stripping only `sig` meant whichever signer went second signed the first signature
+ * along with the object, so the two did not sign identical bytes and neither could verify without
+ * knowing who signed first. Every multi-signature site worked around it by hand-building a core
+ * object — a rule reimplemented per caller is a rule the next caller will get wrong.
+ *
+ * **Removal is top-level only, and that is the load-bearing reading.** Stripping recursively
+ * would take a nested `sig` out of an outer preimage, so an outer signature would stop covering
+ * the signatures inside its own payload and a relay could swap one for another valid one without
+ * breaking it. §6.3 asks the recipient's signature check to catch exactly that.
+ */
 export function unsigned<T extends Record<string, unknown>>(obj: T): Omit<T, 'sig'> {
-  const { sig: _sig, ...rest } = obj as T & { sig?: unknown };
-  return rest as Omit<T, 'sig'>;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === 'sig' || key.startsWith('sig_')) continue;
+    out[key] = value;
+  }
+  return out as Omit<T, 'sig'>;
 }
 
 /** sha256(JCS(object minus "sig")) — the exact bytes that get signed. */

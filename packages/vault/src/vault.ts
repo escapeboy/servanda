@@ -3,8 +3,11 @@ import { join } from 'node:path';
 import {
   type ContentKeySet,
   type WrappedKey,
+  assertM16,
   commitmentHash,
+  edgeIdBindsBody,
   generateContentKey,
+  hashCanonical,
   sealContentKey,
   unwrapWithDevice,
   unwrapWithPassphrase,
@@ -158,6 +161,11 @@ export class Vault {
     const { dir } = opts;
     assertVaultRepo(dir);
     const keyset = readJson<ContentKeySet>(join(dir, 'keyset.json'));
+    // M-16 on every open, not only on create. `sealContentKey` proves no code here BUILDS a
+    // device-only keyset; it proves nothing about the unsigned JSON file sitting in a directory
+    // its owner can write. Deleting the passphrase wrap produced a keyset that satisfied every
+    // schema, violated M-16, and opened. Custody is a property a vault has at rest.
+    assertM16(keyset.wraps);
     let contentKey: Uint8Array;
     if (opts.passphrase !== undefined) {
       contentKey = unwrapWithPassphrase(keyset, opts.passphrase);
@@ -178,6 +186,16 @@ export class Vault {
     return readJson<ContentKeySet>(join(this.dir, 'keyset.json'));
   }
 
+  /**
+   * A commit message names identifiers, never content.
+   *
+   * `.git` is not encrypted and `git log` needs no key, so every message here is readable by
+   * anyone who can read the directory — which is the threat the sealing exists for. Naming a
+   * record by a truncated hex id reveals that it exists, and the directory layout reveals that
+   * anyway. Naming it by what it SAYS gives away the thing the vault was holding: the persona
+   * label was a string its owner typed, and an assertion's state published the whole state
+   * machine of a commitment, dated, to a reader with no key at all.
+   */
   private commit(message: string): void {
     commitAll(this.dir, message);
   }
@@ -202,7 +220,7 @@ export class Vault {
   putPersona(record: PersonaRecord): void {
     const dir = this.personaDir(record.persona_id);
     writeSealed(join(dir, 'persona.json'), this.contentKey, 'persona', record);
-    this.commit(`feat(persona): add ${record.label}`);
+    this.commit(`feat(persona): add ${record.persona_id.slice(0, 12)}`);
   }
 
   getPersona(persona: string): PersonaRecord {
@@ -282,7 +300,38 @@ export class Vault {
 
   // ── edges + assertion chains (§4.1, §4.2) ───────────────────────────────────────────────
 
+  /**
+   * §4.1, both halves, as a storage invariant rather than a caller's duty.
+   *
+   * The identifier must digest the body it names, and the first body accepted under an
+   * identifier is the body — "MUST reject any subsequent edge body bearing the same `edge_id`
+   * whose other members differ, with the whole body discarded rather than merged". Only four of
+   * the eleven members are inside the preimage, so `closure_policy` — which decides who may
+   * close (§4.4) — is unsigned and uncovered, and first-sight binding is all that holds it.
+   *
+   * It lives here because every route that stores an edge passes through this method: node-local
+   * creation, §6.4 reconciliation's refusal to introduce edges, §6.6 recovery, and the inbox.
+   * The inbox checks the same two things itself, so that a hostile propose is DISCARDED with a
+   * named reason rather than throwing out of ingestion and taking the rest of the batch with it;
+   * this is the backstop that makes it unbypassable rather than the place it is reported.
+   *
+   * Re-storing an identical body is a no-op, not a violation: transports replay.
+   */
   putEdge(persona: string, edge: Edge): void {
+    if (!edgeIdBindsBody(edge)) {
+      throw new VaultError(
+        `§4.1: edge_id ${edge.edge_id.slice(0, 12)} is not the digest of this edge body`,
+      );
+    }
+    const held = this.getEdge(persona, edge.edge_id);
+    if (held) {
+      if (hashCanonical(held as unknown as Record<string, unknown>) !== hashCanonical(edge as unknown as Record<string, unknown>)) {
+        throw new VaultError(
+          `§4.1: a different body is already bound to edge_id ${edge.edge_id.slice(0, 12)}`,
+        );
+      }
+      return;
+    }
     const dir = this.edgeDir(persona, edge.edge_id);
     writeSealed(join(dir, 'edge.json'), this.contentKey, 'edge', edge);
     this.commit(`feat(edge): ${edge.edge_id.slice(0, 12)}`);
@@ -325,7 +374,7 @@ export class Vault {
       }
       throw err;
     }
-    this.commit(`feat(assertion): ${assertion.state} on ${assertion.edge_id.slice(0, 12)}`);
+    this.commit(`feat(assertion): ${assertion.edge_id.slice(0, 12)}`);
     return seq;
   }
 

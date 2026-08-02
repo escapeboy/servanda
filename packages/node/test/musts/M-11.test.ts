@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { withSignature } from '@servanda/crypto';
+import { edgeId, withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Edge } from '@servanda/types';
 import { M11Violation, ServandaNode } from '../../src/node.js';
 import * as nodeApi from '../../src/index.js';
@@ -49,14 +49,19 @@ describe('M-11: no cross-party fulfillment statistics', () => {
     // Simulate a third-party edge arriving in the persona's subtree (e.g. via a scope sync).
     const a = persona(2);
     const b = persona(7);
-    const thirdParty: Edge = {
-      v: PROTOCOL_VERSION,
-      type: 'edge',
-      edge_id: 'e'.repeat(64),
+    const body = {
       commitment_hash: 'f'.repeat(64),
       owner: a.personaId,
       owed_to: b.personaId,
       proposed_at: '2026-07-01T00:00:00Z',
+    };
+    const thirdParty: Edge = {
+      v: PROTOCOL_VERSION,
+      type: 'edge',
+      // §4.1: an edge_id digests its body, and the vault refuses one that does not. A literal
+      // here was a stand-in for "some edge"; it is now an edge nothing would ever store.
+      edge_id: edgeId(body),
+      ...body,
       due: null,
       closure_policy: 'on-acceptance',
       acceptance_window: 'P5D',

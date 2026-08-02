@@ -27,14 +27,29 @@ interface VectorCase {
 }
 
 const VECTORS = `${process.env['SERVANDA_VECTORS'] ?? 'vendor/vectors'}/transitions/invalid.json`;
-const cases: VectorCase[] = JSON.parse(readFileSync(VECTORS, 'utf8')).cases;
+const allCases: VectorCase[] = JSON.parse(readFileSync(VECTORS, 'utf8')).cases;
+
+/**
+ * One negative vector cannot be replayed by the harness below, and the reason is the rule it
+ * tests. `edge-id-does-not-bind-its-body` carries an edge whose identifier is not the digest of
+ * its body, and §4.1 makes storing such an edge impossible — `putEdge` refuses it — so there is
+ * no way to stand the edge up and then deliver assertions against it.
+ *
+ * It is named rather than filtered by a property, and its presence is asserted below, so this
+ * exclusion cannot quietly widen. What it excludes is covered directly by
+ * `federation/test/edge-binding.test.ts`, where the inbox refuses the `propose` that carries it.
+ */
+const UNSTORABLE_EDGE_CASE = 'edge-id-does-not-bind-its-body';
+const cases: VectorCase[] = allCases.filter((c) => c.name !== UNSTORABLE_EDGE_CASE);
 
 /** The vectors' `owner` / `owed_to` are personas 0 and 1 of the published test mnemonic. */
 const OWNER = persona(0);
 const COUNTERPARTY = persona(1);
 
 beforeAll(() => {
-  expect(cases).toHaveLength(25);
+  expect(allCases).toHaveLength(29);
+  expect(allCases.map((c) => c.name)).toContain(UNSTORABLE_EDGE_CASE);
+  expect(cases).toHaveLength(28);
   for (const c of cases) {
     expect(c.edge.owner).toBe(OWNER.personaId);
     expect(c.edge.owed_to).toBe(COUNTERPARTY.personaId);

@@ -41,6 +41,42 @@ export const ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 } as const;
 export const MAX_UNWRAP_MEMORY_KIB = ARGON2ID_PARAMS.m * 16;
 
 /**
+ * The most Argon2id WORK a single call to open a keyset may cost, in KiB-passes (m·t·p).
+ *
+ * The memory ceiling above bounds one parameter of three, and it is the one that announces
+ * itself: a wrap naming 4 GiB fails to allocate. Cost is m·t·p, so `t` was the parameter with no
+ * bound at all — at the memory ceiling, `t = 1e6` is thousands of CPU-hours per open, declared in
+ * four bytes of JSON that no schema objected to. `p` multiplies identically and needs no extra
+ * memory. And the candidate COUNT multiplies both, because every passphrase wrap is tried in
+ * turn: twenty conforming wraps cost twenty derivations before the failure is even reported.
+ *
+ * So the bound is stated over the whole call rather than per wrap — opening a keyset costs at
+ * most what one maximal conforming wrap costs — which is the only form that bounds all three
+ * factors, since it is their product that hurts.
+ *
+ * 64× today's point, for the same reason the memory ceiling is 16×: §9.3 says an implementation
+ * MAY raise `m` or `t`, and a ceiling that refused the raise the spec permits would bound
+ * conformance rather than an attacker. RFC 9106's memory-heavy option (m = 1 GiB, t = 2, p = 4)
+ * fits under it with room.
+ */
+export const MAX_UNWRAP_WORK = ARGON2ID_PARAMS.m * ARGON2ID_PARAMS.t * ARGON2ID_PARAMS.p * 64;
+
+/**
+ * How many passphrase wraps an open will consider at all, checked before a single derivation.
+ *
+ * The work budget bounds the total, but it is only ever reached by SPENDING it: sixty-four
+ * conforming wraps stay inside it until the sixty-fourth, which is sixty-four real derivations
+ * before anything is refused. A budget you have to pay to discover is a poor bound, and the
+ * length of a list costs nothing to read. Eight is far past what a real vault carries — a
+ * passphrase slot and a recovery slot is the normal shape — and refusing outright rather than
+ * truncating keeps this from silently ignoring a wrap that would have opened.
+ */
+export const MAX_PASSPHRASE_CANDIDATES = 8;
+
+/** §9.3: "The salt MUST be at least 128 bits, fresh per wrap, from a CSPRNG". */
+export const MIN_SALT_BYTES = 16;
+
+/**
  * Device-key wraps derive a key rather than using the device key as one.
  *
  * §1.7 and §9.3 say a device key wraps the content key and do not say how, so this is ours to
@@ -203,26 +239,61 @@ function unwrapWith(key: Uint8Array, wrap: WrappedKey): Uint8Array {
   return xchacha20poly1305(key, fromHex(wrap.nonce)).decrypt(fromHex(wrap.ciphertext));
 }
 
+/**
+ * Everything a wrap's declared KDF parameters must satisfy before this process will spend
+ * anything on them. Throws rather than skipping the wrap: a keyset naming a cost nobody can pay
+ * is hostile, and moving on to the next candidate is what it wants. `remainingWork` is the
+ * call's unspent budget, so the last check is the one that bounds the candidate count too.
+ */
+function assertSpendable(kdf: NonNullable<WrappedKey['kdf']>, remainingWork: number): number {
+  for (const [name, value] of [['m', kdf.m], ['t', kdf.t], ['p', kdf.p]] as const) {
+    if (!Number.isSafeInteger(value) || value < 1) {
+      throw new Error(`refusing a wrap whose Argon2id ${name} is not a positive integer: ${value}`);
+    }
+  }
+  if (fromHex(kdf.salt).length < MIN_SALT_BYTES) {
+    throw new Error(
+      `refusing a wrap whose salt is under the §9.3 minimum of ${MIN_SALT_BYTES * 8} bits`,
+    );
+  }
+  // Memory and work are different resources and both are bounded: `m` is what gets allocated at
+  // once, m·t·p is what gets spent over time. A wrap can be modest in one and absurd in the other.
+  if (kdf.m > MAX_UNWRAP_MEMORY_KIB) {
+    throw new Error(
+      `refusing a wrap demanding ${kdf.m} KiB of Argon2id memory; the ceiling is ${MAX_UNWRAP_MEMORY_KIB} KiB`,
+    );
+  }
+  const cost = kdf.m * kdf.t * kdf.p;
+  if (cost > remainingWork) {
+    throw new Error(
+      `refusing a wrap demanding ${cost} KiB-passes of Argon2id work; ${remainingWork} remain of a ${MAX_UNWRAP_WORK} budget for this open`,
+    );
+  }
+  return remainingWork - cost;
+}
+
 export function unwrapWithPassphrase(keyset: ContentKeySet, passphrase: string, label?: string): Uint8Array {
   const candidates = keyset.wraps.filter(
     (w) => w.kind === 'passphrase' && (label === undefined || w.label === label),
   );
+  if (candidates.length > MAX_PASSPHRASE_CANDIDATES) {
+    throw new Error(
+      `refusing a keyset offering ${candidates.length} passphrase wraps; more Argon2id work than ${MAX_PASSPHRASE_CANDIDATES} slots is not an open, it is a stall`,
+    );
+  }
+  let budget = MAX_UNWRAP_WORK;
   for (const wrap of candidates) {
     if (!wrap.kdf) continue;
     // The wrap's own parameters, not today's: a vault made before the cost was raised must still
     // open, and deriving with the current constants would tell its owner the passphrase is wrong.
     //
-    // Bounded above, because a keyset is not always your own. Recovery and import paths hand this
-    // function a structure that came from somewhere else, and `m` is the memory Argon2id will
-    // allocate: a wrap declaring m = 4 GiB is a keyset-shaped way to stop the process. Reading a
-    // LOWER cost than today's is harmless — it only ever weakens a key that is already wrapped —
-    // so only the ceiling needs guarding, and it is a refusal rather than a clamp because
-    // silently deriving with different parameters is exactly the bug above.
-    if (wrap.kdf.m > MAX_UNWRAP_MEMORY_KIB) {
-      throw new Error(
-        `refusing a wrap demanding ${wrap.kdf.m} KiB of Argon2id memory; the ceiling is ${MAX_UNWRAP_MEMORY_KIB} KiB`,
-      );
-    }
+    // Bounded above, because a keyset is not always your own: recovery and import paths hand this
+    // function a structure that came from somewhere else. Reading a LOWER cost than today's is
+    // harmless — it only ever weakens a key that is already wrapped, and stranding those vaults is
+    // the failure this whole path exists to avoid — so only the ceilings are guarded, and they
+    // refuse rather than clamp, because silently deriving with different parameters than the wrap
+    // names is exactly the bug above.
+    budget = assertSpendable(wrap.kdf, budget);
     const kek = deriveKeyFromPassphrase(passphrase, fromHex(wrap.kdf.salt), wrap.kdf);
     try {
       return unwrapWith(kek, wrap);
