@@ -57,6 +57,8 @@ export const NON_ASSERTABLE_STATES: readonly string[] = ['open'] as const;
  * - `open`: §4.3 folds `confirmed` into `open` — confirmed ≡ open.
  * - `pending-acceptance`: models the §4.4 acceptance window, which §4.3 has no row for.
  *   This is the vectors' interpretation #4, not normative spec text.
+ * - `contested-closure`: two parties each took a legal unilateral exit from `open`, concurrently.
+ *   Computed, never asserted — see the long note on `TERMINAL_STATES` below.
  */
 export const EffectiveState = z.enum([
   'none',
@@ -66,10 +68,20 @@ export const EffectiveState = z.enum([
   'closed',
   'released',
   'expired',
+  'contested-closure',
   'disputed',
   'superseded',
 ]);
 export type EffectiveState = z.infer<typeof EffectiveState>;
+
+/**
+ * §4.3: the exits `open` offers to ONE party acting alone. They are mutually exclusive, and
+ * nothing stops two parties taking different ones at the same time.
+ *
+ * `closed` is the owner's (with evidence); `released` is `owed_to`'s; `expired` is either party's
+ * once `due` has passed. `superseded` is not here — it needs both signatures, so it cannot race.
+ */
+export const UNILATERAL_EXITS: readonly string[] = ['closed', 'released', 'expired'] as const;
 
 /** States from which no further assertion is accepted. `disputed` is NOT terminal (§4.3). */
 export const TERMINAL_STATES: readonly EffectiveState[] = [
@@ -79,6 +91,33 @@ export const TERMINAL_STATES: readonly EffectiveState[] = [
   'superseded',
 ] as const;
 
+/**
+ * §4.3 / §6.4: `contested-closure` — two parties each took a legal unilateral exit from `open`,
+ * within a window where neither had seen the other's.
+ *
+ * Found by two honest nodes, with no hostility anywhere: partition them, let the owner close with
+ * evidence while the counterparty releases, and each accepts its own act and refuses the other's
+ * forever. §6.4's whole guarantee — "both sides see the same chain" — assumes ONE valid chain
+ * exists, and here both are valid. Recon then never terminates: each side keeps offering a chain
+ * the other keeps discarding, every round, permanently.
+ *
+ * The three ways out, and why this is the one:
+ *
+ * - A deterministic tie-break (lowest hash, earliest `asserted_at`) converges immediately and
+ *   **silently discards a signed act** — in a protocol built so that a signed act stands. Worse,
+ *   `asserted_at` is written by the party it would judge, which §4.3 already had to fix once.
+ * - Narrowing §6.4's promise is honest and leaves the debtor's vault reading `closed` forever
+ *   while the creditor's reads `released`, with nobody told.
+ * - **Naming it converges** — both nodes compute the same state from the same chain — while
+ *   discarding nothing. Both assertions stay, both are accepted, and the disagreement becomes
+ *   visible to the people who have to settle it. §4.1 already resolves a divergence this way
+ *   ("the edge is unverifiable in the sense of M-8"), so this is the precedent, not a new idea.
+ *
+ * It is M-8 unverifiable: a node MUST NOT auto-escalate on it. And like `disputed`, it is NOT
+ * terminal — the exit is mutual: both parties assert `closed`, or both assert `superseded`. A
+ * state two people can reach by accident and cannot leave together would be a worse trap than the
+ * divergence it replaces.
+ */
 export const ClosurePolicy = z.enum(['on-evidence', 'on-acceptance']);
 export type ClosurePolicy = z.infer<typeof ClosurePolicy>;
 

@@ -3,6 +3,7 @@ import type { Assertion, AssertionOutcome, Edge, EffectiveState, RejectionReason
 import {
   NON_ASSERTABLE_STATES,
   TERMINAL_STATES,
+  UNILATERAL_EXITS,
   collectiveDecompositionValid,
 } from '@servanda/types';
 import { addDuration } from './duration.js';
@@ -66,6 +67,17 @@ interface ChainState {
   superseded_by: Set<string>;
   /** §4.3 `disputed → closed` requires both parties (interpretation #6). */
   dispute_closed_by: Set<string>;
+  /**
+   * The assertion that took the edge out of `open`, and who signed it.
+   *
+   * Recorded because `open`'s unilateral exits are mutually exclusive and nothing stops two
+   * parties taking different ones concurrently. Without this the second one is refused as
+   * `terminal-state-reached` — which is what left two honest nodes permanently divergent.
+   */
+  exit: { state: EffectiveState; by: string; at: string } | null;
+  /** §4.3: both parties must assert to leave `contested-closure`, exactly as with `disputed`. */
+  contest_closed_by: Set<string>;
+  contest_superseded_by: Set<string>;
   /** §4.4: `asserted_at` of the accepted `disputed` assertion — when `dispute_window` starts. */
   disputed_at: string | null;
   /**
@@ -107,6 +119,31 @@ function windowElapsed(edge: Edge, openedAt: string, assertedAt: string): boolea
  */
 export const DISPUTE_WINDOW = 'P30D';
 
+/**
+ * Would this assertion have been a legal unilateral exit from `open`? Null if yes, otherwise the
+ * reason it would have been refused.
+ *
+ * Separate from the table rather than folded into it, because it answers a counterfactual: the
+ * chain is no longer at `open`, and the question is whether this party COULD have acted when they
+ * did. Only a legal act contests; an illegal one is not half of a disagreement.
+ */
+function unilateralExitFault(edge: Edge, a: Assertion): RejectionReason | null {
+  const isOwner = a.by === edge.owner;
+  const isOwedTo = a.by === edge.owed_to;
+  switch (a.state) {
+    case 'closed':
+      if (!isOwner) return 'wrong-signer-for-transition';
+      return a.evidence_hash === null ? 'evidence-hash-required-for-owner-closure' : null;
+    case 'released':
+      return isOwedTo ? null : 'wrong-signer-for-transition';
+    case 'expired':
+      if (edge.due === null) return 'due-is-null';
+      return Date.parse(a.asserted_at) < Date.parse(edge.due) ? 'expiry-before-due' : null;
+    default:
+      return 'illegal-source-state';
+  }
+}
+
 /** Applies one assertion. Returns null on acceptance (mutating `ctx`), or the rejection reason. */
 function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null {
   // The assertion must be about THIS edge before anything else is worth checking.
@@ -124,9 +161,74 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
   // this reason, which it could not do if the schema had rejected the value (interpretation #3).
   if (NON_ASSERTABLE_STATES.includes(a.state)) return 'implicit-transition-not-assertable';
 
+  // §4.3 / §6.4: two parties, two different legal unilateral exits from `open`, taken before
+  // either saw the other's. Checked BEFORE the terminal guard, because refusing the second one is
+  // exactly what makes two honest nodes diverge permanently — each accepts its own act, discards
+  // the other's, and §6.4 can never reach "nothing to send".
+  //
+  // Both acts stand. The state becomes `contested-closure`, which both sides compute from the
+  // same chain, so they converge; and nothing signed is thrown away, which is what a tie-break
+  // would have done.
+  //
+  // **Only a CONCURRENT act contests.** An assertion dated later than the exit it conflicts with
+  // could have been a response to it, and §4.3's rows already say what the answer to an exit is:
+  // accept it, or dispute it. Without this the creditor's `released` after seeing the owner's
+  // evidence would reach `contested-closure` — reversing the `pending-acceptance` restriction
+  // decided the same day, and letting a party who waited claim the position of one who did not.
+  //
+  // The comparison is between two self-written timestamps, which §4.3 rightly distrusts. It is
+  // safe here because backdating buys nothing: a counterparty who wants to stop a close already
+  // has `disputed`, legal from `pending-acceptance`, with the same blocking effect and an
+  // `evidence_hash` attached. There is no position reachable by lying that is not reachable
+  // honestly.
+  if (
+    ctx.exit !== null &&
+    a.by !== ctx.exit.by &&
+    UNILATERAL_EXITS.includes(a.state) &&
+    a.state !== ctx.exit.state &&
+    ctx.state !== 'contested-closure' &&
+    Date.parse(a.asserted_at) <= Date.parse(ctx.exit.at)
+  ) {
+    // It only contests if it would have been LEGAL from `open`. An illegal act is not half of a
+    // disagreement — it is just illegal, and must still be reported as such.
+    const fault = unilateralExitFault(edge, a);
+    if (fault !== null) return fault;
+    ctx.state = 'contested-closure';
+    ctx.resolved_at = a.asserted_at;
+    return null;
+  }
+
   // Once terminal, the chain is closed to further assertions. Checked before the table so the
   // reason names the real problem instead of "no such row".
   if (TERMINAL_STATES.includes(ctx.state)) return 'terminal-state-reached';
+
+  // §4.3: `contested-closure` leaves the same way `disputed` does — both parties, or not at all.
+  if (ctx.state === 'contested-closure') {
+    const both = (seen: Set<string>): RejectionReason | null => {
+      if (seen.has(a.by)) return 'duplicate-assertion-by-same-party';
+      seen.add(a.by);
+      return null;
+    };
+    if (a.state === 'closed') {
+      const bad = both(ctx.contest_closed_by);
+      if (bad) return bad;
+      if (ctx.contest_closed_by.size === 2) {
+        ctx.state = 'closed';
+        ctx.resolved_at = a.asserted_at;
+      }
+      return null;
+    }
+    if (a.state === 'superseded') {
+      const bad = both(ctx.contest_superseded_by);
+      if (bad) return bad;
+      if (ctx.contest_superseded_by.size === 2) {
+        ctx.state = 'superseded';
+        ctx.resolved_at = a.asserted_at;
+      }
+      return null;
+    }
+    return 'illegal-source-state';
+  }
 
   const isOwner = a.by === edge.owner;
   const isOwedTo = a.by === edge.owed_to;
@@ -154,6 +256,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
         // on-evidence it closes; under on-acceptance it opens the window.
         if (!isOwner) return 'wrong-signer-for-transition';
         if (a.evidence_hash === null) return 'evidence-hash-required-for-owner-closure';
+        ctx.exit = { state: 'closed', by: a.by, at: a.asserted_at };
         if (edge.closure_policy === 'on-evidence') {
           ctx.state = 'closed';
           ctx.resolved_at = a.asserted_at;
@@ -197,6 +300,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
       // §4.3: unilateral forgiveness by the creditor. An owner releasing themselves would let
       // anyone discharge their own debt.
       if (!isOwedTo) return 'wrong-signer-for-transition';
+      ctx.exit = { state: 'released', by: a.by, at: a.asserted_at };
       ctx.state = 'released';
       ctx.resolved_at = a.asserted_at;
       return null;
@@ -223,6 +327,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
       if (edge.due === null) return 'due-is-null';
       if (Date.parse(a.asserted_at) < Date.parse(edge.due)) return 'expiry-before-due';
       // Either party may assert it; both were validated as parties above.
+      ctx.exit = { state: 'expired', by: a.by, at: a.asserted_at };
       ctx.state = 'expired';
       ctx.resolved_at = a.asserted_at;
       return null;
@@ -290,6 +395,9 @@ export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): Chain
     window_opened_at: null,
     superseded_by: new Set(),
     dispute_closed_by: new Set(),
+    exit: null,
+    contest_closed_by: new Set(),
+    contest_superseded_by: new Set(),
     disputed_at: null,
     resolved_at: null,
     latest_by_signer: new Map(),

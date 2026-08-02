@@ -46,9 +46,9 @@ function run(c: VectorCase) {
   return verifyAssertionChain(edge, assertions);
 }
 
-describe('§4.3 transition table — valid chains (12 vectors)', () => {
+describe('§4.3 transition table — valid chains (15 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(validCases).toHaveLength(12);
+    expect(validCases).toHaveLength(15);
   });
 
   for (const c of validCases) {
@@ -63,9 +63,9 @@ describe('§4.3 transition table — valid chains (12 vectors)', () => {
   }
 });
 
-describe('M-14: assertions violating the transition table are discarded (31 vectors)', () => {
+describe('M-14: assertions violating the transition table are discarded (33 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(invalidCases).toHaveLength(31);
+    expect(invalidCases).toHaveLength(33);
   });
 
   for (const c of invalidCases) {

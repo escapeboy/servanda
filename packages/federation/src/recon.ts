@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { hashCanonical } from '@servanda/crypto';
 import { verifyAssertionChain } from '@servanda/node';
 import type { Assertion, Edge, EffectiveState, RejectionReason } from '@servanda/types';
-import { Assertion as AssertionSchema, Sha256Hex } from '@servanda/types';
+import { Assertion as AssertionSchema, PROTOCOL_VERSION, Sha256Hex } from '@servanda/types';
 import type { Vault } from '@servanda/vault';
 import { isParty, mayServeEdge } from './serve.js';
 
@@ -63,16 +63,32 @@ export interface ReconApplyResult {
 }
 
 /**
- * The hash a peer compares against. §6.4 names `latest_assertion_hash` without defining it;
- * narrowest reading: the canonical hash (§00 signing rule's preimage function) of the last
- * assertion this node holds for the edge. An empty chain has no latest assertion, and is
- * represented by the all-zero hash so the field can stay a required Sha256Hex.
+ * The hash a peer compares against. §6.4 names `latest_assertion_hash` and does not define it.
+ *
+ * The narrow reading — the canonical hash of the LAST assertion held — is what this was, and it
+ * does not converge. The question the hash exists to answer is "do we hold the same assertions?",
+ * which is a question about a SET; the last element of a sequence answers a different one. Two
+ * honest nodes that each signed their own act and then received the other's hold identical sets in
+ * opposite orders, so they reported different hashes forever: every round each side re-offered a
+ * chain the other already had and deduplicated, and reconciliation never reached "nothing to send".
+ *
+ * So it is a set hash: every assertion's `sig` sorted, then digested. Sorting by `sig` rather than
+ * by `asserted_at` because `sig` is unique per assertion and is not a value either party chooses —
+ * `asserted_at` is written by the party it would order, which §4.3 already had to fix once.
+ *
+ * This deliberately says nothing about ORDER, and it should not: order is what the transition
+ * table consumes, and two nodes holding the same set can still disagree about state. That is a
+ * separate guarantee, kept by `inWireOrder` normalising every batch and by §4.3 naming a state for
+ * the case where two legal acts genuinely conflict.
+ *
+ * An empty chain is the all-zero hash, so the field stays a required Sha256Hex.
  */
 export const EMPTY_CHAIN_HASH = '0'.repeat(64);
 
 export function latestAssertionHash(assertions: Assertion[]): string {
-  const last = assertions[assertions.length - 1];
-  return last === undefined ? EMPTY_CHAIN_HASH : hashCanonical(last as unknown as Record<string, unknown>);
+  if (assertions.length === 0) return EMPTY_CHAIN_HASH;
+  const sigs = assertions.map((a) => a.sig).sort();
+  return hashCanonical({ v: PROTOCOL_VERSION, type: 'chain_digest', sigs } as unknown as Record<string, unknown>);
 }
 
 /** Edges this persona shares with `counterparty` that are still live (§6.4 "shared open edges"). */

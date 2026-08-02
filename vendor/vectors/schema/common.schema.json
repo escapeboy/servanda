@@ -79,7 +79,7 @@
       ]
     },
     "effectiveState": {
-      "description": "The state a node computes from an assertion chain. `confirmed` folds into `open`; `pending-acceptance` models the \u00a74.4 window and is never an assertion's `state`.",
+      "description": "The state a node computes from an assertion chain. `confirmed` folds into `open`; `pending-acceptance` models the \u00a74.4 window and is never an assertion's `state`. `contested-closure` is computed, never asserted: two parties took different unilateral exits from `open` concurrently and both acts stand (\u00a74.4).",
       "enum": [
         "none",
         "proposed",
@@ -89,7 +89,8 @@
         "closed",
         "released",
         "superseded",
-        "expired"
+        "expired",
+        "contested-closure"
       ]
     },
     "verificationLevel": {

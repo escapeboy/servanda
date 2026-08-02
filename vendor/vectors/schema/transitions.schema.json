@@ -151,7 +151,8 @@
               "closed",
               "released",
               "superseded",
-              "expired"
+              "expired",
+              "contested-closure"
             ]
           },
           "expected_unverifiable": {
