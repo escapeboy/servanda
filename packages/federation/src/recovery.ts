@@ -145,6 +145,12 @@ export class RecoveryResponder {
           reason: '§6.6: the challenge is not signed by the persona being recovered — a rotation says which key succeeds which, not who is asking',
         };
       }
+      // Spent HERE too. The plain-challenge branch below deletes it and this one did not, so one
+      // rotation proof answered indefinitely — §6.6: "SHOULD refuse a `challenge` it has already
+      // answered". A recovery answer is the requester's whole edge set, which makes a replayable
+      // proof the same bulk disclosure §6.6's proof-of-possession rule exists to stop, reached
+      // through a branch nobody re-read.
+      this.issued.delete(challengeValue);
       return { verified: true, persona: rotation.new, predecessor: rotation.old };
     }
 
