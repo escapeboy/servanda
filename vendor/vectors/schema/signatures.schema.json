@@ -11,7 +11,8 @@
   "required": [
     "description",
     "signing_rule",
-    "cases"
+    "cases",
+    "known_keys"
   ],
   "properties": {
     "suite_version": {},
@@ -111,7 +112,7 @@
           },
           "verifies": {
             "type": "boolean",
-            "description": "The verdict. Pinned because the family carried five positives and none until v0.2, so a `return true` verifier passed every case — over the one primitive M-2, M-14 and §6.2 all reduce to."
+            "description": "The verdict. Pinned because the family carried five positives and none until v0.2, so a `return true` verifier passed every case \u2014 over the one primitive M-2, M-14 and \u00a76.2 all reduce to."
           },
           "reason": {
             "description": "Why a refused case is refused. Non-null exactly when `verifies` is false: 'rejected everything' and 'rejected the right thing' are different implementations and only one conforms.",
@@ -174,7 +175,7 @@
           }
         },
         {
-          "description": "At least one case must NOT verify — a positive-only family cannot fail.",
+          "description": "At least one case must NOT verify \u2014 a positive-only family cannot fail.",
           "contains": {
             "properties": {
               "verifies": {
@@ -187,6 +188,26 @@
           }
         }
       ]
+    },
+    "known_keys": {
+      "type": "array",
+      "description": "The keys in play. Present so that a verifier can report WHICH other key signed a rejected object \u2014 `signature-by-another-key` is not decidable from a signed object and the persona it names. Naming them never rescues a bad signature.",
+      "items": {
+        "type": "object",
+        "required": [
+          "label",
+          "persona_id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "persona_id": {
+            "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
+          }
+        }
+      }
     }
   }
 }

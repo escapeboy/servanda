@@ -5,6 +5,20 @@
   "generated_by": "tools/vectors-gen (deterministic; do not edit by hand)",
   "description": "Ed25519 over sha256(JCS(object without its `sig` field)). Verify by recomputing `sha256_preimage` from `unsigned_object` and checking `signature` against the signer key. Every case pins `verifies`, and a refused one pins `reason` as well: an implementation that rejects everything is not the same as one that rejects the right thing, and only one of them conforms. The family carried five positives and no verdict until v0.2 — a `return true` verifier passed all five.",
   "signing_rule": "ed25519_sign(sha256(JCS(object minus \"sig\")), private_key)",
+  "known_keys": [
+    {
+      "label": "alice",
+      "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+    },
+    {
+      "label": "bob",
+      "persona_id": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f"
+    },
+    {
+      "label": "org-root",
+      "persona_id": "95782730c0a186b430a689b684ab45500b3f08114fe6f2eac460be3e274bb020"
+    }
+  ],
   "cases": [
     {
       "name": "attestation-by-org-root",
