@@ -78,6 +78,9 @@ describe('§6.1 hub transport', () => {
         v: 'servanda/0.2' as const,
         type: 'inbox_auth' as const,
         persona: B.personaId,
+        // §6.1: the signature names the hub it is for. Without it the blob opens this persona's
+        // queue at every hub in its §6.7 list at once.
+        audience: 'https://hub.example',
         challenge,
         issued_at: '2026-07-25T09:00:00.000Z',
       },
@@ -132,6 +135,9 @@ describe('§6.1 hub transport', () => {
         v: 'servanda/0.2' as const,
         type: 'inbox_auth' as const,
         persona: B.personaId,
+        // §6.1: the signature names the hub it is for. Without it the blob opens this persona's
+        // queue at every hub in its §6.7 list at once.
+        audience: 'https://hub.example',
         challenge,
         issued_at: '2026-07-25T09:00:00.000Z',
       },

@@ -26,6 +26,18 @@ export const InboxAuth = z.object({
   v: z.literal(PROTOCOL_VERSION),
   type: z.literal('inbox_auth'),
   persona: PersonaId,
+  /**
+   * §6.1: the hub this signature is FOR, and the reason it is not a bearer token.
+   *
+   * A challenge is public by construction — it is issued before authentication, so anyone can ask
+   * for one — and that is fine. What must not be transferable is the SIGNATURE over it. Without
+   * this member the signed blob is valid at every hub at once, which turns §6.7's ordered hub
+   * list from an availability feature into the attack surface: a compromised hub in that list
+   * fetches an honest hub's outstanding challenge, serves it to the persona as its own, collects
+   * the signature and replays it. The honest hub sees its own nonce and a genuine signature by
+   * the persona it names, and hands over the queue.
+   */
+  audience: z.string().min(1),
   /** The hub-issued nonce this signature answers. */
   challenge: z.string().min(16),
   issued_at: Rfc3339,
@@ -48,6 +60,8 @@ export interface StoredEnvelope {
 
 export interface MemoryHubOptions {
   now?: () => Date;
+  /** This hub's own base URL, as a persona's §6.7 record names it. Checked against `audience`. */
+  baseUrl?: string;
   /** §6.7 RECOMMENDS a queue TTL of ≥ 30 days. */
   ttlDays?: number;
   /** Deterministic nonces in tests; a real hub uses a CSPRNG. */
@@ -60,9 +74,11 @@ export class MemoryHub {
   private readonly clock: () => Date;
   private readonly ttlMs: number;
   private readonly nonce: () => string;
+  private readonly baseUrl: string;
   private counter = 0;
 
   constructor(opts: MemoryHubOptions = {}) {
+    this.baseUrl = opts.baseUrl ?? 'https://hub.example';
     this.clock = opts.now ?? (() => new Date());
     this.ttlMs = (opts.ttlDays ?? 30) * 86_400_000;
     this.nonce = opts.nonce ?? (() => `nonce-${++this.counter}-${this.clock().getTime()}`);
@@ -103,6 +119,14 @@ export class MemoryHub {
     if (!parsed.success) throw new HubRejection('§6.1: inbox access requires a signed challenge');
     const a = parsed.data;
     if (a.persona !== persona) throw new HubRejection('§6.7: a hub delivers only to the persona itself');
+    // Checked BEFORE the nonce, because the nonce will match: an attacker replaying here holds a
+    // challenge this hub genuinely issued. The audience is the only thing that distinguishes a
+    // signature made FOR this hub from one made for another and relayed.
+    if (a.audience !== this.baseUrl) {
+      throw new HubRejection(
+        `§6.1: this authentication names another hub as its audience (${a.audience}); a challenge signature is not a bearer token`,
+      );
+    }
     if (this.challenges.get(persona) !== a.challenge) {
       throw new HubRejection('§6.1: challenge is unknown or already spent');
     }

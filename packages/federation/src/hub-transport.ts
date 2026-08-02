@@ -150,6 +150,9 @@ export class HubClient implements Transport {
         v: PROTOCOL_VERSION,
         type: 'inbox_auth' as const,
         persona,
+        // §6.1: the hub this signature is for. A client that omits it hands every other hub in
+        // its own §6.7 list a token that opens this queue.
+        audience: this.baseUrl,
         challenge: challenge.challenge,
         issued_at: this.clock().toISOString(),
       },
