@@ -240,7 +240,7 @@ export class Inbox {
     }
 
     // M-14 before anything is written: an invalid `proposed` assertion never creates an edge.
-    const { outcomes } = verifyAssertionChain(edge, [assertion]);
+    const { outcomes } = verifyAssertionChain(edge, [assertion], this.vault.now());
     const outcome = outcomes[0]!;
     if (!outcome.accepted) {
       result.discarded.push({
@@ -291,7 +291,7 @@ export class Inbox {
     const local = this.vault.getAssertions(this.persona, edge.edge_id);
     if (local.some((a) => a.sig === assertion.sig)) return; // transports may replay
 
-    const { outcomes } = verifyAssertionChain(edge, [...local, assertion]);
+    const { outcomes } = verifyAssertionChain(edge, [...local, assertion], this.vault.now());
     const outcome = outcomes[local.length]!;
     if (!outcome.accepted) {
       result.discarded.push({
@@ -335,7 +335,7 @@ export function applyRecoverResponse(vault: Vault, persona: string, response: Re
     const local = vault.getAssertions(persona, edge.edge_id);
     const held = new Set(local.map((a) => a.sig));
     const incoming = assertions.filter((a) => !held.has(a.sig)).sort(inWireOrder);
-    const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming]);
+    const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming], vault.now());
 
     // M-1 / M-14: an edge exists because its OWNER proposed it, and that proposal is signed.
     // The edge object itself is not — §4.2 puts every signature on the assertions, and `edge_id`

@@ -60,6 +60,8 @@ export interface ChainVerification {
 }
 
 interface ChainState {
+  /** The verifying node's own clock, when it has one. Absent for clockless replay. */
+  now: number | null;
   state: EffectiveState;
   /** §4.4: when the owner's evidence assertion opened the acceptance window. */
   window_opened_at: string | null;
@@ -120,6 +122,28 @@ function windowElapsed(edge: Edge, openedAt: string, assertedAt: string): boolea
 export const DISPUTE_WINDOW = 'P30D';
 
 /**
+ * How far into a node's own future an `expired` assertion may be dated before it is discarded.
+ *
+ * §4.3 held `expired` up as the SOUND contrast to the self-asserted windows: "`due` sits on the
+ * edge object that both parties signed, cannot be moved unilaterally, and so the check on it means
+ * something." The check on `due` does mean something. The claim about *now* did not — and one
+ * assertion is enough, because the per-signer monotonic rule has nothing earlier by that signer to
+ * compare against.
+ *
+ * The consequence was total: confirm an edge due in 2028, immediately sign `expired` dated 2028,
+ * and the counterparty's node records the edge as terminally expired two years early. `expired`
+ * is terminal, so the owner can never act on their own commitment again.
+ *
+ * §4.3 said a node "MAY additionally refuse an assertion dated in its own future; that is local
+ * policy, not conformance, because two honest nodes disagree about *now*". That reasoning holds
+ * for seconds and minutes. It does not stretch to months, and a MAY over a transition that ends
+ * an edge for both parties is not a policy — it is the difference between the rule working and
+ * not. One day is far past any honest disagreement between machines whose timestamps carry an
+ * offset, and it turns "two years early" into "one day early", which is not an attack worth having.
+ */
+export const EXPIRY_SKEW_MS = 86_400_000;
+
+/**
  * Would this assertion have been a legal unilateral exit from `open`? Null if yes, otherwise the
  * reason it would have been refused.
  *
@@ -127,7 +151,7 @@ export const DISPUTE_WINDOW = 'P30D';
  * chain is no longer at `open`, and the question is whether this party COULD have acted when they
  * did. Only a legal act contests; an illegal one is not half of a disagreement.
  */
-function unilateralExitFault(edge: Edge, a: Assertion): RejectionReason | null {
+function unilateralExitFault(edge: Edge, a: Assertion, now: number | null): RejectionReason | null {
   const isOwner = a.by === edge.owner;
   const isOwedTo = a.by === edge.owed_to;
   switch (a.state) {
@@ -138,7 +162,10 @@ function unilateralExitFault(edge: Edge, a: Assertion): RejectionReason | null {
       return isOwedTo ? null : 'wrong-signer-for-transition';
     case 'expired':
       if (edge.due === null) return 'due-is-null';
-      return Date.parse(a.asserted_at) < Date.parse(edge.due) ? 'expiry-before-due' : null;
+      if (Date.parse(a.asserted_at) < Date.parse(edge.due)) return 'expiry-before-due';
+      return now !== null && Date.parse(a.asserted_at) > now + EXPIRY_SKEW_MS
+        ? 'expiry-dated-in-the-future'
+        : null;
     default:
       return 'illegal-source-state';
   }
@@ -191,7 +218,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
   ) {
     // It only contests if it would have been LEGAL from `open`. An illegal act is not half of a
     // disagreement — it is just illegal, and must still be reported as such.
-    const fault = unilateralExitFault(edge, a);
+    const fault = unilateralExitFault(edge, a, ctx.now);
     if (fault !== null) return fault;
     ctx.state = 'contested-closure';
     ctx.resolved_at = a.asserted_at;
@@ -326,6 +353,11 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
       // §3.1: undated commitments MUST NOT time-escalate. With no `due` there is no expiry.
       if (edge.due === null) return 'due-is-null';
       if (Date.parse(a.asserted_at) < Date.parse(edge.due)) return 'expiry-before-due';
+      // The other half of the same question, and the one that was missing: `due` cannot be moved,
+      // but the claim about *now* can, and this transition is terminal and needs nobody's consent.
+      if (ctx.now !== null && Date.parse(a.asserted_at) > ctx.now + EXPIRY_SKEW_MS) {
+        return 'expiry-dated-in-the-future';
+      }
       // Either party may assert it; both were validated as parties above.
       ctx.exit = { state: 'expired', by: a.by, at: a.asserted_at };
       ctx.state = 'expired';
@@ -389,8 +421,20 @@ function acceptanceWindowMalformed(edge: Edge): boolean {
     : edge.acceptance_window != null;
 }
 
-export function verifyAssertionChain(edge: Edge, assertions: Assertion[]): ChainVerification {
+/**
+ * `now` is optional, and its absence is not an oversight. Vector generation and the conformance
+ * runner are both clockless on purpose — "an IUT that reads a clock here is answering a different
+ * question than the one asked" — so a chain replayed against the suite must reach the same verdict
+ * on every machine forever. A node verifying live traffic has a clock and MUST pass it; what that
+ * buys is the `expired` bound, which is therefore a prose obligation no vector can carry.
+ */
+export function verifyAssertionChain(
+  edge: Edge,
+  assertions: Assertion[],
+  now?: string,
+): ChainVerification {
   const ctx: ChainState = {
+    now: now === undefined ? null : Date.parse(now),
     state: 'none',
     window_opened_at: null,
     superseded_by: new Set(),

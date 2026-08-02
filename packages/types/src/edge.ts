@@ -216,6 +216,12 @@ export const RejectionReason = z.enum([
   'evidence-hash-required-for-owner-closure',
   'due-is-null',
   'expiry-before-due',
+  /**
+   * §4.3: `expired` dated further into the verifying node's future than honest clock skew allows.
+   * The other half of `expiry-before-due` — `due` cannot be moved unilaterally, and until this
+   * existed the claim about *now* could be, which ended an edge for both parties on one signature.
+   */
+  'expiry-dated-in-the-future',
   'acceptance-window-not-elapsed',
   /** §4.4: `disputed → expired` before `dispute_window` ran. Names a window, never a verdict. */
   'dispute-window-not-elapsed',

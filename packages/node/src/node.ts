@@ -110,6 +110,10 @@ const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
   'evidence-hash-required-for-owner-closure': 'evidence-hash-required',
   'due-is-null': 'illegal-source-state',
   'expiry-before-due': 'illegal-source-state',
+  // §7 has no member for "your clock and mine disagree", and adding one would be a normative
+  // change for a distinction the caller cannot act on: either way the assertion is refused and
+  // waiting is the only remedy.
+  'expiry-dated-in-the-future': 'illegal-source-state',
   'acceptance-window-not-elapsed': 'acceptance-window-not-elapsed',
   'dispute-window-not-elapsed': 'illegal-source-state',
   'malformed-edge-acceptance-window': 'malformed-edge-acceptance-window',
@@ -414,7 +418,7 @@ export class ServandaNode {
     // The node validates its OWN assertion against the table before storing it. A node that
     // trusts itself is a node that can write an invalid chain (M-14).
     const chain = [...this.vault.getAssertions(persona, edge.edge_id), assertion];
-    const verification = verifyAssertionChain(edge, chain);
+    const verification = verifyAssertionChain(edge, chain, this.now().toISOString());
     const last = verification.outcomes[verification.outcomes.length - 1];
     if (!last || !last.accepted) {
       throw new NodeError(
@@ -493,7 +497,7 @@ export class ServandaNode {
     );
 
     const chain = [...this.vault.getAssertions(persona, edge.edge_id), assertion];
-    const verification = verifyAssertionChain(edge, chain);
+    const verification = verifyAssertionChain(edge, chain, this.now().toISOString());
     const last = verification.outcomes[verification.outcomes.length - 1];
     if (!last || !last.accepted) {
       const reason = last?.rejection_reason;
@@ -548,6 +552,10 @@ export class ServandaNode {
   edgeState(persona: string, edge_id: string): ChainVerification {
     const edge = this.vault.getEdge(persona, edge_id);
     if (!edge) throw new NodeError(`no such edge: ${edge_id}`);
+    // Deliberately clockless. The `expired` bound decides what a node will STORE; a read must
+    // replay a stored chain to the same state every time, on every machine, forever. A read that
+    // consulted the clock would let an edge change state because time passed rather than because
+    // somebody asserted something.
     return verifyAssertionChain(edge, this.vault.getAssertions(persona, edge_id));
   }
 

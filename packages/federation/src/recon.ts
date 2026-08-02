@@ -202,7 +202,7 @@ export function applyReconResponse(
     if (incoming.length === 0) continue;
 
     const candidate = [...local, ...incoming];
-    const { outcomes } = verifyAssertionChain(edge, candidate);
+    const { outcomes } = verifyAssertionChain(edge, candidate, vault.now());
     for (let i = 0; i < incoming.length; i++) {
       const assertion = incoming[i]!;
       const outcome = outcomes[local.length + i]!;
