@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import type { Assertion } from '@servanda/types';
 import { Vault } from '@servanda/vault';
 import { ServandaNode } from '@servanda/node';
@@ -107,6 +107,7 @@ export async function freshInstall(startInstant: string, persona = alice): Promi
   const dir = mkdtempSync(join(tmpdir(), 'servanda-e2e-'));
   const clock = new TestClock(new Date(startInstant));
   const vault = await Vault.create({
+    kdf: ARGON2ID_CONSTRAINED,
     dir: join(dir, 'vault'),
     passphrase: 'e2e-passphrase-of-record',
     author: { name: 'e2e', email: 'e2e@servanda.test' },

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://servanda.dev/schema/transitions.schema.json",
-  "title": "Edge transition-table vectors (spec §4.3, M-14)",
+  "title": "Edge transition-table vectors (spec \u00a74.3, M-14)",
   "type": "object",
   "allOf": [
     {
@@ -34,7 +34,8 @@
           "edge",
           "assertions",
           "expected_outcomes",
-          "expected_final_state"
+          "expected_final_state",
+          "expected_unverifiable"
         ],
         "additionalProperties": false,
         "properties": {
@@ -152,6 +153,10 @@
               "superseded",
               "expired"
             ]
+          },
+          "expected_unverifiable": {
+            "type": "boolean",
+            "description": "\u00a74.7 / M-8 / M-9: the edge is collective and has neither covering `fulfillment.children` nor a `fulfillment.coordinator`, so a node MUST mark it unverifiable and MUST NOT auto-escalate on it. Stated on every case, including the non-collective ones where it is false, so that an absent member can never be read as \"not checked\"."
           }
         }
       }

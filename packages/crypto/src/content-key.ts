@@ -14,31 +14,46 @@ import { fromHex, toHex, utf8 } from './hash.js';
  * a keyset without a passphrase wrap.
  */
 
+export interface Argon2idParams {
+  readonly m: number;
+  readonly t: number;
+  readonly p: number;
+  readonly dkLen: number;
+}
+
 /**
- * §9.3: "Argon2id (m=64MiB, t=3, p=1 minimum) for passphrase keys."
+ * §9.3 names two points, and which one applies is a property of the machine, not of the vault.
  *
- * The three move TOGETHER. §9.3's word "minimum" reads as though each is independently tunable,
- * and it is not: `m`, `t` and `p` describe one analysed point, and lowering any of them while
- * claiming to meet the minimum is how a parameter set gets quietly weakened. RFC 9106's second
- * recommended option is the same `t = 3, m = 64 MiB` with `p = 4`; `p` bounds the parallelism an
- * ATTACKER is assumed to have, so `p = 1` is not the weaker choice, and this sits above the
- * common OWASP floor (m = 19 MiB, t = 2, p = 1) on every axis.
+ * `m`, `t` and `p` describe ONE analysed point each; lowering any of them while claiming to meet
+ * a profile is how a parameter set gets quietly weakened, so the profiles are whole values rather
+ * than three independently tunable knobs.
  *
- * Every wrap stores the values it was made with (see `WrappedKey.kdf`), so raising them later
- * does not strand an existing vault — a wrap is opened with its own parameters, not with these.
- * The wording is filed upstream; the values are not in dispute.
+ * **Why memory and not iterations.** This passphrase does not guard content — `PersonaRecord`'s
+ * `private_key` is sealed under the same content key every record is, so what the passphrase
+ * guards is the IDENTITIES. Memory is the only parameter that cuts an attacker's parallelism:
+ * a 24 GB GPU holds roughly 350 concurrent instances at 64 MiB and roughly 22 at 1 GiB. Raising
+ * `t` costs the attacker and the owner in the same proportion; raising `m` does not.
+ *
+ * 64 MiB was RFC 9106's constrained-device point, and it stays here under that name — a phone or
+ * a container with a hard memory limit is a real deployment, and naming it explicitly is better
+ * than a silent fallback. It is the FLOOR: nothing conforming goes below it.
  */
-export const ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 } as const;
+export const ARGON2ID_DESKTOP: Argon2idParams = { m: 1048576, t: 2, p: 4, dkLen: 32 };
+export const ARGON2ID_CONSTRAINED: Argon2idParams = { m: 65536, t: 3, p: 1, dkLen: 32 };
+
+/** What a new wrap is made at unless the caller names the constrained profile. */
+export const ARGON2ID_PARAMS = ARGON2ID_DESKTOP;
 
 /**
  * The most Argon2id memory this code will allocate to open somebody else's keyset.
  *
  * §9.3 fixes the cost a NEW wrap is made at; nothing bounded the cost an EXISTING one may ask for,
- * and a keyset arrives over §6.6 recovery and over import. 16× the current parameter leaves room
- * for a future raise (the §9.3 floor has moved once already) while keeping a hostile keyset from
- * naming a number the machine cannot serve.
+ * and a keyset arrives over §6.6 recovery and over import. Twice the desktop profile: enough that
+ * a raise beyond today's point is not foreclosed, small enough that a hostile keyset cannot name
+ * a number the machine will try to serve. A further raise moves this constant deliberately, which
+ * is right — it is a real commitment of the opener's memory, not a formality.
  */
-export const MAX_UNWRAP_MEMORY_KIB = ARGON2ID_PARAMS.m * 16;
+export const MAX_UNWRAP_MEMORY_KIB = ARGON2ID_DESKTOP.m * 2;
 
 /**
  * The most Argon2id WORK a single call to open a keyset may cost, in KiB-passes (m·t·p).
@@ -54,12 +69,13 @@ export const MAX_UNWRAP_MEMORY_KIB = ARGON2ID_PARAMS.m * 16;
  * most what one maximal conforming wrap costs — which is the only form that bounds all three
  * factors, since it is their product that hurts.
  *
- * 64× today's point, for the same reason the memory ceiling is 16×: §9.3 says an implementation
- * MAY raise `m` or `t`, and a ceiling that refused the raise the spec permits would bound
- * conformance rather than an attacker. RFC 9106's memory-heavy option (m = 1 GiB, t = 2, p = 4)
- * fits under it with room.
+ * Twice the desktop profile, which is the same headroom the memory ceiling carries and for the
+ * same reason: §9.3 permits a raise, so a ceiling that refused one would bound conformance rather
+ * than an attacker — but a desktop open already costs seconds, so the multiplier has to be small
+ * or the bound stops bounding anything a person would notice.
  */
-export const MAX_UNWRAP_WORK = ARGON2ID_PARAMS.m * ARGON2ID_PARAMS.t * ARGON2ID_PARAMS.p * 64;
+export const MAX_UNWRAP_WORK =
+  ARGON2ID_DESKTOP.m * ARGON2ID_DESKTOP.t * ARGON2ID_DESKTOP.p * 2;
 
 /**
  * How many passphrase wraps an open will consider at all, checked before a single derivation.
@@ -146,7 +162,7 @@ export function deriveKeyFromPassphrase(
     m: params.m,
     t: params.t,
     p: params.p,
-    dkLen: ARGON2ID_PARAMS.dkLen,
+    dkLen: ARGON2ID_PARAMS.dkLen, // 32 in every profile; the KEK is an XChaCha20 key
   });
 }
 
@@ -178,26 +194,83 @@ export function wrapForPassphrase(
   contentKey: Uint8Array,
   passphrase: string,
   label = 'passphrase',
+  params: Argon2idParams = ARGON2ID_PARAMS,
 ): WrappedKey {
   if (passphrase.length === 0) {
     throw new EmptyPassphrase('M-16: a passphrase wrap made with an empty passphrase protects nothing');
   }
+  assertConformingProfile(params);
   const salt = randomBytes(SALT_BYTES);
-  const kek = deriveKeyFromPassphrase(passphrase, salt);
+  const kek = deriveKeyFromPassphrase(passphrase, salt, params);
   const { nonce, ciphertext } = wrapWith(kek, contentKey);
   return {
     kind: 'passphrase',
     label,
     nonce,
     ciphertext,
-    kdf: {
-      algo: 'argon2id',
-      salt: toHex(salt),
-      m: ARGON2ID_PARAMS.m,
-      t: ARGON2ID_PARAMS.t,
-      p: ARGON2ID_PARAMS.p,
-    },
+    kdf: { algo: 'argon2id', salt: toHex(salt), m: params.m, t: params.t, p: params.p },
   };
+}
+
+/**
+ * §9.3's floor, enforced where a wrap is MADE.
+ *
+ * The ceilings elsewhere in this file refuse a hostile keyset; this refuses our own code writing
+ * a weak one. It is deliberately not applied on the read path: a wrap already made below the
+ * floor protects a key that is already wrapped, and refusing to open it would strand the vault
+ * rather than the attacker. Weakening on write is preventable; weakening already done is not
+ * undone by locking the owner out.
+ */
+export function assertConformingProfile(params: Argon2idParams): void {
+  const floor = ARGON2ID_CONSTRAINED;
+  // TWO conditions, and not one per axis. The desktop profile has t = 2 against the constrained
+  // profile's t = 3, so a per-axis floor would reject the very point §9.3 recommends — the
+  // parameters are one analysed value each, not three independent dials, which is the whole
+  // reason the profiles are named rather than assembled.
+  //
+  // Total work is the first condition because it is what a guess costs an attacker. Memory is the
+  // second and separate one because it is the only parameter that cuts their PARALLELISM: without
+  // it, a profile could buy its way to the work floor with iterations alone and be far weaker
+  // against the hardware that actually does this.
+  if (params.m < floor.m) {
+    throw new Error(`§9.3: m = ${params.m} KiB is below the floor of ${floor.m} KiB`);
+  }
+  const work = params.m * params.t * params.p;
+  const floorWork = floor.m * floor.t * floor.p;
+  if (work < floorWork) {
+    throw new Error(`§9.3: m·t·p = ${work} is below the floor of ${floorWork}`);
+  }
+}
+
+/**
+ * Re-wrap a keyset's passphrase slots at `params`, keeping the same content key.
+ *
+ * §9.3 says an implementation MAY raise `m` or `t`. Until this existed that permission was
+ * empty: a wrap is opened with its OWN stored parameters, so the value a vault was created at was
+ * the value for its whole life, and "MAY raise" described something no code could do. Every
+ * device wrap is carried through untouched — the content key does not change, so they still open.
+ *
+ * Deliberately not automatic on open. Rewriting key material is not a side effect a caller should
+ * discover afterwards, and an open that silently costs six seconds more than the last one is a
+ * bug report. `kdfProfileOf` reports; this acts.
+ */
+export function rewrapPassphrase(
+  keyset: ContentKeySet,
+  passphrase: string,
+  params: Argon2idParams = ARGON2ID_PARAMS,
+): ContentKeySet {
+  const contentKey = unwrapWithPassphrase(keyset, passphrase);
+  const wraps = keyset.wraps.map((w) =>
+    w.kind === 'passphrase' ? wrapForPassphrase(contentKey, passphrase, w.label, params) : w,
+  );
+  return sealContentKey(contentKey, wraps);
+}
+
+/** The weakest passphrase wrap in a keyset, by total work. Null when there is none. */
+export function kdfProfileOf(keyset: ContentKeySet): { m: number; t: number; p: number } | null {
+  const kdfs = keyset.wraps.flatMap((w) => (w.kind === 'passphrase' && w.kdf ? [w.kdf] : []));
+  if (kdfs.length === 0) return null;
+  return kdfs.reduce((weakest, k) => (k.m * k.t * k.p < weakest.m * weakest.t * weakest.p ? k : weakest));
 }
 
 export function wrapForDevice(
@@ -325,14 +398,28 @@ export interface SealedBlob {
   ciphertext: string;
 }
 
-export function encryptContent(contentKey: Uint8Array, plaintext: Uint8Array): SealedBlob {
+/**
+ * `aad` is authenticated but NOT encrypted and NOT stored — the caller recomputes it from the
+ * context the ciphertext was found in. That is what makes it a binding rather than a label: a
+ * value carried alongside the ciphertext would travel with it, and an attacker relocating the
+ * record would relocate its AAD too.
+ */
+export function encryptContent(
+  contentKey: Uint8Array,
+  plaintext: Uint8Array,
+  aad?: Uint8Array,
+): SealedBlob {
   const nonce = randomBytes(XCHACHA_NONCE_BYTES);
   return {
     nonce: toHex(nonce),
-    ciphertext: toHex(xchacha20poly1305(contentKey, nonce).encrypt(plaintext)),
+    ciphertext: toHex(xchacha20poly1305(contentKey, nonce, aad).encrypt(plaintext)),
   };
 }
 
-export function decryptContent(contentKey: Uint8Array, blob: SealedBlob): Uint8Array {
-  return xchacha20poly1305(contentKey, fromHex(blob.nonce)).decrypt(fromHex(blob.ciphertext));
+export function decryptContent(
+  contentKey: Uint8Array,
+  blob: SealedBlob,
+  aad?: Uint8Array,
+): Uint8Array {
+  return xchacha20poly1305(contentKey, fromHex(blob.nonce), aad).decrypt(fromHex(blob.ciphertext));
 }

@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ed25519, edwardsToMontgomeryPub } from '@noble/curves/ed25519';
 import { randomBytes } from '@noble/hashes/utils';
+
 import {
+  ARGON2ID_CONSTRAINED,
   DEVICE_KEY_MIN_BYTES,
   UnsealableRecipient,
   WeakDeviceKey,
@@ -16,6 +18,16 @@ import {
   wrapForPassphrase,
   sealContentKey,
 } from '../src/index.js';
+
+/**
+ * Every wrap in this file at the §9.3 constrained-device profile. The desktop default is
+ * m = 1 GiB — right for a real vault, and minutes of Argon2id across a file that wraps a key
+ * a few dozen times. Nothing here is testing the profile; the cases that do call
+ * `wrapForPassphrase` directly.
+ */
+const wrapAtFloor = (key: Uint8Array, passphrase: string, label?: string) =>
+  wrapForPassphrase(key, passphrase, label, ARGON2ID_CONSTRAINED);
+
 
 /**
  * The findings from `docs/crypto-review-packet.md`, as tests.
@@ -100,7 +112,7 @@ describe('F-5: a device key is stretched and checked, not used as an AEAD key', 
     const contentKey = generateContentKey();
     const deviceKey = toHex(randomBytes(32));
     const keyset = sealContentKey(contentKey, [
-      wrapForPassphrase(contentKey, 'correct horse battery staple'),
+      wrapAtFloor(contentKey, 'correct horse battery staple'),
       wrapForDevice(contentKey, deviceKey, 'laptop'),
     ]);
     expect(toHex(unwrapWithDevice(keyset, deviceKey))).toBe(toHex(contentKey));
@@ -113,7 +125,7 @@ describe('F-5: a device key is stretched and checked, not used as an AEAD key', 
     const deviceKey = toHex(randomBytes(32));
     const wrap = wrapForDevice(contentKey, deviceKey, 'laptop');
     const keyset = sealContentKey(contentKey, [
-      wrapForPassphrase(contentKey, 'pass'),
+      wrapAtFloor(contentKey, 'pass'),
       wrap,
     ]);
     expect(() => unwrapWithDevice(keyset, deviceKey)).not.toThrow();

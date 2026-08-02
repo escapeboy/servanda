@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import type { DerivedPersona } from '@servanda/crypto';
 import { ServandaNode } from '@servanda/node';
 import { PROTOCOL_VERSION, InboxRecord } from '@servanda/types';
@@ -113,7 +113,7 @@ function makePeer(
 ): Peer {
   const derived = persona(index);
   const dir = join(root, `${label}-vault`);
-  const vault = Vault.create({ dir, passphrase: TEST_PASSPHRASE, now: clock });
+  const vault = Vault.create({ dir, passphrase: TEST_PASSPHRASE, now: clock, kdf: ARGON2ID_CONSTRAINED });
   const record: PersonaRecord = {
     persona_id: derived.personaId,
     persona_index: index,
@@ -187,7 +187,7 @@ export function makeSolo(index = 0, opts: { now?: Date; budget?: ProposalBudget 
   const derived = persona(index);
   const dir = mkdtempSync(join(tmpdir(), 'servanda-fed-solo-'));
   const clock = () => opts.now ?? new Date('2026-07-25T09:00:00.000Z');
-  const vault = Vault.create({ dir, passphrase: TEST_PASSPHRASE, now: clock });
+  const vault = Vault.create({ dir, passphrase: TEST_PASSPHRASE, now: clock, kdf: ARGON2ID_CONSTRAINED });
   vault.putPersona({
     persona_id: derived.personaId,
     persona_index: index,

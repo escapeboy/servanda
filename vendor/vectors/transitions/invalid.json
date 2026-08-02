@@ -6,6 +6,141 @@
   "description": "Assertion sequences a conforming node MUST reject. §4.3: \"Any assertion violating this table is invalid and MUST be discarded.\" These cases are the operative definition of M-14 — a verifier that accepts any of them is non-conforming.",
   "cases": [
     {
+      "name": "collective-edge-with-neither-children-nor-coordinator",
+      "description": "§4.7 + M-9 + M-8: neither covering children nor a named coordinator, so the edge is unverifiable and a node MUST NOT auto-escalate on it. Note what is and is not being pinned: the ASSERTIONS are perfectly legal and are accepted, and the edge reaches `open` normally. Escalation is a local decision no vector can watch — what a vector can pin is the flag the decision is gated on, and a verifier that never computes it will report false here and fail. This case is in the invalid set because the EDGE is what is at fault, not any assertion in it.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "012071cacc49214b9a454b5f21702d1d40d144a16be8af941fece283c465a06e",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:12:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "fulfillment": {
+          "policy": "all",
+          "children": []
+        },
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "012071cacc49214b9a454b5f21702d1d40d144a16be8af941fece283c465a06e",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "52a8c06386d4707b73f88c61ff0ab8627f56599b617be6427edf44476ea34d9cffd446f20a3a08d92805a134c4855d24f6ba65a51a789e5b2a7a79e46b052c0b"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "012071cacc49214b9a454b5f21702d1d40d144a16be8af941fece283c465a06e",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "5f4dd1c550fa637f51f9cc1af2f437dc0755c4610edcb1047b2afa4bcc32d982cc19b3927f62cb0ccfcd78704ec30415b6d9374b313afff312920adb0117bf09"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "012071cacc49214b9a454b5f21702d1d40d144a16be8af941fece283c465a06e",
+          "state": "released",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "27371bd6b0f938c883e4c0114ec13820d5f64f859c50044a2e2303a1175e08bfad6a37389a74b07c06fda0a641ae1decd1ffe0710c9341248e34264b8cda0a0d"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 2,
+          "accepted": false,
+          "rejection_reason": "wrong-signer-for-transition"
+        }
+      ],
+      "expected_final_state": "open",
+      "expected_unverifiable": true
+    },
+    {
+      "name": "collective-edge-with-k-greater-than-its-children",
+      "description": "§4.7 `k-of-n`: k = 3 over two children can never be satisfied, so the decomposition does not cover fulfillment and the edge is unverifiable (M-9). A verifier that checked only for a non-empty `children` list passes every other collective case and fails this one, which is the reason it is here.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "9fe90c610e53fa7ed242a710f4c4ab99d4e895f252c73b037b77aa4b08cbf107",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:13:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "fulfillment": {
+          "policy": "k-of-n",
+          "k": 3,
+          "children": [
+            "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+            "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2"
+          ]
+        },
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "9fe90c610e53fa7ed242a710f4c4ab99d4e895f252c73b037b77aa4b08cbf107",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "c43bf8c4fc3a578d5aed4f2643a675a5f6573cac6933fb0e04cd34c71a234097860cff5293cbb87230887f5ad528539ec98b5d4d8097c0c6b24a4c74e2d1a70a"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "9fe90c610e53fa7ed242a710f4c4ab99d4e895f252c73b037b77aa4b08cbf107",
+          "state": "released",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "99e369739d00bfec2e098a3708d72530cd1115a6b7424fc13fa8014a9fc4c570860e97b784666542eac06622f2c42420df1697c7be7bb02b6e52c8d5f8f8260f"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": false,
+          "rejection_reason": "illegal-source-state"
+        }
+      ],
+      "expected_final_state": "proposed",
+      "expected_unverifiable": true
+    },
+    {
       "name": "edge-id-does-not-bind-its-body",
       "description": "§4.1: \"A node MUST bind an `edge_id` to the first edge body it accepts for that identifier.\" The identifier IS the digest of four of the body’s members, so an edge whose `edge_id` is not that digest is not an edge — it is a chain filed under a name its sender chose. Because an assertion chain is keyed by `edge_id`, a stranger who proposes a perfectly self-consistent edge under somebody else’s identifier gets their assertion appended to somebody else’s chain; the transition table will refuse it on every later read, but it is in the chain, so §6.4 — whose whole guarantee is that both sides see the same chain — can never converge on that edge again. The whole edge is refused, so every assertion in the case is rejected, not merely the offending one: there is nothing for an assertion to be valid ABOUT. This vector exists because nothing in the suite recomputed an `edge_id`, which is how the rule went unimplemented in two codebases at once.",
       "edge": {
@@ -56,7 +191,8 @@
           "rejection_reason": "edge-id-does-not-bind-body"
         }
       ],
-      "expected_final_state": "none"
+      "expected_final_state": "none",
+      "expected_unverifiable": false
     },
     {
       "name": "expired-from-pending-acceptance",
@@ -139,7 +275,8 @@
           "rejection_reason": "illegal-source-state"
         }
       ],
-      "expected_final_state": "pending-acceptance"
+      "expected_final_state": "pending-acceptance",
+      "expected_unverifiable": false
     },
     {
       "name": "released-from-pending-acceptance",
@@ -222,7 +359,8 @@
           "rejection_reason": "illegal-source-state"
         }
       ],
-      "expected_final_state": "pending-acceptance"
+      "expected_final_state": "pending-acceptance",
+      "expected_unverifiable": false
     },
     {
       "name": "superseded-from-pending-acceptance",
@@ -305,7 +443,8 @@
           "rejection_reason": "illegal-source-state"
         }
       ],
-      "expected_final_state": "pending-acceptance"
+      "expected_final_state": "pending-acceptance",
+      "expected_unverifiable": false
     },
     {
       "name": "owner-backdates-to-manufacture-an-elapsed-acceptance-window",
@@ -388,7 +527,8 @@
           "rejection_reason": "asserted-at-before-signers-previous"
         }
       ],
-      "expected_final_state": "pending-acceptance"
+      "expected_final_state": "pending-acceptance",
+      "expected_unverifiable": false
     },
     {
       "name": "counterparty-backdates-a-dispute",
@@ -471,7 +611,8 @@
           "rejection_reason": "asserted-at-before-signers-previous"
         }
       ],
-      "expected_final_state": "pending-acceptance"
+      "expected_final_state": "pending-acceptance",
+      "expected_unverifiable": false
     },
     {
       "name": "proposed-by-owed-to",
@@ -509,7 +650,8 @@
           "rejection_reason": "wrong-signer-for-transition"
         }
       ],
-      "expected_final_state": "none"
+      "expected_final_state": "none",
+      "expected_unverifiable": false
     },
     {
       "name": "owner-self-confirms",
@@ -562,7 +704,8 @@
           "rejection_reason": "wrong-signer-for-transition"
         }
       ],
-      "expected_final_state": "proposed"
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     },
     {
       "name": "confirmed-by-third-party",
@@ -615,7 +758,8 @@
           "rejection_reason": "signer-not-a-party"
         }
       ],
-      "expected_final_state": "proposed"
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     },
     {
       "name": "closed-without-confirmation",
@@ -668,7 +812,8 @@
           "rejection_reason": "illegal-source-state"
         }
       ],
-      "expected_final_state": "proposed"
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     },
     {
       "name": "on-evidence-closed-by-owed-to",
@@ -736,7 +881,8 @@
           "rejection_reason": "wrong-signer-for-transition"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "closed-without-evidence-hash",
@@ -804,7 +950,8 @@
           "rejection_reason": "evidence-hash-required-for-owner-closure"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "released-by-owner",
@@ -872,7 +1019,8 @@
           "rejection_reason": "wrong-signer-for-transition"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "expired-with-null-due",
@@ -940,7 +1088,8 @@
           "rejection_reason": "due-is-null"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "expired-before-due",
@@ -1008,7 +1157,8 @@
           "rejection_reason": "expiry-before-due"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "dispute-expiry-before-the-window-elapsed",
@@ -1106,7 +1256,8 @@
           "rejection_reason": "dispute-window-not-elapsed"
         }
       ],
-      "expected_final_state": "disputed"
+      "expected_final_state": "disputed",
+      "expected_unverifiable": false
     },
     {
       "name": "dispute-expiry-by-a-non-party",
@@ -1204,7 +1355,8 @@
           "rejection_reason": "signer-not-a-party"
         }
       ],
-      "expected_final_state": "disputed"
+      "expected_final_state": "disputed",
+      "expected_unverifiable": false
     },
     {
       "name": "disputed-without-evidence",
@@ -1272,7 +1424,8 @@
           "rejection_reason": "evidence-hash-required"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "tacit-close-before-window-elapsed",
@@ -1355,7 +1508,8 @@
           "rejection_reason": "acceptance-window-not-elapsed"
         }
       ],
-      "expected_final_state": "pending-acceptance"
+      "expected_final_state": "pending-acceptance",
+      "expected_unverifiable": false
     },
     {
       "name": "forged-signature",
@@ -1408,7 +1562,8 @@
           "rejection_reason": "invalid-signature"
         }
       ],
-      "expected_final_state": "proposed"
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     },
     {
       "name": "signature-attributed-to-other-party",
@@ -1461,7 +1616,8 @@
           "rejection_reason": "invalid-signature"
         }
       ],
-      "expected_final_state": "proposed"
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     },
     {
       "name": "explicit-open-assertion",
@@ -1529,7 +1685,8 @@
           "rejection_reason": "implicit-transition-not-assertable"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "replayed-confirmation",
@@ -1597,7 +1754,8 @@
           "rejection_reason": "illegal-source-state"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "assertion-after-terminal-state",
@@ -1680,7 +1838,8 @@
           "rejection_reason": "terminal-state-reached"
         }
       ],
-      "expected_final_state": "released"
+      "expected_final_state": "released",
+      "expected_unverifiable": false
     },
     {
       "name": "edge-id-mismatch",
@@ -1733,7 +1892,8 @@
           "rejection_reason": "edge-id-mismatch"
         }
       ],
-      "expected_final_state": "proposed"
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     },
     {
       "name": "superseded-by-third-party",
@@ -1801,7 +1961,8 @@
           "rejection_reason": "signer-not-a-party"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "supersession-double-signed-by-one-party",
@@ -1884,7 +2045,8 @@
           "rejection_reason": "duplicate-assertion-by-same-party"
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "on-acceptance-edge-with-null-window",
@@ -1922,7 +2084,8 @@
           "rejection_reason": "malformed-edge-acceptance-window"
         }
       ],
-      "expected_final_state": "none"
+      "expected_final_state": "none",
+      "expected_unverifiable": false
     },
     {
       "name": "on-evidence-edge-with-non-null-window",
@@ -1960,7 +2123,8 @@
           "rejection_reason": "malformed-edge-acceptance-window"
         }
       ],
-      "expected_final_state": "none"
+      "expected_final_state": "none",
+      "expected_unverifiable": false
     }
   ]
 }

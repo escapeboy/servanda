@@ -23,6 +23,8 @@ interface VectorCase {
   assertions: unknown[];
   expected_outcomes: { index: number; accepted: boolean; rejection_reason: string | null }[];
   expected_final_state: string;
+  /** §4.7 / M-8 / M-9 — see the case block at the bottom of this file. */
+  expected_unverifiable: boolean;
 }
 
 function load(file: string): VectorCase[] {
@@ -44,9 +46,9 @@ function run(c: VectorCase) {
   return verifyAssertionChain(edge, assertions);
 }
 
-describe('§4.3 transition table — valid chains (10 vectors)', () => {
+describe('§4.3 transition table — valid chains (12 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(validCases).toHaveLength(10);
+    expect(validCases).toHaveLength(12);
   });
 
   for (const c of validCases) {
@@ -61,9 +63,9 @@ describe('§4.3 transition table — valid chains (10 vectors)', () => {
   }
 });
 
-describe('M-14: assertions violating the transition table are discarded (29 vectors)', () => {
+describe('M-14: assertions violating the transition table are discarded (31 vectors)', () => {
   it('has the expected number of cases', () => {
-    expect(invalidCases).toHaveLength(29);
+    expect(invalidCases).toHaveLength(31);
   });
 
   for (const c of invalidCases) {
@@ -83,6 +85,35 @@ describe('M-14: assertions violating the transition table are discarded (29 vect
     for (const c of invalidCases) {
       expect(run(c).outcomes.some((o) => !o.accepted)).toBe(true);
     }
+  });
+
+  /**
+   * §4.7 / M-8 / M-9, and the reason they could be covered at all.
+   *
+   * §8 counted both as MUSTs with no vector, and for M-8 the reason looked structural: "MUST NOT
+   * auto-escalate" is about a decision a node makes locally, and no vector watches a decision.
+   * But the decision is GATED on a value the verifier computes, and a value can be pinned. So
+   * what these cases require is not that a node declines to escalate — it is that a node knows
+   * it must not, which is the half that can be got wrong silently.
+   *
+   * Asserted over every case rather than only the collective ones: a verifier that never computes
+   * the flag reports `false` everywhere and would pass a check that only looked at the two cases
+   * expecting `true`.
+   */
+  it('§4.7: every case reports the verifiability the suite states', () => {
+    for (const c of [...validCases, ...invalidCases]) {
+      expect(run(c).unverifiable, c.name).toBe(c.expected_unverifiable);
+    }
+  });
+
+  it('and the suite contains cases on both sides of it', () => {
+    const marked = [...validCases, ...invalidCases].filter((c) => c.expected_unverifiable);
+    // Named, so that a regenerated suite which quietly dropped the collective family fails here
+    // rather than passing an assertion over an empty set.
+    expect(marked.map((c) => c.name).sort()).toEqual([
+      'collective-edge-with-k-greater-than-its-children',
+      'collective-edge-with-neither-children-nor-coordinator',
+    ]);
   });
 
   it('covers every rejection reason the vectors exercise', () => {

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { readHead } from '../src/sandbox/run.js';
-import { derivePersona, mnemonicToSeed } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, mnemonicToSeed } from '@servanda/crypto';
 import { Vault } from '@servanda/vault';
 import {
   applyOutcome,
@@ -205,7 +205,7 @@ describe('trust store — history persisted in the vault, per persona', () => {
     dirs.push(dir);
     const seed = mnemonicToSeed(MNEMONIC);
     const me = derivePersona(seed, 0);
-    const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+    const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
     vault.putPersona({
       persona_id: me.personaId,
       persona_index: 0,

@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { derivePersona, mnemonicToSeed } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, mnemonicToSeed } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Attestation, type DomainAnchor, type Revocation } from '@servanda/types';
 import { Vault, VaultError, type PersonaRecord } from '../src/index.js';
 
@@ -57,7 +57,7 @@ function newVault(): { dir: string; vault: Vault } {
   const parent = mkdtempSync(join(tmpdir(), 'servanda-scope-test-'));
   dirs.push(parent);
   const dir = join(parent, 'vault');
-  const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+  const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
   vault.putPersona(personaRecord(mine, 0, 'me'));
   vault.putPersona(personaRecord(theirs, 1, 'them'));
   return { dir, vault };
@@ -141,7 +141,7 @@ describe('vault: creation does not adopt a repository it finds', () => {
     execFileSync('git', ['config', 'user.email', 'human@example.com'], { cwd: host });
     writeFileSync(join(host, 'work-in-progress.txt'), 'uncommitted work');
 
-    expect(() => Vault.create({ dir: host, passphrase: PASSPHRASE })).toThrow(VaultError);
+    expect(() => Vault.create({ dir: host, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED })).toThrow(VaultError);
 
     // The damage the throw prevents, asserted rather than assumed: the owner's work is still
     // untracked and their git identity is still theirs.

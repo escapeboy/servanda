@@ -82,7 +82,7 @@ export class TrustStore {
     this.#requirePersona(persona);
     const path = recordPath(this.#dir, persona, workClass);
     if (!existsSync(path)) return emptyTrustRecord(persona, workClass, this.#now());
-    const record = TrustRecord.parse(readSealed<unknown>(path, this.#contentKey));
+    const record = TrustRecord.parse(readSealed<unknown>(this.#dir, path, this.#contentKey));
     if (record.persona !== persona || record.work_class !== workClass) {
       // A record that does not describe the pair it is filed under is not a record we can use.
       throw new TrustStoreError(
@@ -96,6 +96,7 @@ export class TrustStore {
     this.#requirePersona(record.persona);
     const parsed = TrustRecord.parse(record);
     writeSealed(
+      this.#dir,
       recordPath(this.#dir, parsed.persona, parsed.work_class),
       this.#contentKey,
       'trust_record',
@@ -114,7 +115,7 @@ export class TrustStore {
     this.#requirePersona(persona);
     const dir = trustDir(this.#dir, persona);
     return listFiles(dir)
-      .map((file) => TrustRecord.parse(readSealed<unknown>(join(dir, file), this.#contentKey)))
+      .map((file) => TrustRecord.parse(readSealed<unknown>(this.#dir, join(dir, file), this.#contentKey)))
       .sort((a, b) => (a.work_class < b.work_class ? -1 : 1));
   }
 }

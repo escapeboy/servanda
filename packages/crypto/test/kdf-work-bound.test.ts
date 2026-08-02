@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+
 import {
+  ARGON2ID_CONSTRAINED,
   ARGON2ID_PARAMS,
   MAX_PASSPHRASE_CANDIDATES,
   MAX_UNWRAP_WORK,
@@ -9,6 +11,16 @@ import {
   unwrapWithPassphrase,
   wrapForPassphrase,
 } from '../src/content-key.js';
+
+/**
+ * Every wrap in this file at the §9.3 constrained-device profile. The desktop default is
+ * m = 1 GiB — right for a real vault, and minutes of Argon2id across a file that wraps a key
+ * a few dozen times. Nothing here is testing the profile; the cases that do call
+ * `wrapForPassphrase` directly.
+ */
+const wrapAtFloor = (key: Uint8Array, passphrase: string, label?: string) =>
+  wrapForPassphrase(key, passphrase, label, ARGON2ID_CONSTRAINED);
+
 
 /**
  * `MAX_UNWRAP_MEMORY_KIB` capped `m` and nothing else, and `m` is the one parameter that
@@ -34,7 +46,7 @@ function keysetOf(wraps: ContentKeySet['wraps']): ContentKeySet {
 
 /** A wrap that opens, then re-declared with hostile parameters it was never made at. */
 function declaring(kdf: Partial<{ m: number; t: number; p: number; salt: string }>) {
-  const wrap = wrapForPassphrase(generateContentKey(), PASSPHRASE);
+  const wrap = wrapAtFloor(generateContentKey(), PASSPHRASE);
   return { ...wrap, kdf: { ...wrap.kdf!, ...kdf } };
 }
 
@@ -53,7 +65,7 @@ describe('§9.3 unwrap is bounded in total work, not only in memory', () => {
     // Every one of these declares exactly the §9.3 parameter set. None is refusable on its own,
     // which is the whole point: the attack is the length of the list. Cloned rather than derived
     // — building 200 real wraps costs the same half-minute the bound exists to refuse.
-    const one = wrapForPassphrase(generateContentKey(), PASSPHRASE);
+    const one = wrapAtFloor(generateContentKey(), PASSPHRASE);
     const many = Array.from({ length: 200 }, (_v, i) => ({
       ...one,
       label: `slot-${i}`,
@@ -63,7 +75,7 @@ describe('§9.3 unwrap is bounded in total work, not only in memory', () => {
   });
 
   it('and refuses the long list before deriving anything, not after paying for it', () => {
-    const one = wrapForPassphrase(generateContentKey(), PASSPHRASE);
+    const one = wrapAtFloor(generateContentKey(), PASSPHRASE);
     const many = Array.from({ length: MAX_PASSPHRASE_CANDIDATES + 1 }, (_v, i) => ({
       ...one,
       label: `slot-${i}`,
@@ -95,7 +107,7 @@ describe('§9.3 unwrap is bounded in total work, not only in memory', () => {
     expect(m * t * p).toBeLessThan(MAX_UNWRAP_WORK);
 
     const key = generateContentKey();
-    const wraps = [wrapForPassphrase(key, PASSPHRASE, 'primary'), wrapForPassphrase(key, PASSPHRASE, 'recovery')];
+    const wraps = [wrapAtFloor(key, PASSPHRASE, 'primary'), wrapAtFloor(key, PASSPHRASE, 'recovery')];
     expect(unwrapWithPassphrase(keysetOf(wraps), PASSPHRASE)).toEqual(key);
   });
 

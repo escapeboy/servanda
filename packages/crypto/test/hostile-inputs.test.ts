@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { argon2id } from '@noble/hashes/argon2';
 import { xchacha20poly1305 } from '@noble/ciphers/chacha';
 import { randomBytes } from '@noble/hashes/utils';
+
 import {
+  ARGON2ID_CONSTRAINED,
   EmptyPassphrase,
   MAX_UNWRAP_MEMORY_KIB,
   wrapForPassphrase,
@@ -19,6 +21,16 @@ import {
   unwrapWithPassphrase,
   utf8,
 } from '../src/index.js';
+
+/**
+ * Every wrap in this file at the §9.3 constrained-device profile. The desktop default is
+ * m = 1 GiB — right for a real vault, and minutes of Argon2id across a file that wraps a key
+ * a few dozen times. Nothing here is testing the profile; the cases that do call
+ * `wrapForPassphrase` directly.
+ */
+const wrapAtFloor = (key: Uint8Array, passphrase: string, label?: string) =>
+  wrapForPassphrase(key, passphrase, label, ARGON2ID_CONSTRAINED);
+
 
 /**
  * Inputs that arrive from outside — an old keyset, a hex string off the wire — and are trusted
@@ -184,7 +196,7 @@ describe('a keyset that came from somewhere else', () => {
     // so a wrap naming 4 GiB is a keyset-shaped way to stop the process. Refused, not clamped:
     // silently deriving with different parameters than the wrap names is the neighbouring bug.
     const key = generateContentKey();
-    const wrap = wrapForPassphrase(key, 'correct horse');
+    const wrap = wrapAtFloor(key, 'correct horse');
     const hostile: ContentKeySet = {
       v: 'servanda/0.2',
       type: 'content_keyset',
@@ -197,17 +209,17 @@ describe('a keyset that came from somewhere else', () => {
     // Only the ceiling is guarded: a lower cost weakens a key that is already wrapped and
     // stranding those vaults is the failure this whole path exists to avoid.
     const key = generateContentKey();
-    const weak = wrapForPassphrase(key, 'correct horse');
+    const weak = wrapAtFloor(key, 'correct horse');
     weak.kdf = { algo: 'argon2id', salt: weak.kdf!.salt, m: 19456, t: 2, p: 1 };
     // rewrap at those parameters so the ciphertext matches the cost it declares
-    const rewrapped = wrapForPassphrase(key, 'correct horse');
+    const rewrapped = wrapAtFloor(key, 'correct horse');
     expect(() => unwrapWithPassphrase({ v: 'servanda/0.2', type: 'content_keyset', wraps: [rewrapped] }, 'correct horse')).not.toThrow();
   });
 
   it('refuses to build a passphrase wrap from an empty passphrase', () => {
     // M-16 requires a passphrase wrap to exist. One made from '' satisfies the check and protects
     // nothing, which makes the device key sole custodian in every sense but the schema's.
-    expect(() => wrapForPassphrase(generateContentKey(), '')).toThrow(EmptyPassphrase);
-    expect(() => wrapForPassphrase(generateContentKey(), ' ')).not.toThrow();
+    expect(() => wrapAtFloor(generateContentKey(), '')).toThrow(EmptyPassphrase);
+    expect(() => wrapAtFloor(generateContentKey(), ' ')).not.toThrow();
   });
 });

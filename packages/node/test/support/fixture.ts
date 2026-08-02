@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { derivePersona, mnemonicToSeed } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, mnemonicToSeed } from '@servanda/crypto';
 import { PROTOCOL_VERSION } from '@servanda/types';
 import { Vault, type PersonaRecord } from '@servanda/vault';
 import { ServandaNode } from '../../src/node.js';
@@ -52,6 +52,7 @@ export function makeFixture(opts: FixtureOptions = {}): Fixture {
   const clock = () => now;
 
   const vault = Vault.create({
+    kdf: ARGON2ID_CONSTRAINED,
     dir,
     passphrase: TEST_PASSPHRASE,
     now: clock,

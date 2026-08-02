@@ -7,7 +7,21 @@ import type { Vault } from './vault.js';
  *
  * After the owner-configured window, the commitment PLAINTEXT is deleted and the edge plus its
  * full assertion chain are preserved. What survives is a signed, hash-only record that the
- * promise existed and how it ended; what does not survive is what it said.
+ * promise existed and how it ended.
+ *
+ * **What this does NOT do, stated because it used to claim otherwise.** This file said "what does
+ * not survive is what it said", and that was false. The vault is a git repository, so deleting a
+ * record writes a commit that removes it from the working tree while the sealed blob stays in
+ * history — under the same content key, since there is only one. `git show HEAD~1:<path>` plus the
+ * passphrase returns the exact intent string. Retention removes the record from the vault's
+ * present, not from its past.
+ *
+ * The conflict is structural rather than a bug to patch: an append-only store and a forgetting
+ * requirement are opposite properties, and no arrangement of records inside git resolves it —
+ * whatever key opens a blob must itself be somewhere git cannot keep. So the honest reading is
+ * that M-15's "SHOULD be deleted" is met against a reader of the vault, and is not met against a
+ * reader of the repository. §5.4 says which, and `deleteCommitmentPlaintext` says it again at the
+ * call site rather than trusting anyone to have read this.
  *
  * The pass only ever touches edges in a terminal state (§5.4 names closed/expired/released/
  * superseded — exactly `TERMINAL_STATES`). An open edge's plaintext is never a retention

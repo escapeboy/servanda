@@ -48,8 +48,8 @@ beforeAll(() => {
 afterAll(() => fx.cleanup());
 
 describe('M-14: assertions violating the transition table are discarded', () => {
-  it('all 29 negative vectors are rejected with the reason the suite states', () => {
-    expect(invalidCases).toHaveLength(29);
+  it('all 31 negative vectors are rejected with the reason the suite states', () => {
+    expect(invalidCases).toHaveLength(31);
     for (const c of invalidCases) {
       const result = verifyAssertionChain(
         Edge.parse(c.edge),

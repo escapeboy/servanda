@@ -1,13 +1,17 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  type Argon2idParams,
   type ContentKeySet,
   type WrappedKey,
+  ARGON2ID_PARAMS,
   assertM16,
   commitmentHash,
   edgeIdBindsBody,
   generateContentKey,
   hashCanonical,
+  kdfProfileOf,
+  rewrapPassphrase,
   sealContentKey,
   unwrapWithDevice,
   unwrapWithPassphrase,
@@ -87,6 +91,14 @@ export interface VaultCreateOptions {
   author?: VaultAuthor;
   retentionDays?: number;
   now?: () => Date;
+  /**
+   * §9.3 profile for the passphrase wrap. Defaults to the desktop point (m = 1 GiB), which costs
+   * seconds per open — deliberately, since memory is the only parameter that cuts an attacker's
+   * parallelism. A constrained device passes `ARGON2ID_CONSTRAINED`, and so does every test in
+   * this repository: a suite that stood up hundreds of vaults at the desktop profile would take
+   * hours and teach nothing the constrained one does not.
+   */
+  kdf?: Argon2idParams;
 }
 
 export interface VaultOpenOptions {
@@ -136,7 +148,7 @@ export class Vault {
 
     const clock = opts.now ?? (() => new Date());
     const contentKey = generateContentKey();
-    const wraps: WrappedKey[] = [wrapForPassphrase(contentKey, opts.passphrase)];
+    const wraps: WrappedKey[] = [wrapForPassphrase(contentKey, opts.passphrase, 'passphrase', opts.kdf ?? ARGON2ID_PARAMS)];
     for (const d of opts.deviceKeys ?? []) wraps.push(wrapForDevice(contentKey, d.keyHex, d.label));
     // sealContentKey enforces M-16; it is not bypassed and not re-implemented here.
     const keyset = sealContentKey(contentKey, wraps);
@@ -181,6 +193,34 @@ export class Vault {
     return this.clock().toISOString();
   }
 
+  /**
+   * The §9.3 profile this vault's weakest passphrase wrap was made at, and whether it is behind
+   * the current default.
+   *
+   * Reported rather than acted on. §9.3's "MAY raise" is the owner's to exercise: rewriting key
+   * material is not something a caller should discover after the fact, and an open that silently
+   * costs six seconds more than the last one is a bug report, not an upgrade.
+   */
+  kdfProfile(): { m: number; t: number; p: number; behindDefault: boolean } | null {
+    const kdf = kdfProfileOf(this.keyset());
+    if (!kdf) return null;
+    const current = ARGON2ID_PARAMS;
+    return { ...kdf, behindDefault: kdf.m * kdf.t * kdf.p < current.m * current.t * current.p };
+  }
+
+  /**
+   * Re-wrap the passphrase slots at `params`, keeping the content key and every device wrap.
+   *
+   * This is what makes §9.3's "MAY raise" a permission rather than a sentence: a wrap is opened
+   * with its own stored parameters, so before this existed the value a vault was created at was
+   * the value for its whole life.
+   */
+  upgradeKdf(passphrase: string, params: Argon2idParams = ARGON2ID_PARAMS): void {
+    const upgraded = rewrapPassphrase(this.keyset(), passphrase, params);
+    writeJson(join(this.dir, 'keyset.json'), upgraded);
+    this.commit(`chore(vault): re-wrap passphrase at m=${params.m} t=${params.t} p=${params.p}`);
+  }
+
   /** Exposed so the M-16 test can assert on the custody arrangement of a real vault. */
   keyset(): ContentKeySet {
     return readJson<ContentKeySet>(join(this.dir, 'keyset.json'));
@@ -219,13 +259,13 @@ export class Vault {
 
   putPersona(record: PersonaRecord): void {
     const dir = this.personaDir(record.persona_id);
-    writeSealed(join(dir, 'persona.json'), this.contentKey, 'persona', record);
+    writeSealed(this.dir, join(dir, 'persona.json'), this.contentKey, 'persona', record);
     this.commit(`feat(persona): add ${record.persona_id.slice(0, 12)}`);
   }
 
   getPersona(persona: string): PersonaRecord {
     const dir = this.requirePersona(persona);
-    return readSealed<PersonaRecord>(join(dir, 'persona.json'), this.contentKey);
+    return readSealed<PersonaRecord>(this.dir, join(dir, 'persona.json'), this.contentKey);
   }
 
   listPersonaIds(): string[] {
@@ -240,7 +280,7 @@ export class Vault {
     const dir = this.requirePersona(persona);
     assertHexId(commitment.owner, 'commitment.owner');
     const hash = commitmentKey(commitment);
-    writeSealed(join(dir, 'commitments', `${hash}.json`), this.contentKey, 'commitment', commitment);
+    writeSealed(this.dir, join(dir, 'commitments', `${hash}.json`), this.contentKey, 'commitment', commitment);
     this.commit(`feat(commitment): record ${hash.slice(0, 12)}`);
   }
 
@@ -250,20 +290,26 @@ export class Vault {
     assertHexId(commitmentHash, 'commitment_hash');
     const path = join(dir, 'commitments', `${commitmentHash}.json`);
     if (!existsSync(path)) return null;
-    return readSealed<Commitment>(path, this.contentKey);
+    return readSealed<Commitment>(this.dir, path, this.contentKey);
   }
 
   listCommitments(persona: string): { hash: string; commitment: Commitment }[] {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'commitments')).map((f) => ({
       hash: f.replace(/\.json$/, ''),
-      commitment: readSealed<Commitment>(join(dir, 'commitments', f), this.contentKey),
+      commitment: readSealed<Commitment>(this.dir, join(dir, 'commitments', f), this.contentKey),
     }));
   }
 
   /**
    * M-15: delete the plaintext, keep the proof. Returns true when a record was removed.
    * The edge and its assertion chain are untouched by construction — they live elsewhere.
+   *
+   * **Removed from the working tree, not from history.** This vault is a git repository, so the
+   * commit below records the deletion and the sealed blob remains reachable at the parent commit,
+   * under the same content key it was always sealed with. Anyone holding the passphrase and the
+   * repository can still read it. See the note in `retention.ts` for why that is structural
+   * rather than an oversight, and §5.4 for what M-15 therefore does and does not promise.
    */
   deleteCommitmentPlaintext(persona: string, commitmentHash: string): boolean {
     const dir = this.requirePersona(persona);
@@ -278,7 +324,7 @@ export class Vault {
   putExpectation(persona: string, id: string, expectation: Expectation): void {
     const dir = this.requirePersona(persona);
     assertHexId(id, 'expectation_id');
-    writeSealed(join(dir, 'expectations', `${id}.json`), this.contentKey, 'expectation', expectation);
+    writeSealed(this.dir, join(dir, 'expectations', `${id}.json`), this.contentKey, 'expectation', expectation);
     this.commit(`feat(expectation): record ${id.slice(0, 12)}`);
   }
 
@@ -287,14 +333,14 @@ export class Vault {
     assertHexId(id, 'expectation_id');
     const path = join(dir, 'expectations', `${id}.json`);
     if (!existsSync(path)) return null;
-    return readSealed<Expectation>(path, this.contentKey);
+    return readSealed<Expectation>(this.dir, path, this.contentKey);
   }
 
   listExpectations(persona: string): { id: string; expectation: Expectation }[] {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'expectations')).map((f) => ({
       id: f.replace(/\.json$/, ''),
-      expectation: readSealed<Expectation>(join(dir, 'expectations', f), this.contentKey),
+      expectation: readSealed<Expectation>(this.dir, join(dir, 'expectations', f), this.contentKey),
     }));
   }
 
@@ -333,7 +379,7 @@ export class Vault {
       return;
     }
     const dir = this.edgeDir(persona, edge.edge_id);
-    writeSealed(join(dir, 'edge.json'), this.contentKey, 'edge', edge);
+    writeSealed(this.dir, join(dir, 'edge.json'), this.contentKey, 'edge', edge);
     this.commit(`feat(edge): ${edge.edge_id.slice(0, 12)}`);
   }
 
@@ -346,7 +392,7 @@ export class Vault {
   getEdge(persona: string, edgeId: string): Edge | null {
     const path = join(this.edgeDir(persona, edgeId), 'edge.json');
     if (!existsSync(path)) return null;
-    return readSealed<Edge>(path, this.contentKey);
+    return readSealed<Edge>(this.dir, path, this.contentKey);
   }
 
   listEdgeIds(persona: string): string[] {
@@ -367,7 +413,7 @@ export class Vault {
     // between them — both pick `000N.json` and the later write replaces a signed assertion with
     // another one. The survivor is well-formed, so an append-only chain quietly loses a link.
     try {
-      writeSealedExclusive(path, this.contentKey, 'assertion', assertion);
+      writeSealedExclusive(this.dir, path, this.contentKey, 'assertion', assertion);
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
         throw new VaultError(`assertion chain is append-only; ${path} already exists`);
@@ -380,7 +426,7 @@ export class Vault {
 
   getAssertions(persona: string, edgeId: string): Assertion[] {
     const dir = join(this.edgeDir(persona, edgeId), 'assertions');
-    return listFiles(dir).map((f) => readSealed<Assertion>(join(dir, f), this.contentKey));
+    return listFiles(dir).map((f) => readSealed<Assertion>(this.dir, join(dir, f), this.contentKey));
   }
 
   // ── edge-local bookkeeping ──────────────────────────────────────────────────────────────
@@ -388,12 +434,12 @@ export class Vault {
   getEdgeMeta(persona: string, edgeId: string): EdgeMeta {
     const path = join(this.edgeDir(persona, edgeId), 'meta.json');
     if (!existsSync(path)) return { edge_id: edgeId, dismissed: false, plaintext_deleted_at: null };
-    return readSealed<EdgeMeta>(path, this.contentKey);
+    return readSealed<EdgeMeta>(this.dir, path, this.contentKey);
   }
 
   putEdgeMeta(persona: string, meta: EdgeMeta): void {
     const path = join(this.edgeDir(persona, meta.edge_id), 'meta.json');
-    writeSealed(path, this.contentKey, 'edge_meta', meta);
+    writeSealed(this.dir, path, this.contentKey, 'edge_meta', meta);
     this.commit(`chore(edge): meta ${meta.edge_id.slice(0, 12)}`);
   }
 
@@ -411,7 +457,7 @@ export class Vault {
       throw new ScopeViolation('§5.2: only a party to the edge may publish it');
     }
     const seq = listFiles(join(dir, 'publish')).length;
-    writeSealed(
+    writeSealed(this.dir, 
       join(dir, 'publish', `${String(seq).padStart(4, '0')}.json`),
       this.contentKey,
       'publish',
@@ -423,7 +469,7 @@ export class Vault {
   listPublishRecords(persona: string): Publish[] {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'publish')).map((f) =>
-      readSealed<Publish>(join(dir, 'publish', f), this.contentKey),
+      readSealed<Publish>(this.dir, join(dir, 'publish', f), this.contentKey),
     );
   }
 
@@ -434,7 +480,7 @@ export class Vault {
     // The id being written is a path segment exactly as the one being read is (`getAttestation`),
     // and it arrives from the wire. Checked on both sides or the scoping is one-way.
     assertHexId(attestation.subject, 'attestation.subject');
-    writeSealed(
+    writeSealed(this.dir, 
       join(dir, 'attestations', `${attestation.subject}.json`),
       this.contentKey,
       'attestation',
@@ -448,13 +494,13 @@ export class Vault {
     assertHexId(subject, 'subject');
     const path = join(dir, 'attestations', `${subject}.json`);
     if (!existsSync(path)) return null;
-    return readSealed<Attestation>(path, this.contentKey);
+    return readSealed<Attestation>(this.dir, path, this.contentKey);
   }
 
   putRevocation(persona: string, revocation: Revocation): void {
     const dir = this.requirePersona(persona);
     assertHexId(revocation.subject, 'revocation.subject');
-    writeSealed(
+    writeSealed(this.dir, 
       join(dir, 'revocations', `${revocation.subject}.json`),
       this.contentKey,
       'revocation',
@@ -468,7 +514,7 @@ export class Vault {
     assertHexId(subject, 'subject');
     const path = join(dir, 'revocations', `${subject}.json`);
     if (!existsSync(path)) return null;
-    return readSealed<Revocation>(path, this.contentKey);
+    return readSealed<Revocation>(this.dir, path, this.contentKey);
   }
 
   /**
@@ -478,7 +524,7 @@ export class Vault {
   putDomainAnchor(persona: string, anchor: DomainAnchor): void {
     const dir = this.requirePersona(persona);
     assertHexId(anchor.org_root, 'org_root');
-    writeSealed(join(dir, 'anchors', `${anchor.org_root}.json`), this.contentKey, 'anchor', anchor);
+    writeSealed(this.dir, join(dir, 'anchors', `${anchor.org_root}.json`), this.contentKey, 'anchor', anchor);
     this.commit(`feat(anchor): ${anchor.org_root.slice(0, 12)}`);
   }
 
@@ -487,7 +533,7 @@ export class Vault {
     assertHexId(orgRoot, 'org_root');
     const path = join(dir, 'anchors', `${orgRoot}.json`);
     if (!existsSync(path)) return null;
-    return readSealed<DomainAnchor>(path, this.contentKey);
+    return readSealed<DomainAnchor>(this.dir, path, this.contentKey);
   }
 
   // ── pending extraction queue (§7 confirm) ───────────────────────────────────────────────
@@ -495,7 +541,7 @@ export class Vault {
   putPending(item: PendingExtraction): void {
     const dir = this.requirePersona(item.persona);
     assertHexId(item.id, 'pending_extraction_id');
-    writeSealed(join(dir, 'pending', `${item.id}.json`), this.contentKey, 'pending', item);
+    writeSealed(this.dir, join(dir, 'pending', `${item.id}.json`), this.contentKey, 'pending', item);
     this.commit(`feat(pending): queue ${item.id.slice(0, 12)}`);
   }
 
@@ -504,13 +550,13 @@ export class Vault {
     assertHexId(id, 'pending_extraction_id');
     const path = join(dir, 'pending', `${id}.json`);
     if (!existsSync(path)) return null;
-    return readSealed<PendingExtraction>(path, this.contentKey);
+    return readSealed<PendingExtraction>(this.dir, path, this.contentKey);
   }
 
   listPending(persona: string): PendingExtraction[] {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'pending')).map((f) =>
-      readSealed<PendingExtraction>(join(dir, 'pending', f), this.contentKey),
+      readSealed<PendingExtraction>(this.dir, join(dir, 'pending', f), this.contentKey),
     );
   }
 
@@ -527,14 +573,14 @@ export class Vault {
   putOutbox(item: OutboxItem): void {
     const dir = this.requirePersona(item.persona);
     assertHexId(item.id, 'outbox id');
-    writeSealed(join(dir, 'outbox', `${item.id}.json`), this.contentKey, 'outbox', item);
+    writeSealed(this.dir, join(dir, 'outbox', `${item.id}.json`), this.contentKey, 'outbox', item);
     this.commit(`feat(outbox): queue ${item.id.slice(0, 12)}`);
   }
 
   listOutbox(persona: string): OutboxItem[] {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'outbox')).map((f) =>
-      readSealed<OutboxItem>(join(dir, 'outbox', f), this.contentKey),
+      readSealed<OutboxItem>(this.dir, join(dir, 'outbox', f), this.contentKey),
     );
   }
 

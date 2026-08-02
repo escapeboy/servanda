@@ -39,7 +39,7 @@
     },
     "protocolVersion": {
       "const": "servanda/0.2",
-      "description": "The wire version. Pre-1.0 there is no compatibility between minors; a node refuses a `v` it does not implement rather than interpreting it. Note the §0 domain tags keep their `servanda/0.1:` spelling deliberately — a tag separates identifiers, not versions."
+      "description": "The wire version. Pre-1.0 there is no compatibility between minors; a node refuses a `v` it does not implement rather than interpreting it. Note the \u00a70 domain tags keep their `servanda/0.1:` spelling deliberately \u2014 a tag separates identifiers, not versions."
     },
     "banner": {
       "type": "object",
@@ -79,7 +79,7 @@
       ]
     },
     "effectiveState": {
-      "description": "The state a node computes from an assertion chain. `confirmed` folds into `open`; `pending-acceptance` models the §4.4 window and is never an assertion's `state`.",
+      "description": "The state a node computes from an assertion chain. `confirmed` folds into `open`; `pending-acceptance` models the \u00a74.4 window and is never an assertion's `state`.",
       "enum": [
         "none",
         "proposed",
@@ -125,7 +125,7 @@
       },
       "allOf": [
         {
-          "description": "§7: where `tool` is null, `args` MUST be {}.",
+          "description": "\u00a77: where `tool` is null, `args` MUST be {}.",
           "if": {
             "properties": {
               "tool": {
@@ -172,7 +172,7 @@
     },
     "actTooling": {
       "type": "array",
-      "description": "The act -> §7 tool binding table, emitted with every node-surface file.",
+      "description": "The act -> \u00a77 tool binding table, emitted with every node-surface file.",
       "minItems": 8,
       "maxItems": 8,
       "items": {
@@ -281,6 +281,37 @@
               "type": "null"
             }
           ]
+        },
+        "fulfillment": {
+          "type": "object",
+          "description": "\u00a74.7: present only on a collective edge (owner is a group key). Its shape is what M-9 judges and what M-8 gates auto-escalation on.",
+          "properties": {
+            "policy": {
+              "enum": [
+                "all",
+                "any",
+                "k-of-n"
+              ]
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/hex64"
+              }
+            },
+            "coordinator": {
+              "$ref": "#/$defs/hex64"
+            }
+          },
+          "required": [
+            "policy",
+            "children"
+          ],
+          "additionalProperties": false
         }
       }
     },
@@ -326,7 +357,7 @@
     },
     "envelopeSansId": {
       "type": "object",
-      "description": "§2 envelope with `id` absent — `id` is never part of its own preimage.",
+      "description": "\u00a72 envelope with `id` absent \u2014 `id` is never part of its own preimage.",
       "required": [
         "v",
         "type",
@@ -407,7 +438,7 @@
           "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/hex64"
         },
         "clipped": {
-          "description": "§2: true or ABSENT. Never false — it is inside the canonical form the id hashes over.",
+          "description": "\u00a72: true or ABSENT. Never false \u2014 it is inside the canonical form the id hashes over.",
           "const": true
         }
       }

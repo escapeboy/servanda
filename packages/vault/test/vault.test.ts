@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { derivePersona, edgeId, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, edgeId, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Assertion, type Commitment, type Edge } from '@servanda/types';
 import { GIT_CONFIG, logMessages, ScopeViolation, Vault, VaultGitError, type PersonaRecord } from '../src/index.js';
 
@@ -32,7 +32,7 @@ afterEach(() => {
 function newVault(): { dir: string; vault: Vault } {
   const dir = mkdtempSync(join(tmpdir(), 'servanda-vault-test-'));
   dirs.push(dir);
-  const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+  const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
   vault.putPersona(personaRecord(p0, 0, 'me'));
   vault.putPersona(personaRecord(p1, 1, 'them'));
   return { dir, vault };
@@ -223,7 +223,7 @@ describe('vault: nothing keeps writing after a commit returns', () => {
   it('forks no background maintenance process', () => {
     const dir = mkdtempSync(join(tmpdir(), 'servanda-vault-trace-'));
     dirs.push(dir);
-    const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+    const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
     vault.putPersona(personaRecord(p0, 0, 'me'));
 
     // GIT_CONFIG is imported from the vault's own module rather than restated here. A test that

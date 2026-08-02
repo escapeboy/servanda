@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  ARGON2ID_CONSTRAINED,
+  ARGON2ID_DESKTOP,
   M16Violation,
   generateContentKey,
   sealContentKey,
@@ -44,6 +46,7 @@ describe('M-16: a device key is never sole custodian of the content key', () => 
     const dir = mkdtempSync(join(tmpdir(), 'servanda-m16-'));
     try {
       const vault = Vault.create({
+        kdf: ARGON2ID_CONSTRAINED,
         dir,
         passphrase: TEST_PASSPHRASE,
         deviceKeys: [{ label: 'laptop', keyHex: DEVICE_KEY }],
@@ -59,10 +62,30 @@ describe('M-16: a device key is never sole custodian of the content key', () => 
     }
   });
 
-  it('the passphrase wrap uses the §9.3 Argon2id parameters', () => {
+  it('a passphrase wrap records the §9.3 profile it was made at', () => {
+    // §9.3 names two points and the default is the desktop one. Both are asserted, because the
+    // parameters are stored PER WRAP and that is what makes a later raise possible at all — a
+    // wrap is opened with its own values, never with today's.
     const key = generateContentKey();
-    const wrap = wrapForPassphrase(key, 'a passphrase');
-    expect(wrap.kdf).toMatchObject({ algo: 'argon2id', m: 65536, t: 3, p: 1 });
+    expect(wrapForPassphrase(key, 'a passphrase').kdf).toMatchObject({
+      algo: 'argon2id',
+      m: ARGON2ID_DESKTOP.m,
+      t: ARGON2ID_DESKTOP.t,
+      p: ARGON2ID_DESKTOP.p,
+    });
+    expect(wrapForPassphrase(key, 'a passphrase', 'slot', ARGON2ID_CONSTRAINED).kdf).toMatchObject({
+      m: 65536,
+      t: 3,
+      p: 1,
+    });
+  });
+
+  it('refuses to make a wrap below the §9.3 floor', () => {
+    // The ceilings elsewhere refuse a hostile keyset; this refuses our own code writing a weak
+    // one. `MUST NOT lower` had been a write-path rule with nothing enforcing it on the write path.
+    expect(() =>
+      wrapForPassphrase(generateContentKey(), 'a passphrase', 'weak', { m: 8, t: 1, p: 1, dkLen: 32 }),
+    ).toThrow(/§9.3/);
   });
 
   /**
@@ -77,6 +100,7 @@ describe('M-16: a device key is never sole custodian of the content key', () => 
     const dir = mkdtempSync(join(tmpdir(), 'servanda-m16-strip-'));
     try {
       Vault.create({
+        kdf: ARGON2ID_CONSTRAINED,
         dir,
         passphrase: TEST_PASSPHRASE,
         deviceKeys: [{ label: 'laptop', keyHex: DEVICE_KEY }],

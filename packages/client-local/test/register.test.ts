@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FixtureNodeClient, loadApp, makeFixture as makeUiFixture } from '@servanda/client-web';
-import { derivePersona, generateRootMnemonic, mnemonicToSeed } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, generateRootMnemonic, mnemonicToSeed } from '@servanda/crypto';
 import { Vault } from '@servanda/vault';
 import { LocalNodeClient, openRegister } from '../src/index.js';
 
@@ -34,7 +34,7 @@ function freshVault(): Opened {
   const dir = mkdtempSync(join(tmpdir(), 'servanda-client-local-'));
   const seed = mnemonicToSeed(generateRootMnemonic());
   const p = derivePersona(seed, 0);
-  const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+  const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
   vault.putPersona({
     persona_id: p.personaId,
     persona_index: p.personaIndex,

@@ -57,7 +57,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "open"
+      "expected_final_state": "open",
+      "expected_unverifiable": false
     },
     {
       "name": "on-acceptance-explicit-accept",
@@ -140,7 +141,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "closed"
+      "expected_final_state": "closed",
+      "expected_unverifiable": false
     },
     {
       "name": "on-acceptance-tacit-expiry",
@@ -223,7 +225,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "closed"
+      "expected_final_state": "closed",
+      "expected_unverifiable": false
     },
     {
       "name": "on-evidence-owner-closes",
@@ -291,7 +294,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "closed"
+      "expected_final_state": "closed",
+      "expected_unverifiable": false
     },
     {
       "name": "released-by-owed-to",
@@ -359,7 +363,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "released"
+      "expected_final_state": "released",
+      "expected_unverifiable": false
     },
     {
       "name": "expired-after-due",
@@ -427,7 +432,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "expired"
+      "expected_final_state": "expired",
+      "expected_unverifiable": false
     },
     {
       "name": "disputed-then-expired-after-the-window",
@@ -525,7 +531,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "expired"
+      "expected_final_state": "expired",
+      "expected_unverifiable": false
     },
     {
       "name": "disputed-then-mutual-close",
@@ -638,7 +645,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "closed"
+      "expected_final_state": "closed",
+      "expected_unverifiable": false
     },
     {
       "name": "supersession-needs-both-parties",
@@ -721,7 +729,8 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "superseded"
+      "expected_final_state": "superseded",
+      "expected_unverifiable": false
     },
     {
       "name": "dispute-from-pending-acceptance",
@@ -804,7 +813,113 @@
           "rejection_reason": null
         }
       ],
-      "expected_final_state": "disputed"
+      "expected_final_state": "disputed",
+      "expected_unverifiable": false
+    },
+    {
+      "name": "collective-edge-with-covering-children",
+      "description": "§4.7 + M-9: a collective edge (owner is a group key) is verifiable when `fulfillment.children` covers it. M-8 then does not apply — there is nothing to withhold escalation from. The positive is here so that the two negatives below cannot be satisfied by a verifier that marks every collective edge unverifiable.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "b04854e1c79505bb858a64ee1442f6a5f9d9d0f7718c84dadd98ee58029440a8",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:10:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "fulfillment": {
+          "policy": "all",
+          "children": [
+            "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+            "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2"
+          ]
+        },
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "b04854e1c79505bb858a64ee1442f6a5f9d9d0f7718c84dadd98ee58029440a8",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "d249bba6459c7178dabd4908d624aeba44180bed27382039c5f29d91863b02072906f48ce6c3e1276dae3a529079f82f724747d1a8a8999664a29ae6b4634308"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "b04854e1c79505bb858a64ee1442f6a5f9d9d0f7718c84dadd98ee58029440a8",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "7bed953dfd228134491d051d8a2217274eb07bb886ce5bb2953b7f9c6fa7641817cad2b6e943f0416226fa1725ff130258ae174cc26ebba228d0e77793df2003"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        },
+        {
+          "index": 1,
+          "accepted": true,
+          "rejection_reason": null
+        }
+      ],
+      "expected_final_state": "open",
+      "expected_unverifiable": false
+    },
+    {
+      "name": "collective-edge-with-a-named-coordinator",
+      "description": "§4.7: the other way to be verifiable. A coordinator is a person who answers for the edge, so no decomposition is needed — the alternative is a group promise with nobody accountable for it, which is what M-9 exists to refuse.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "d9f49129ee53d02cb13a2e6a30a2e5d18fe297d92909f43a73d00b96a30e5fba",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:11:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "fulfillment": {
+          "policy": "any",
+          "children": [],
+          "coordinator": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a"
+        },
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "d9f49129ee53d02cb13a2e6a30a2e5d18fe297d92909f43a73d00b96a30e5fba",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "cf319a1d1d1f3a6c51c8fd7a66b8ff768578dc29207f7b124acd485803d339d9",
+          "evidence_hash": null,
+          "sig": "7ef298fae5d4a7864218b25071130138af9021d1a0822d63f0c76d6d5934a691c08cadbe4a4b334af16b74e0a3bc68364f15d15235551f38a8806d7fb8de7100"
+        }
+      ],
+      "expected_outcomes": [
+        {
+          "index": 0,
+          "accepted": true,
+          "rejection_reason": null
+        }
+      ],
+      "expected_final_state": "proposed",
+      "expected_unverifiable": false
     }
   ]
 }

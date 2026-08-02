@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { derivePersona, edgeId, mnemonicToSeed, withSignature } from '@servanda/crypto';
+import { ARGON2ID_CONSTRAINED, derivePersona, edgeId, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Assertion, type Edge } from '@servanda/types';
 import { GIT_CONFIG, Vault, type PersonaRecord } from '../src/index.js';
 
@@ -77,7 +77,7 @@ function proposed(): Assertion {
 function busyVault(): string {
   const dir = mkdtempSync(join(tmpdir(), 'servanda-log-'));
   dirs.push(dir);
-  const vault = Vault.create({ dir, passphrase: PASSPHRASE });
+  const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
   const record: PersonaRecord = {
     persona_id: p0.personaId,
     persona_index: 0,

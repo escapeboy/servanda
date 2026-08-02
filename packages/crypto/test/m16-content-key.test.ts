@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ARGON2ID_CONSTRAINED,
+  ARGON2ID_DESKTOP,
   M16Violation,
   assertM16,
   decryptContent,
@@ -17,6 +19,17 @@ import { toHex, utf8 } from '../src/hash.js';
 import { derivePersona } from '../src/slip10.js';
 import { mnemonicToSeed } from '../src/mnemonic.js';
 import { loadVectors, type DerivationVectors } from './vectors.js';
+
+/**
+ * Every wrap in this file at the §9.3 constrained-device profile. The desktop default is
+ * m = 1 GiB — right for a real vault, and minutes of Argon2id across a file that wraps a key
+ * a few dozen times. Nothing here is testing the profile; the cases that do call
+ * `wrapForPassphrase` directly.
+ */
+const wrapAtFloor = (key: Uint8Array, passphrase: string, label?: string) =>
+  wrapForPassphrase(key, passphrase, label, ARGON2ID_CONSTRAINED);
+
+
 
 /**
  * M-16 — "A device key MUST NOT be sole custodian of vault content keys."
@@ -44,7 +57,7 @@ describe('M-16 vault content-key custody', () => {
   it('accepts a keyset carrying a passphrase wrap', () => {
     const ck = generateContentKey();
     const keyset = sealContentKey(ck, [
-      wrapForPassphrase(ck, 'correct horse battery staple'),
+      wrapAtFloor(ck, 'correct horse battery staple'),
       wrapForDevice(ck, deviceKey, 'laptop'),
     ]);
     expect(keyset.type).toBe('content_keyset');
@@ -54,7 +67,7 @@ describe('M-16 vault content-key custody', () => {
   it('unwraps the same content key by passphrase and by device (independent wrapping)', () => {
     const ck = generateContentKey();
     const keyset = sealContentKey(ck, [
-      wrapForPassphrase(ck, 'correct horse battery staple'),
+      wrapAtFloor(ck, 'correct horse battery staple'),
       wrapForDevice(ck, deviceKey, 'laptop'),
     ]);
     expect(toHex(unwrapWithPassphrase(keyset, 'correct horse battery staple'))).toBe(toHex(ck));
@@ -64,7 +77,7 @@ describe('M-16 vault content-key custody', () => {
   it('a lost device does not lose the vault — the passphrase still opens it', () => {
     const ck = generateContentKey();
     const keyset = sealContentKey(ck, [
-      wrapForPassphrase(ck, 'passphrase-of-record'),
+      wrapAtFloor(ck, 'passphrase-of-record'),
       wrapForDevice(ck, deviceKey, 'stolen-laptop'),
     ]);
     const survivors = { ...keyset, wraps: keyset.wraps.filter((w) => w.label !== 'stolen-laptop') };
@@ -74,15 +87,31 @@ describe('M-16 vault content-key custody', () => {
   it('rejects the wrong passphrase and the wrong device key', () => {
     const ck = generateContentKey();
     const keyset = sealContentKey(ck, [
-      wrapForPassphrase(ck, 'right'),
+      wrapAtFloor(ck, 'right'),
       wrapForDevice(ck, deviceKey, 'laptop'),
     ]);
     expect(() => unwrapWithPassphrase(keyset, 'wrong')).toThrow();
     expect(() => unwrapWithDevice(keyset, toHex(generateContentKey()))).toThrow();
   });
 
-  it('uses the §9.3 Argon2id minimum parameters', () => {
-    expect(ARGON2ID_PARAMS).toMatchObject({ m: 65536, t: 3, p: 1, dkLen: 32 });
+  it('names both §9.3 profiles, and defaults to the stronger one', () => {
+    // The floor and the default are different values now, and which applies is a property of the
+    // machine. Both are pinned: a default that silently fell back to the floor would look exactly
+    // like a correct implementation from every other test in this file.
+    expect(ARGON2ID_CONSTRAINED).toMatchObject({ m: 65536, t: 3, p: 1, dkLen: 32 });
+    expect(ARGON2ID_DESKTOP).toMatchObject({ m: 1048576, t: 2, p: 4, dkLen: 32 });
+    expect(ARGON2ID_PARAMS).toBe(ARGON2ID_DESKTOP);
+  });
+
+  it('the desktop profile is stronger by the measure that matters, not on every axis', () => {
+    // `t` GOES DOWN from 3 to 2, and the profile is still the stronger one — memory is what cuts
+    // an attacker's parallelism, and iterations cost them and the owner in the same proportion.
+    // Anything comparing these per-axis will conclude the wrong thing, which is why the floor
+    // check is on total work plus a separate memory floor.
+    expect(ARGON2ID_DESKTOP.t).toBeLessThan(ARGON2ID_CONSTRAINED.t);
+    expect(ARGON2ID_DESKTOP.m).toBeGreaterThan(ARGON2ID_CONSTRAINED.m);
+    const work = (k: typeof ARGON2ID_DESKTOP) => k.m * k.t * k.p;
+    expect(work(ARGON2ID_DESKTOP)).toBeGreaterThan(work(ARGON2ID_CONSTRAINED));
   });
 
   it('encrypts and decrypts vault content under the content key', () => {
