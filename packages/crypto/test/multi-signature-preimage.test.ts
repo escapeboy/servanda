@@ -58,3 +58,31 @@ describe('§0 signing preimage: `sig` and every `sig_*` member is removed', () =
     );
   });
 });
+
+/**
+ * The consequence nobody had written down, found by S3 reading the change rather than the tests.
+ *
+ * Implementing §0's rule falsified a claim `rotation.ts` was still making in a comment beside a
+ * signature check: that `sig_old`/`sig_new` sit inside `sig`'s preimage and so cannot be stripped
+ * or swapped without invalidating it. They can. That is what "every signer covers identical bytes"
+ * means, and it is the point of the rule — but a stale comment beside a security check is how the
+ * next reader reasons from a guarantee that no longer exists.
+ */
+describe('§0: what stripping `sig_*` actually gives away', () => {
+  it('a `sig_*` member can be added or removed without disturbing `sig`', () => {
+    const rotation = { v: 'servanda/0.2', type: 'rotation', old: 'a', new: 'b' };
+    const signed = { ...rotation, sig: 'e'.repeat(128) };
+    expect(signingPreimageHex(signed)).toBe(signingPreimageHex({ ...signed, sig_old: 'f'.repeat(128) }));
+    expect(signingPreimageHex(signed)).toBe(signingPreimageHex({ ...signed, sig_new: '1'.repeat(128) }));
+  });
+
+  it('so a legacy `sig_old` verifies as `sig` with no key at all', () => {
+    // `sig_old` was always a signature by the old key over these bytes; §0 now says so out loud.
+    // An opt-in gate in front of it is a gate in front of an open door — worth knowing, and not a
+    // forgery: nothing is accepted that the old key did not sign.
+    const rotation = { v: 'servanda/0.2', type: 'rotation', old: 'a', new: 'b' };
+    const legacy = { ...rotation, sig_old: 'c'.repeat(128) };
+    const promoted = { ...rotation, sig: legacy.sig_old };
+    expect(signingPreimageHex(promoted)).toBe(signingPreimageHex(legacy));
+  });
+});

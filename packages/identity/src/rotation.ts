@@ -89,9 +89,21 @@ export function verifyRotation(input: unknown, options: VerifyRotationOptions = 
   }
 
   if (r.sig !== undefined) {
-    // The universal rule, applied literally: the preimage is the object minus `sig`. If the
-    // object also carries sig_old/sig_new they are part of that preimage, so they cannot be
-    // stripped or swapped without invalidating `sig`.
+    // §0's rule, applied literally: the preimage is the object minus `sig` AND minus every
+    // `sig_*`. This comment used to say the opposite — that `sig_old`/`sig_new` are inside the
+    // preimage and so cannot be stripped or swapped without invalidating `sig` — and that stopped
+    // being true the day §0's rule was implemented. They cover identical bytes now.
+    //
+    // Two consequences, and neither is a forgery. Adding or removing a `sig_*` member does not
+    // disturb `sig`, which is exactly what §0 intends: every signer of a multi-signature object
+    // covers the same bytes. And `acceptLegacySigOld` is bypassable without a key, because
+    // `{...rest, sig: legacy.sig_old}` verifies — `sig_old` was always a signature by `old` over
+    // these bytes. An opt-in gate in front of a signature that verifies on the normative preimage
+    // is a gate in front of an open door.
+    //
+    // Left standing rather than removed: §1.7 has WITHDRAWN the two-field encoding, so what the
+    // gate now guards is which encoding this implementation will report as authoritative, not
+    // whether a signature is trusted. `sig_new` is read by nothing (grepped).
     if (!verifyObject(r, r.old)) {
       return {
         ok: false,

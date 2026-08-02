@@ -240,6 +240,26 @@ export function assertConformingProfile(params: Argon2idParams): void {
   if (work < floorWork) {
     throw new Error(`§9.3: m·t·p = ${work} is below the floor of ${floorWork}`);
   }
+
+  // And the CEILINGS, because the write path and the read path have to agree about what a wrap is.
+  //
+  // This checked only the floor while `unwrapWithPassphrase` enforces `MAX_UNWRAP_MEMORY_KIB` and
+  // `MAX_UNWRAP_WORK`, and nothing looked at the gap between them. `upgradeKdf` would therefore
+  // happily write a keyset that its own `Vault.open` refuses — `{m: 2 GiB, t: 3, p: 4}` is a plain
+  // §9.3 "raise m and t" and is unopenable by any credential. The vault bricks silently and the
+  // owner finds out at the next open, by which time the old keyset is only recoverable from git.
+  //
+  // A parameter set nobody can open is not a strong parameter set.
+  if (params.m > MAX_UNWRAP_MEMORY_KIB) {
+    throw new Error(
+      `refusing to write a wrap at m = ${params.m} KiB; no open would allocate past ${MAX_UNWRAP_MEMORY_KIB} KiB`,
+    );
+  }
+  if (work > MAX_UNWRAP_WORK) {
+    throw new Error(
+      `refusing to write a wrap costing ${work} KiB-passes; no open would spend past ${MAX_UNWRAP_WORK}`,
+    );
+  }
 }
 
 /**
@@ -300,10 +320,33 @@ export function sealContentKey(
 
 /** M-16 check, exported so vault code and the M-suite can assert on the same predicate. */
 export function assertM16(wraps: WrappedKey[]): void {
-  if (!wraps.some((w) => w.kind === 'passphrase')) {
+  // A wrap counts toward M-16 only if it could actually be OPENED. `kind: 'passphrase'` is a
+  // label, and the check was reading the label.
+  //
+  // The attack this morning's fix was written for was deleting the passphrase wrap outright. One
+  // step further: delete its `kdf` and leave the wrap in place. `unwrapWithPassphrase` skips a
+  // wrap with no `kdf` (`if (!wrap.kdf) continue`), so the passphrase opens nothing and the device
+  // key opens everything — sole custody, with a keyset that satisfied the custody check. The
+  // guard has to ask whether the passphrase route still exists, not whether something claims it.
+  //
+  // Structural validity is as far as this can go without the passphrase itself: a wrap whose
+  // CIPHERTEXT has been corrupted is indistinguishable from a good one here, and its owner finds
+  // out on the next open. That limit is real and is why this checks what it can rather than
+  // implying more.
+  const usable = wraps.some(
+    (w) =>
+      w.kind === 'passphrase' &&
+      w.kdf !== undefined &&
+      w.kdf.algo === 'argon2id' &&
+      [w.kdf.m, w.kdf.t, w.kdf.p].every((n) => Number.isSafeInteger(n) && n >= 1) &&
+      w.kdf.salt.length >= MIN_SALT_BYTES * 2 &&
+      typeof w.ciphertext === 'string' &&
+      w.ciphertext.length > 0,
+  );
+  if (!usable) {
     throw new M16Violation(
       'M-16: a device key MUST NOT be sole custodian of the vault content key; ' +
-        'at least one passphrase wrap is required',
+        'at least one passphrase wrap that can actually be opened is required',
     );
   }
 }
