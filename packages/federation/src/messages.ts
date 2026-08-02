@@ -38,6 +38,24 @@ export function verifyMessage(raw: unknown): WireMessage | null {
   return message;
 }
 
+/**
+ * Does this object claim a protocol version this node speaks? Asked BEFORE anything else.
+ *
+ * §00: "the `v` field exists so a node can refuse rather than misinterpret." It did refuse — and
+ * it reported every refusal as `signature-does-not-verify`, because `verifyMessage` collapses a
+ * schema failure and a signature failure into one `null`. A correctly signed `servanda/0.1`
+ * message was logged as a forgery. An operator watching a peer roll out a new version sees an
+ * attack instead of a version skew, and the peer's signatures were never in question.
+ *
+ * This is the same defect the discard-reason list already fixed once, for
+ * `addressed-to-another-persona` — a message that verifies perfectly and is addressed to somebody
+ * else is a re-sealed message, not a corrupt one, and an operator reading a log needs those apart.
+ */
+export function speaksThisVersion(raw: unknown): boolean {
+  const v = (raw as { v?: unknown } | null | undefined)?.v;
+  return v === PROTOCOL_VERSION;
+}
+
 /** Content address of a message. Used to deduplicate deliveries — transports may replay. */
 export function messageId(message: WireMessage): string {
   return hashCanonical(message as unknown as Record<string, unknown>);

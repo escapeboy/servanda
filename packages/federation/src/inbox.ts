@@ -4,7 +4,7 @@ import type { Assertion, Edge, VerificationLevel, WireMessage } from '@servanda/
 import { AssertPayload, ProposePayload } from '@servanda/types';
 import type { Vault } from '@servanda/vault';
 import type { ProposalBudget } from './antispam.js';
-import { edgeIdOf, verifyMessage } from './messages.js';
+import { edgeIdOf, speaksThisVersion, verifyMessage } from './messages.js';
 import {
   applyReconResponse,
   inWireOrder,
@@ -30,6 +30,8 @@ import { isParty } from './serve.js';
  */
 
 export type DiscardReason =
+  /** §00: the object names a protocol version this node does not speak. Decided FIRST. */
+  | 'wrong-protocol-version'
   | 'signature-does-not-verify'
   /** §6.2: it verifies, and it was signed for somebody else. Not the same failure. */
   | 'addressed-to-another-persona'
@@ -110,6 +112,13 @@ export class Inbox {
   ingest(messages: WireMessage[]): IngestResult {
     const result = emptyResult();
     for (const raw of messages) {
+      // §00 first, because a version this node does not speak is not a message it can judge —
+      // and because reporting the refusal as a signature failure accuses a peer of forgery for
+      // running a different release.
+      if (!speaksThisVersion(raw)) {
+        result.discarded.push({ type: 'unknown', edge_id: null, reason: 'wrong-protocol-version' });
+        continue;
+      }
       // Re-verified even though transports verify: this class is the security boundary, and a
       // boundary that trusts its caller is not one.
       const message = verifyMessage(raw as unknown);
