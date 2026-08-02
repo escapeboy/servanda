@@ -242,3 +242,32 @@ export function isSuccessorOf(
   if (candidate === key) return true;
   return resolveSuccessor(key, rotations, options).current === candidate;
 }
+
+/**
+ * §1.7 + §1.3: the keys a party has held, each with the instant it stopped being current.
+ *
+ * Lives here because rotations do, and because two consumers needed it — the node that verifies
+ * chains and anything testing that it does. A second copy of this walk is a second chance to get
+ * the history rule wrong.
+ *
+ * The history rule is §1.3's, restated: *"edges signed before `revoked_at` remain valid
+ * (offboarding semantics)"*. A key that was current when it signed was current when it signed, so
+ * resolving a party to its newest key alone would invalidate everything it did before rotating.
+ * Each entry is therefore valid up to the rotation that replaced it, and only the last is open.
+ *
+ * At a fork `resolveSuccessor` returns the key unchanged, so the lineage is one entry and that
+ * entry is still open — continuity stops where §1.7 says it stops, and the ambiguous successors
+ * are strangers to the edge until somebody resolves it.
+ */
+export function keyLineage(
+  key: string,
+  rotations: readonly unknown[],
+  options: VerifyRotationOptions = {},
+): { key: string; supersededAt: string | null }[] {
+  const { chain } = resolveSuccessor(key, rotations, options);
+  const lineage = [{ key, supersededAt: chain[0]?.rotated_at ?? null }];
+  chain.forEach((r, i) => {
+    lineage.push({ key: r.new, supersededAt: chain[i + 1]?.rotated_at ?? null });
+  });
+  return lineage;
+}

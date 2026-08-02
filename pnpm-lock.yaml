@@ -216,6 +216,9 @@ importers:
       '@servanda/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@servanda/identity':
+        specifier: workspace:*
+        version: link:../identity
       '@servanda/node':
         specifier: workspace:*
         version: link:../node
@@ -255,6 +258,9 @@ importers:
       '@servanda/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@servanda/identity':
+        specifier: workspace:*
+        version: link:../identity
       '@servanda/types':
         specifier: workspace:*
         version: link:../types

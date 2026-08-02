@@ -62,6 +62,8 @@ export interface ChainVerification {
 interface ChainState {
   /** The verifying node's own clock, when it has one. Absent for clockless replay. */
   now: number | null;
+  /** §1.7: the keys each party has held, with the instant each stopped being current. */
+  keyLineage: KeyLineage;
   state: EffectiveState;
   /** §4.4: when the owner's evidence assertion opened the acceptance window. */
   window_opened_at: string | null;
@@ -153,9 +155,13 @@ export const EXPIRY_SKEW_MS = 86_400_000;
  * chain is no longer at `open`, and the question is whether this party COULD have acted when they
  * did. Only a legal act contests; an illegal one is not half of a disagreement.
  */
-function unilateralExitFault(edge: Edge, a: Assertion, now: number | null): RejectionReason | null {
-  const isOwner = a.by === edge.owner;
-  const isOwedTo = a.by === edge.owed_to;
+function unilateralExitFault(
+  edge: Edge,
+  a: Assertion,
+  now: number | null,
+  roles: { isOwner: boolean; isOwedTo: boolean },
+): RejectionReason | null {
+  const { isOwner, isOwedTo } = roles;
   switch (a.state) {
     case 'closed':
       if (!isOwner) return 'wrong-signer-for-transition';
@@ -183,7 +189,20 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
   if (!verifyObject(a as unknown as Record<string, unknown>, a.by)) return 'invalid-signature';
 
   // M-3: edges are strictly two-party. A non-party signature is never valid, whatever it says.
-  if (a.by !== edge.owner && a.by !== edge.owed_to) return 'signer-not-a-party';
+  //
+  // §1.7 decides WHICH key each party currently is: "verifiers MUST treat `new` as the successor
+  // for all open edges of `old`". So the comparison is against each party's current key, not
+  // against the key frozen into the edge body — an edge is between two people, and a rotation is
+  // how a person says which key they now hold. The edge object never changes; §4.1 binds it.
+  //
+  // The resolution is the NODE's, from rotation statements it has itself accepted. A verifier that
+  // went looking for successors would answer differently depending on what it happened to hold,
+  // and this function is the oracle every implementation is checked against.
+  const ownerKeys = ctx.keyLineage(edge.owner);
+  const owedToKeys = ctx.keyLineage(edge.owed_to);
+  const isOwnerKey = heldBy(ownerKeys, a.by, a.asserted_at);
+  const isOwedToKey = heldBy(owedToKeys, a.by, a.asserted_at);
+  if (!isOwnerKey && !isOwedToKey) return 'signer-not-a-party';
 
   // §4.3 marks `confirmed → open` "(implicit)" with no authorised signer, so no row permits an
   // explicit `open`. Checked here rather than in the parser: the node must be able to REPORT
@@ -220,7 +239,7 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
   ) {
     // It only contests if it would have been LEGAL from `open`. An illegal act is not half of a
     // disagreement — it is just illegal, and must still be reported as such.
-    const fault = unilateralExitFault(edge, a, ctx.now);
+    const fault = unilateralExitFault(edge, a, ctx.now, { isOwner: isOwnerKey, isOwedTo: isOwedToKey });
     if (fault !== null) return fault;
     ctx.state = 'contested-closure';
     ctx.contested_at = a.asserted_at;
@@ -287,8 +306,8 @@ function step(edge: Edge, ctx: ChainState, a: Assertion): RejectionReason | null
     return 'illegal-source-state';
   }
 
-  const isOwner = a.by === edge.owner;
-  const isOwedTo = a.by === edge.owed_to;
+  const isOwner = isOwnerKey;
+  const isOwedTo = isOwedToKey;
 
   switch (a.state) {
     case 'proposed': {
@@ -458,13 +477,46 @@ function acceptanceWindowMalformed(edge: Edge): boolean {
  * on every machine forever. A node verifying live traffic has a clock and MUST pass it; what that
  * buys is the `expired` bound, which is therefore a prose obligation no vector can carry.
  */
+/**
+ * §1.7: the keys a party has held, and when each stopped being current.
+ *
+ * A LINEAGE rather than a single successor, because a rotation must not rewrite history. §1.3
+ * already settled the same question for revocation — "edges signed before `revoked_at` remain
+ * valid (offboarding semantics)" — and the reasoning is identical: a key that was current when it
+ * signed was current when it signed. Resolving a party to its newest key alone invalidated every
+ * assertion the party made before rotating, which is not continuity, it is amnesia.
+ *
+ * So each entry carries the instant it was superseded, and an assertion by a retired key is valid
+ * exactly while that key was the current one. Going forward only the newest key acts, which is the
+ * whole point: §1.7 exists for the case where the old key is lost or compromised, and a rotation
+ * that merely ADDED a key would leave the compromised one working beside its replacement.
+ *
+ * Passed in rather than read here, for the same reason `now` is: this table is the one thing that
+ * must replay a chain to the same state on every machine, and a rotation set is per-vault state. A
+ * verifier that went looking for successors would answer differently depending on what it happened
+ * to hold — right for a NODE, wrong for the oracle every implementation is checked against.
+ *
+ * Absent means "nobody has rotated", which is what the conformance vectors mean.
+ */
+export type PartyKey = { key: string; supersededAt: string | null };
+export type KeyLineage = (partyKey: string) => PartyKey[];
+
+/** Was `by` this party's current key at `at`? */
+function heldBy(lineage: PartyKey[], by: string, at: string): boolean {
+  const entry = lineage.find((k) => k.key === by);
+  if (entry === undefined) return false;
+  return entry.supersededAt === null || Date.parse(at) < Date.parse(entry.supersededAt);
+}
+
 export function verifyAssertionChain(
   edge: Edge,
   assertions: Assertion[],
   now?: string,
+  keyLineage?: KeyLineage,
 ): ChainVerification {
   const ctx: ChainState = {
     now: now === undefined ? null : Date.parse(now),
+    keyLineage: keyLineage ?? ((k) => [{ key: k, supersededAt: null }]),
     state: 'none',
     window_opened_at: null,
     superseded_by: new Set(),

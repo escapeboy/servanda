@@ -27,6 +27,7 @@ import type {
   Expectation,
   Publish,
   Revocation,
+  Rotation,
 } from '@servanda/types';
 import { PROTOCOL_VERSION } from '@servanda/types';
 import { assertVaultRepo, commitAll, initVaultRepo, VAULT_MARKER } from './git.js';
@@ -470,6 +471,44 @@ export class Vault {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'publish')).map((f) =>
       readSealed<Publish>(this.dir, join(dir, 'publish', f), this.contentKey),
+    );
+  }
+
+  // ── rotations (§1.7) ────────────────────────────────────────────────────────────────────
+
+  /**
+   * §1.7: "the signature by `old` is what transfers continuity: verifiers MUST treat `new` as the
+   * successor for all open edges of `old`."
+   *
+   * There was nowhere to put one. `resolveSuccessor` was written, was correct, and had no
+   * production caller, and the vault had no record type — so a counterparty holding a perfectly
+   * valid rotation statement could do nothing with it. §1.7 lists rotation as one of two seedless
+   * recovery paths, and the path existed only on paper: the persona survived a lost device by
+   * still holding the seed, which is to say by not needing the rotation.
+   *
+   * Keyed by `new` rather than by `old`. A key may be rotated away from only once — a second
+   * rotation from the same `old` is the FORK `resolveSuccessor` refuses to choose between — so
+   * keying by `old` would silently overwrite one of the two statements that make it a fork, and
+   * the vault would hide the ambiguity the resolver exists to report.
+   */
+  putRotation(persona: string, rotation: Rotation): void {
+    const dir = this.requirePersona(persona);
+    assertHexId(rotation.new, 'rotation.new');
+    assertHexId(rotation.old, 'rotation.old');
+    writeSealed(
+      this.dir,
+      join(dir, 'rotations', `${rotation.new}.json`),
+      this.contentKey,
+      'rotation',
+      rotation,
+    );
+    this.commit(`feat(rotation): ${rotation.old.slice(0, 12)} → ${rotation.new.slice(0, 12)}`);
+  }
+
+  listRotations(persona: string): Rotation[] {
+    const dir = this.requirePersona(persona);
+    return listFiles(join(dir, 'rotations')).map((f) =>
+      readSealed<Rotation>(this.dir, join(dir, 'rotations', f), this.contentKey),
     );
   }
 

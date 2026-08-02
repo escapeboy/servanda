@@ -26,7 +26,8 @@ import type {
 import { ACT_TOOL_BINDINGS, type ActRejectionReason, PROTOCOL_VERSION } from '@servanda/types';
 import { DEFAULT_ACCEPTANCE_WINDOW } from '@servanda/types';
 import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
-import { verifyAssertionChain, type ChainVerification } from './transitions.js';
+import { keyLineage } from '@servanda/identity';
+import { verifyAssertionChain, type ChainVerification, type KeyLineage } from './transitions.js';
 import { actionsFor } from './actions.js';
 import { addDuration } from './duration.js';
 import { mayAutoEscalate } from './escalation.js';
@@ -418,7 +419,7 @@ export class ServandaNode {
     // The node validates its OWN assertion against the table before storing it. A node that
     // trusts itself is a node that can write an invalid chain (M-14).
     const chain = [...this.vault.getAssertions(persona, edge.edge_id), assertion];
-    const verification = verifyAssertionChain(edge, chain, this.now().toISOString());
+    const verification = verifyAssertionChain(edge, chain, this.now().toISOString(), this.successorResolver(persona));
     const last = verification.outcomes[verification.outcomes.length - 1];
     if (!last || !last.accepted) {
       throw new NodeError(
@@ -497,7 +498,7 @@ export class ServandaNode {
     );
 
     const chain = [...this.vault.getAssertions(persona, edge.edge_id), assertion];
-    const verification = verifyAssertionChain(edge, chain, this.now().toISOString());
+    const verification = verifyAssertionChain(edge, chain, this.now().toISOString(), this.successorResolver(persona));
     const last = verification.outcomes[verification.outcomes.length - 1];
     if (!last || !last.accepted) {
       const reason = last?.rejection_reason;
@@ -549,6 +550,23 @@ export class ServandaNode {
     return now.getTime() >= addDuration(new Date(Date.parse(openedAt)), edge.acceptance_window).getTime();
   }
 
+  /**
+   * §1.7: the key each party currently holds, from the rotation statements this vault has accepted.
+   *
+   * Resolved per persona and per call rather than cached: a rotation arriving over the wire has to
+   * take effect on the next read, and a stale map is how a rotated-away key keeps working.
+   *
+   * A LINEAGE, not a single key: §1.3's rule that "edges signed before `revoked_at` remain valid"
+   * applies here for the same reason. A key that was current when it signed was current when it
+   * signed, and resolving a party to its newest key alone would invalidate everything it did
+   * before rotating — which is amnesia, not continuity.
+   */
+  private successorResolver(persona: string): KeyLineage {
+    const rotations = this.vault.listRotations(persona);
+    if (rotations.length === 0) return (key) => [{ key, supersededAt: null }];
+    return (key) => keyLineage(key, rotations);
+  }
+
   edgeState(persona: string, edge_id: string): ChainVerification {
     const edge = this.vault.getEdge(persona, edge_id);
     if (!edge) throw new NodeError(`no such edge: ${edge_id}`);
@@ -556,7 +574,7 @@ export class ServandaNode {
     // replay a stored chain to the same state every time, on every machine, forever. A read that
     // consulted the clock would let an edge change state because time passed rather than because
     // somebody asserted something.
-    return verifyAssertionChain(edge, this.vault.getAssertions(persona, edge_id));
+    return verifyAssertionChain(edge, this.vault.getAssertions(persona, edge_id), undefined, this.successorResolver(persona));
   }
 
   /** M-8: edges this node may escalate on its own initiative — never undated, never unverifiable. */

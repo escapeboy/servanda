@@ -1,4 +1,5 @@
 import { edgeIdBindsBody, hashCanonical } from '@servanda/crypto';
+import { verifyRotation } from '@servanda/identity';
 import { verifyAssertionChain } from '@servanda/node';
 import type { Assertion, Edge, VerificationLevel, WireMessage } from '@servanda/types';
 import { AssertPayload, ProposePayload } from '@servanda/types';
@@ -44,6 +45,12 @@ export type DiscardReason =
   | 'edge-body-differs-from-held'
   | 'unknown-edge'
   | 'sender-is-not-a-party'
+  /** §1.7: a rotation statement that does not verify under the key it claims to rotate FROM. */
+  | 'rotation-does-not-verify'
+  /** §1.7: delivered by somebody who is neither side of the rotation it carries. */
+  | 'rotation-from-a-third-party'
+  /** §1.7: the rotated-from key is party to no edge here, so this node has no use for it. */
+  | 'rotation-for-an-unknown-party'
   | `transition-table:${string}`;
 
 export interface IngestResult {
@@ -188,8 +195,11 @@ export class Inbox {
           }
           result.accepted.push({ type: message.type, edge_id: null });
           break;
+        case 'rotation':
+          this.ingestRotation(message, result);
+          break;
         default:
-          // publish/unpublish/attestation/revocation/rotation are §5 and §1 objects; this layer
+          // publish/unpublish/attestation/revocation are §5 and §1 objects; this layer
           // carries them but does not own their storage rules.
           result.accepted.push({ type: message.type, edge_id: null });
       }
@@ -207,6 +217,50 @@ export class Inbox {
    */
   private bindingFailure(edge: Edge): DiscardReason | null {
     return edgeBindingFailure(this.vault, this.persona, edge);
+  }
+
+  /**
+   * §1.7 rotation, and the three rules that keep it from being the takeover it exists to prevent.
+   *
+   * A rotation statement is a PUBLISHED artefact — that is the whole point of §1.7's second
+   * seedless recovery path. §6.6 already learned what follows: anyone who merely OBSERVED one
+   * could replay it, and a signature that verifies is not proof that the person it names is the
+   * one talking to you. So possession of a valid statement is not enough here either.
+   *
+   *  1. It must verify under the key it claims to rotate FROM. `verifyRotation` refuses a
+   *     statement signed only by `new` — precisely the takeover the object exists to prevent.
+   *  2. It must arrive from one of its own two keys. An observer holding a copy is not a party to
+   *     it, and the wire signature is what makes that checkable: §6.2 already verified `sender`.
+   *  3. The rotated-from key must be party to an edge this node holds. Without it, any persona
+   *     that can reach us could fill our vault with rotations about strangers — an unbounded store
+   *     keyed by attacker-chosen values, which is the §6.5 problem in a place §6.5 does not look.
+   *
+   * What is deliberately NOT here is any check that the new key has "proved" itself beyond signing
+   * the statement's delivery. §1.7's residual note asks a verifier to require the new key to sign
+   * its own first assertion before treating it as active, and that is exactly what happens: the
+   * successor becomes real by ACTING, and the transition table judges that act like any other.
+   * There is no window in which the successor is trusted without having done anything.
+   */
+  private ingestRotation(message: WireMessage, result: IngestResult): void {
+    const verdict = verifyRotation(message.payload);
+    if (!verdict.ok) {
+      result.discarded.push({ type: 'rotation', edge_id: null, reason: 'rotation-does-not-verify' });
+      return;
+    }
+    if (message.sender !== verdict.old && message.sender !== verdict.new) {
+      result.discarded.push({ type: 'rotation', edge_id: null, reason: 'rotation-from-a-third-party' });
+      return;
+    }
+    const relevant = this.vault
+      .listEdgeIds(this.persona)
+      .map((id) => this.vault.getEdge(this.persona, id))
+      .some((edge) => edge !== null && isParty(edge, verdict.old));
+    if (!relevant) {
+      result.discarded.push({ type: 'rotation', edge_id: null, reason: 'rotation-for-an-unknown-party' });
+      return;
+    }
+    this.vault.putRotation(this.persona, verdict.rotation);
+    result.accepted.push({ type: 'rotation', edge_id: null });
   }
 
   private ingestPropose(message: WireMessage, result: IngestResult): void {

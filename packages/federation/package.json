@@ -23,12 +23,15 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b"
   },
   "dependencies": {
     "@servanda/crypto": "workspace:*",
+    "@servanda/identity": "workspace:*",
     "@servanda/node": "workspace:*",
     "@servanda/types": "workspace:*",
     "@servanda/vault": "workspace:*",

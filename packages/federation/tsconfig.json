@@ -9,6 +9,7 @@
     { "path": "../types" },
     { "path": "../crypto" },
     { "path": "../vault" },
-    { "path": "../node" }
+    { "path": "../node" },
+    { "path": "../identity" }
   ]
 }
