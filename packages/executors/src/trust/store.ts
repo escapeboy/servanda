@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { unwrapWithPassphrase } from '@servanda/crypto';
+import { assertM16, unwrapWithPassphrase } from '@servanda/crypto';
 import { listFiles, readSealed, writeSealed } from '@servanda/vault';
 import type { Vault } from '@servanda/vault';
 import { applyOutcome, emptyTrustRecord, TrustRecord } from './gradient.js';
@@ -60,7 +60,13 @@ export class TrustStore {
    * invent a second custody arrangement of its own.
    */
   static open(vault: Vault, passphrase: string, now?: () => string): TrustStore {
-    const contentKey = unwrapWithPassphrase(vault.keyset(), passphrase);
+    // M-16 on this route too. `Vault.open` asserts custody before it unwraps anything, and this
+    // reads `vault.keyset()` and unwraps it directly — a second door to the same key material
+    // that skipped the invariant. The passphrase-only path bounds what it could reach, but "the
+    // other route happens to be safe" is how an invariant becomes a convention.
+    const keyset = vault.keyset();
+    assertM16(keyset.wraps);
+    const contentKey = unwrapWithPassphrase(keyset, passphrase);
     return new TrustStore({ dir: vault.dir, contentKey, ...(now ? { now } : {}) });
   }
 

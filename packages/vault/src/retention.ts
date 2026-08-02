@@ -26,6 +26,17 @@ import type { Vault } from './vault.js';
  * The pass only ever touches edges in a terminal state (§5.4 names closed/expired/released/
  * superseded — exactly `TERMINAL_STATES`). An open edge's plaintext is never a retention
  * candidate, however old it is.
+ *
+ * **And one plaintext store is outside this pass entirely: the pending-extraction queue.**
+ * `queuePendingExtraction` seals a whole `Commitment`, `intent` and all, under
+ * `personas/<p>/pending/`, and nothing here iterates it — this walks `listEdgeIds`. A candidate
+ * the user never confirmed and never dismissed sits there for the life of the vault.
+ *
+ * That is not a breach of M-15, which scopes retention to terminal EDGES and to nothing else, and
+ * it is not silently a feature either: the queue holds the most speculative content in the system,
+ * extracted without anyone agreeing to it, and "we keep it until you act" is a policy somebody
+ * should choose rather than inherit. Named here because the retention story reads as complete
+ * without it, which is how an unbounded store stays unnoticed.
  */
 
 export interface RetentionCandidate {

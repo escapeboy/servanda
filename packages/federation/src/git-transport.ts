@@ -37,6 +37,9 @@ export interface GitTransportOptions {
 }
 
 const SUBDIR = 'servanda';
+/** Every path segment this transport builds comes from a wire message; none is trusted. */
+const HEX64 = /^[0-9a-f]{64}$/;
+
 const DIRECT = '_direct';
 const DEFAULT_AUTHOR = { name: 'servanda', email: 'node@servanda.local' };
 
@@ -178,10 +181,29 @@ export class GitTransport implements Transport {
     return n;
   }
 
+  /**
+   * §6.1: `servanda/{edge_id}/{seq}-{type}.json`. Both branches produce a path segment from a
+   * value that came off a wire message, and only one of them checked it.
+   *
+   * `edgeIdOf` reads `payload.edge.edge_id` — attacker-chosen — and it was returned unchecked
+   * while the sibling `recipient` branch two lines below was hex-tested. An `edge_id` of
+   * `../../../ESCAPED` wrote the file outside the clone entirely, outside git, wherever the
+   * relative path landed.
+   *
+   * Nothing in the shipped wiring reaches it: `FederatedNode.push` only sends messages it built
+   * from its own outbox, and `Vault.putEdge` refuses an edge whose id does not digest its body.
+   * That makes it latent rather than exploitable, which is a reason to fix it cheaply now rather
+   * than a reason to leave it — the guarded sibling is the argument that it was meant to have one.
+   */
   private relativeDirFor(recipient: string, message: WireMessage): string {
     const edge = edgeIdOf(message);
-    if (edge !== null) return edge;
-    if (!/^[0-9a-f]{64}$/.test(recipient)) {
+    if (edge !== null) {
+      if (!HEX64.test(edge)) {
+        throw new GitTransportError(`a ${message.type} names an edge_id that is not addressable: ${edge}`);
+      }
+      return edge;
+    }
+    if (!HEX64.test(recipient)) {
       throw new GitTransportError(`a ${message.type} needs a persona recipient to be addressable`);
     }
     return join(DIRECT, recipient);
