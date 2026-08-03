@@ -40,9 +40,29 @@ export function actionsFor(input: {
    * that does not yet exist.
    */
   disputeWindowElapsed?: boolean;
+  /**
+   * §4.3's first `expired` row: `open → expired`, "either party after `due`". True when the edge
+   * has a `due` and it has passed.
+   *
+   * A third flag rather than a reuse of either above, for the reason those two are separate from
+   * each other: three different clocks, on three different states, and collapsing any pair of them
+   * advertises an act at a moment the table refuses it.
+   */
+  dueElapsed?: boolean;
 }): ItemAction[] {
   const { state, role, edgeId, windowElapsed } = input;
   const disputeWindowElapsed = input.disputeWindowElapsed ?? false;
+  /**
+   * §7's `actions.json` cases `open-owner` and `open-owed-to` list `expire` under
+   * `must_not_advertise` and carry NO `due_elapsed` input — vector generation is clockless, so
+   * the family has no way to express "the due date has passed" and therefore pins this branch and
+   * only this branch. The oracle is complied with exactly; what it does not reach, it does not
+   * decide. Named rather than written inline so the gap survives being read again: a vector family
+   * that cannot state an input cannot forbid the behaviour that input turns on, and treating its
+   * silence as a prohibition is how `expire` came to exist in §4.3 and nowhere a person stands.
+   */
+  const DUE_ELAPSED_UNKNOWN_MEANS_NOT_YET = false;
+  const dueElapsed = input.dueElapsed ?? DUE_ELAPSED_UNKNOWN_MEANS_NOT_YET;
 
   // A non-party is offered nothing at all, in any state. M-4: visibility follows participation.
   if (role === 'non-party') return [];
@@ -58,10 +78,30 @@ export function actionsFor(input: {
             bind('dismiss', { id: edgeId, decision: 'dismiss' }),
           ];
 
-    case 'open':
+    case 'open': {
+      // §4.3 gives `open` a THIRD unilateral exit — `expired`, either party, once `due` has passed
+      // — and §7 advertised it nowhere. So an edge whose due date went by a year ago offered its
+      // owner `done`, `supersede` and `delegate`, none of which end it, and offered the party owed
+      // `release`, which is forgiveness and therefore a verdict. The one act that ends such an edge
+      // deciding nothing was in the table, was signable through `act`, and was invisible.
+      //
+      // That is the defect `expire` was added to fix at `disputed` and `contested-closure`, one
+      // state further along, and it is the older half of it: those two states are reached by a
+      // disagreement, this one is reached by a date passing, which happens to every dated promise
+      // nobody got to.
+      //
+      // Not role-gated, on §4.3's own words and for §4.4's reason: an expiry finds for nobody, and
+      // both parties are equally stuck with a promise whose moment has gone.
+      const expire = dueElapsed ? [bind('expire', { id: edgeId, act: 'expire' })] : [];
+      // §7's order is most-consequential-first: `done` · `release` · `expire` · … `expire` ends the
+      // promise and signs, which puts it above `supersede` and `delegate`; `done` and `release` end
+      // it too and are the acts that say what happened, which puts them above `expire`. §7 notes
+      // that this last comparison "is stated here and exercised by no case, because on the current
+      // rules no state advertises it alongside either". This state does.
       return role === 'owner'
-        ? [bind('done', { id: edgeId, act: 'done' }), bind('supersede'), bind('delegate')]
-        : [bind('release', { id: edgeId, act: 'release' }), bind('ping'), bind('supersede')];
+        ? [bind('done', { id: edgeId, act: 'done' }), ...expire, bind('supersede'), bind('delegate')]
+        : [bind('release', { id: edgeId, act: 'release' }), ...expire, bind('ping'), bind('supersede')];
+    }
 
     case 'pending-acceptance':
       // NOT `release`. §4.3 gives `pending-acceptance` three rows and `released` is not among

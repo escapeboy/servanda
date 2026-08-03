@@ -77,7 +77,12 @@ export class FixtureNodeClient implements NodeClient {
               : this.state.items;
     // `total` is the view's size, never the page's — a stand-in that returned the page size
     // would agree with a truncating node about everything and prove nothing about truncation.
-    return { items: view.slice(0, input.limit), total: view.length };
+    //
+    // `next_cursor` is null because this stand-in serves ONE page and models no cursor; the
+    // fixtures it feeds are all smaller than `limit`, so null is the true answer for them. It
+    // would stop being the true answer the moment a fixture exceeded a page, which is the point
+    // at which this needs a real keyset rather than a constant.
+    return { items: view.slice(0, input.limit), total: view.length, next_cursor: null, skipped: 0 };
   }
 
   async brief(_input: BriefInput): Promise<BriefOutput> {
@@ -85,7 +90,12 @@ export class FixtureNodeClient implements NodeClient {
   }
 
   pendingLoops(): OpenLoopsOutput {
-    return { items: [...this.state.pending], total: this.state.pending.length };
+    return {
+      items: [...this.state.pending],
+      total: this.state.pending.length,
+      next_cursor: null,
+      skipped: 0,
+    };
   }
 }
 

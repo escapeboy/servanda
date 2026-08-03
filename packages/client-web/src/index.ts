@@ -60,10 +60,10 @@ export async function loadApp(client: NodeClient, options: LoadAppOptions): Prom
   // "You owe" for the whole of v0.
   const [brief, loops, owe, waiting, closed] = await Promise.all([
     client.brief({ persona }),
-    client.open_loops({ view: 'all', persona, limit: 500 }),
-    client.open_loops({ view: 'owe', persona, limit: 500 }),
-    client.open_loops({ view: 'waiting', persona, limit: 500 }),
-    client.open_loops({ view: 'closed', persona, limit: 500 }),
+    client.open_loops({ view: 'all', persona, limit: 500, cursor: null }),
+    client.open_loops({ view: 'owe', persona, limit: 500, cursor: null }),
+    client.open_loops({ view: 'waiting', persona, limit: 500, cursor: null }),
+    client.open_loops({ view: 'closed', persona, limit: 500, cursor: null }),
   ]);
   const buckets = { owe, waiting, closed };
   const proof = options.proof ?? null;
@@ -71,7 +71,7 @@ export async function loadApp(client: NodeClient, options: LoadAppOptions): Prom
     surface: options.surface,
     brief: buildBrief(brief, loops, options.now, waitingIdsOf(buckets)),
     ledger: buildLedger(buckets, options.now),
-    inbox: buildInbox(options.pending ?? { items: [], total: 0 }, options.now),
+    inbox: buildInbox(options.pending ?? { items: [], total: 0, next_cursor: null, skipped: 0 }, options.now),
     team: buildTeam(options.team ?? NO_TEAM, options.now),
     integrations: buildIntegrations(options.integrations ?? {}),
     onboarding: buildOnboarding(options.onboarding ?? {}),

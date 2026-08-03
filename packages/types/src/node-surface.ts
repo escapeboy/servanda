@@ -141,6 +141,18 @@ export const ActRejectionReason = z.enum([
   'evidence-hash-required',
   'acceptance-window-not-elapsed',
   /**
+   * §4.3's `open → expired` row: "either party after `due`". Before `due`, the act is refused —
+   * and the refusal is "not yet", not "never".
+   *
+   * The same argument that earned the two window members below their own names, on the transition
+   * that reaches a person soonest. Collapsed into `illegal-source-state` it said "you may never do
+   * this" about one of the two states from which `expire` IS legal, with a clock as the only thing
+   * standing in the way. It is distinct from an undated promise, which keeps `illegal-source-state`
+   * because there the answer really is never: §3.1 says undated commitments MUST NOT time-escalate,
+   * so no amount of waiting produces a `due` for expiry to be after.
+   */
+  'due-not-elapsed',
+  /**
    * §4.4's window, and it needs its own name for exactly the reason the one above does.
    *
    * Without it an `expire` refused because the dispute window is still running reports
@@ -214,8 +226,38 @@ export const OpenLoopsInput = z.object({
   view: OpenLoopsView.default('all'),
   persona: z.string().nullable().default(null),
   limit: z.number().int().positive().max(500).default(50),
+  /**
+   * Where the previous page stopped: `next_cursor`, verbatim, and nothing a client composes.
+   *
+   * `limit` is capped at 500 and 500 is the largest number anyone may ask for, so `total` could
+   * tell a client its register was cut off and could not help it read the rest. §7 declined a
+   * cursor and named the reasons — "a stable order under insertion, cursor expiry, items removed
+   * mid-page" — which is the right list of hazards and the wrong conclusion from it. The hazards
+   * do not disappear with the cursor; they land on the person holding a register they cannot read
+   * past item 500.
+   *
+   * `null` starts a fresh read at the top. Anything else must be a cursor this node issued: a node
+   * MUST refuse one it cannot verify rather than interpret it, because every failure of a
+   * mis-read cursor is a silently skipped item.
+   */
+  cursor: z.string().nullable().default(null),
 });
 export type OpenLoopsInput = z.infer<typeof OpenLoopsInput>;
+
+/**
+ * What a CALLER may pass, as against what the parser produces.
+ *
+ * `cursor` carries `.default(null)`, which is the schema saying in so many words that omitting it
+ * is a legal call meaning "start at the top". `z.infer` describes the value AFTER parsing, where
+ * the default has already been filled in, so a signature typed with it would make a member the
+ * schema calls optional compulsory at every call site — and the first page is what nearly every
+ * call wants.
+ *
+ * Only `cursor` is relaxed. `view`, `persona` and `limit` are defaulted by the schema too, but
+ * nothing in this repository applies those defaults outside `callTool`, so widening them here
+ * would promise a leniency the implementation does not have.
+ */
+export type OpenLoopsCall = Omit<OpenLoopsInput, 'cursor'> & { cursor?: string | null };
 
 export const OpenLoopItem = z.object({
   kind: z.enum(['commitment', 'expectation', 'edge']),
@@ -278,8 +320,38 @@ export const OpenLoopsOutput = z.object({
    * is truncated; paging through a register that mutates between calls is a second problem with
    * its own failure modes (a stable order under insertion, cursor expiry, items deleted mid-page)
    * and none of them should be invented on the way to fixing the first.
+   *
+   * The second problem is now solved beside the first, and the three failure modes are answered
+   * one by one on `next_cursor` and `skipped` below rather than left as reasons not to try.
    */
   total: z.number().int().nonnegative(),
+  /**
+   * Where to resume, or `null` when this page ended the register.
+   *
+   * `null` is a STATEMENT, not an absence: it says the reader has seen everything the view holds,
+   * which is the one thing `total` alone could never establish for a client that had asked for 500
+   * and received 500. A node MUST emit the field on every page.
+   *
+   * The value is opaque to a client — it is not a page number and not an offset, and composing one
+   * is not a supported operation — but it is opaque by convention rather than by encryption, so
+   * anyone debugging can read exactly what a node claimed. What it carries is the view, the
+   * persona, the ranking instant, and the rank of the last item delivered.
+   */
+  next_cursor: z.string().nullable(),
+  /**
+   * How many items now sort ABOVE this page's cursor that this walk did not deliver.
+   *
+   * An item inserted above where the reader has already passed is not delivered by any later page.
+   * That is true of every keyset cursor ever written and it cannot be fixed without the node
+   * keeping per-reader state; what CAN be fixed is whether the reader is told, and that is the
+   * whole difference between an honest cursor and an offset dressed up as one.
+   *
+   * A NET figure, and stated as such: it compares how many items sort above the cursor now against
+   * how many did when the cursor was issued, so an insertion above the cursor and a deletion above
+   * it in the same interval cancel and report zero. It is therefore a lower bound on what was
+   * missed, never an over-count. `0` on every page of a walk means nothing overtook the reader.
+   */
+  skipped: z.number().int().nonnegative(),
 });
 export type OpenLoopsOutput = z.infer<typeof OpenLoopsOutput>;
 

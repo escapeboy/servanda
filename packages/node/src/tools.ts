@@ -84,13 +84,22 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: 'open_loops',
-    description: 'List what you owe, what you are waiting on, or what has closed.',
+    description:
+      'List what you owe, what you are waiting on, what is awaiting your decision, or what has ' +
+      'closed. `total` is the size of the view; pass `next_cursor` back as `cursor` to read past ' +
+      '`limit`.',
     inputSchema: {
       type: 'object',
       properties: {
-        view: { type: 'string', enum: ['owe', 'waiting', 'closed', 'all'], default: 'all' },
+        // `pending` was missing here while `OpenLoopsView` has always admitted it, so the schema a
+        // client discovers this tool through — `additionalProperties: false`, and MCP hosts
+        // validate against it — rejected the one view §7 added for the confirm queue. That is
+        // upstream #27 exactly, one level up: the queue was readable through the implementation
+        // and undiscoverable through the contract.
+        view: { type: 'string', enum: ['owe', 'waiting', 'closed', 'pending', 'all'], default: 'all' },
         persona: nullableString,
         limit: { type: 'integer', minimum: 1, maximum: 500, default: 50 },
+        cursor: nullableString,
       },
       additionalProperties: false,
     },

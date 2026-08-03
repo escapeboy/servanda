@@ -18,6 +18,7 @@ import type {
   ExpectOutput,
   ItemAction,
   OpenLoopItem,
+  OpenLoopsCall,
   OpenLoopsInput,
   OpenLoopsOutput,
   RejectionReason,
@@ -29,6 +30,14 @@ import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
 import { keyLineage } from '@servanda/identity';
 import { DISPUTE_WINDOW, verifyAssertionChain, type ChainVerification, type KeyLineage } from './transitions.js';
 import { actionsFor } from './actions.js';
+import {
+  CURSOR_TTL,
+  cursorExpired,
+  decodeCursor,
+  encodeCursor,
+  sortsAfter,
+  type PageCursor,
+} from './cursor.js';
 import { addDuration } from './duration.js';
 import { mayAutoEscalate } from './escalation.js';
 import { rank } from './ranking.js';
@@ -109,8 +118,13 @@ const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
   'illegal-source-state': 'illegal-source-state',
   'evidence-hash-required': 'evidence-hash-required',
   'evidence-hash-required-for-owner-closure': 'evidence-hash-required',
+  // §3.1: an undated commitment MUST NOT time-escalate, so there is no `due` for an expiry to be
+  // after and never will be. "You may never do this" is the true answer here, unlike the row below.
   'due-is-null': 'illegal-source-state',
-  'expiry-before-due': 'illegal-source-state',
+  // §4.3 `open → expired` is "either party after `due`", so before `due` the answer is NOT YET —
+  // and this said `illegal-source-state`, which is the complaint §7's rejection table opens with,
+  // on one of the two states from which `expire` is legal at all.
+  'expiry-before-due': 'due-not-elapsed',
   // §7 has no member for "your clock and mine disagree", and adding one would be a normative
   // change for a distinction the caller cannot act on: either way the assertion is refused and
   // waiting is the only remedy.
@@ -740,9 +754,41 @@ export class ServandaNode {
    * active persona rather than fanning out — the alternative would create a second cross-org
    * mixing point that §7 says does not exist.
    */
-  openLoops(input: OpenLoopsInput): OpenLoopsOutput {
+  openLoops(input: OpenLoopsCall): OpenLoopsOutput {
     const persona = this.resolvePersona(input.persona);
-    const items = this.itemsFor(persona, input.view);
+
+    // The cursor decides the instant everything below is computed at, so it is validated first.
+    //
+    // Refused rather than reinterpreted, in all three cases. A cursor this node cannot verify is
+    // one it cannot position, and a mis-positioned page does not fail — it silently omits items,
+    // which is the failure the whole design is against.
+    // `?? null` because the schema defaults the member to null: a caller that omits it is asking
+    // for the first page, which is what every caller predating the cursor is doing.
+    const raw = input.cursor ?? null;
+    let cursor: PageCursor | null = null;
+    if (raw !== null) {
+      try {
+        cursor = decodeCursor(raw);
+      } catch (error) {
+        throw new NodeError((error as Error).message);
+      }
+      if (cursor.view !== input.view || cursor.persona !== persona) {
+        // The order AND the membership are functions of the view, so a cursor replayed against
+        // another one positions a page by a rank from a different list. The result would look
+        // exactly like a correct answer.
+        throw new NodeError('§7: this cursor was issued for a different view or persona');
+      }
+      if (cursorExpired(cursor, this.now())) {
+        // §7 named cursor expiry as a hazard, and it is only a hazard when it is silent. A walk
+        // resumed later would rank a stale register and present it as current.
+        throw new NodeError(`§7: this cursor is older than ${CURSOR_TTL}; read the register again`);
+      }
+    }
+
+    // ONE read, delivered in pieces. Every page of a walk ranks — and ages — as of the instant the
+    // first page was served, because a rank that moves under a reader is how a keyset cursor skips.
+    const asOf = cursor === null ? this.now() : new Date(Date.parse(cursor.as_of));
+    const items = this.itemsFor(persona, input.view, asOf);
 
     // RANKED, and by the same function `brief` ranks with.
     //
@@ -756,22 +802,62 @@ export class ServandaNode {
     // doctrine, and it only means something if the order is one.
     const scored = new Map<string, number>();
     for (const key of this.vault.listOrderingKeys(persona)) {
-      scored.set(key.id, rank(key, this.now()).score);
+      scored.set(key.id, rank(key, asOf).score);
     }
+    const scoreOf = (id: string): number => scored.get(id) ?? 0;
     // Ties break on id so the order is TOTAL and reproducible rather than dependent on traversal
     // — the same rule the archaeology candidates already use.
     const ordered = [...items].sort(
-      (a, b) => (scored.get(b.id) ?? 0) - (scored.get(a.id) ?? 0) || a.id.localeCompare(b.id),
+      (a, b) => scoreOf(b.id) - scoreOf(a.id) || a.id.localeCompare(b.id),
     );
 
-    // `total` is what this view HOLDS. Without it a client cannot distinguish a register of
-    // exactly `limit` items from one that was silently cut off at `limit`, and 500 is the
-    // schema's maximum, so there is no larger number to ask for.
-    return { items: ordered.slice(0, input.limit), total: ordered.length };
+    // Where the previous page stopped: the first item ranking strictly below its last one. A rank
+    // and not a count, which is what makes a deletion above the boundary move nothing.
+    const start =
+      cursor === null
+        ? 0
+        : (() => {
+            const at = ordered.findIndex((i) => sortsAfter(cursor, scoreOf(i.id), i.id));
+            return at === -1 ? ordered.length : at;
+          })();
+    const page = ordered.slice(start, start + input.limit);
+    const delivered = start + page.length;
+
+    // What overtook the reader, counted rather than hidden. `start` is how many items sort above
+    // the cursor NOW; `cursor.above` is how many did when it was issued. Clamped at zero because a
+    // deletion above the boundary makes the difference negative and nothing was skipped by it.
+    const skipped = cursor === null ? 0 : Math.max(0, start - cursor.above);
+
+    return {
+      // `total` is what this view HOLDS. Without it a client cannot distinguish a register of
+      // exactly `limit` items from one that was silently cut off at `limit`, and 500 is the
+      // schema's maximum, so there is no larger number to ask for.
+      items: page,
+      total: ordered.length,
+      next_cursor:
+        delivered >= ordered.length
+          ? null
+          : encodeCursor({
+              v: PROTOCOL_VERSION,
+              view: input.view,
+              persona,
+              as_of: asOf.toISOString(),
+              score: scoreOf(page[page.length - 1]!.id),
+              id: page[page.length - 1]!.id,
+              // The key's own property, not a running tally of deliveries: a later page comparing
+              // against it measures the same thing, so an insertion is reported once and not on
+              // every page after it.
+              above: delivered,
+            }),
+      skipped,
+    };
   }
 
-  private itemsFor(persona: string, view: OpenLoopsInput['view']): OpenLoopItem[] {
-    const now = this.now();
+  /**
+   * `now` is a parameter, not a clock read, because a paged read is one read: every page of a walk
+   * ages and ranks its items as of the instant the walk began (see `cursor.ts`).
+   */
+  private itemsFor(persona: string, view: OpenLoopsInput['view'], now: Date): OpenLoopItem[] {
     const out: OpenLoopItem[] = [];
     const edgeCommitments = new Set<string>();
 
@@ -823,6 +909,9 @@ export class ServandaNode {
           disputeWindowElapsed:
             verified.deadlocked_since !== null &&
             now.getTime() >= addDuration(new Date(Date.parse(verified.deadlocked_since)), DISPUTE_WINDOW).getTime(),
+          // §4.3's `open → expired` row. The edge's own `due`, which both parties signed and
+          // neither can move — the reason §4.3 holds this check up as the sound one.
+          dueElapsed: dueElapsed(edge, now),
         }),
       });
     }
@@ -958,7 +1047,8 @@ export class ServandaNode {
     if (key.kind === 'edge') {
       const edge = this.vault.getEdge(persona, key.id);
       if (!edge) return null;
-      const state = this.edgeState(persona, key.id).final_state;
+      const verified = this.edgeState(persona, key.id);
+      const state = verified.final_state;
       const commitment = this.vault.getCommitment(persona, edge.commitment_hash);
       const isOwner = edge.owner === persona;
       // Same distinction on the brief. A slot for an edge whose words this node never held is
@@ -970,12 +1060,23 @@ export class ServandaNode {
         // The same act vocabulary open_loops advertises, so a client has one act→copy mapping.
         // The old shape said `label: 'Mark done'` pointed at `confirm` — wording supplied by the
         // node (M-21), aimed at a tool that would not have marked anything done (M-20).
+        // The SAME inputs `open_loops` computes, and that is not tidiness. §7: "a node MUST NOT
+        // describe an act differently on the two surfaces." This passed neither window flag, so
+        // for every state whose only signing act is gated on a window the brief computed the
+        // ungated answer — `supersede`, bound to no tool — and `primary_action` came back `null`.
+        // A person whose surface is the brief was told there was nothing to press on precisely the
+        // edges that had an escape: a deadlock past its window, and a promise past its due date.
         primary_action: primaryActionOf(
           actionsFor({
             state,
             role: isOwner ? 'owner' : 'owed_to',
             edgeId: key.id,
             windowElapsed: this.acceptanceWindowElapsed(persona, edge, this.now()),
+            disputeWindowElapsed:
+              verified.deadlocked_since !== null &&
+              this.now().getTime() >=
+                addDuration(new Date(Date.parse(verified.deadlocked_since)), DISPUTE_WINDOW).getTime(),
+            dueElapsed: dueElapsed(edge, this.now()),
           }),
         ),
         persona,
@@ -1023,6 +1124,16 @@ export class ServandaNode {
 
 function ageDays(since: string, now: Date): number {
   return Math.max(0, (now.getTime() - Date.parse(since)) / 86_400_000);
+}
+
+/**
+ * §4.3 `open → expired`: "either party after `due`", "only if `due` non-null".
+ *
+ * §3.1's MUST is the null branch and it is absolute: an undated commitment MUST NOT time-escalate,
+ * so no age makes this true. The same shape as the ranking bands, and for the same reason.
+ */
+function dueElapsed(edge: Edge, now: Date): boolean {
+  return edge.due !== null && now.getTime() >= Date.parse(edge.due);
 }
 
 /**
