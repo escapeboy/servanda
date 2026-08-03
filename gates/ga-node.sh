@@ -2,8 +2,8 @@
 # GATE GA — Vault + node.
 #
 # "Done" means all three of:
-#   1. all 21 negative transition vectors rejected with the exact expected reason, and all 7
-#      positive chains accepted with the expected final state;
+#   1. every negative transition vector rejected with the exact expected reason, and every
+#      positive chain accepted with the expected final state;
 #   2. the node answers all six §7 MCP tools with networking DISABLED — proved in a child
 #      process whose network primitives throw, with controls showing the trap is armed;
 #   3. every MUST this layer owns has a named behavioural test here.
@@ -23,15 +23,29 @@ for f in transitions/valid.json transitions/invalid.json; do
   fi
 done
 
+# A FLOOR, not an equality.
+#
+# This was `{valid: 9, invalid: 25}` and the vectors grew past it — `contested-closure` alone
+# added seven positive chains and nine refusals — so the gate reported FAIL for a suite that had
+# got BIGGER. That is the same defect `gates/must-coverage.sh` records about itself, where a
+# hardcoded `length: 16` went on reporting 16/16 while M-20 arrived unchecked: a gate that
+# restates a number the source of truth already carries goes stale the first time the truth
+# moves, and it fails in whichever direction nobody is watching.
+#
+# What this check is actually for is a vector file that has been emptied or truncated, because
+# `transitions-vectors.test.ts` iterates whatever it finds — zero cases would pass silently, and
+# a suite that proves nothing while reporting green is the failure this whole directory exists to
+# prevent. A floor catches that and lets the suite grow. It is raised deliberately, never to match
+# whatever happens to be there.
 node --input-type=module -e '
 import { readFileSync } from "node:fs";
 const dir = process.env.SERVANDA_VECTORS ?? "vendor/vectors";
-const expected = { "transitions/valid.json": 9, "transitions/invalid.json": 25 };
+const floor = { "transitions/valid.json": 16, "transitions/invalid.json": 34 };
 let bad = 0;
-for (const [file, n] of Object.entries(expected)) {
+for (const [file, min] of Object.entries(floor)) {
   const got = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")).cases.length;
-  if (got !== n) { console.error(`FAIL: ${file} has ${got} cases, expected ${n}`); bad++; }
-  else console.log(`    ${file}: ${got} cases`);
+  if (got < min) { console.error(`FAIL: ${file} has ${got} cases, fewer than the floor of ${min}`); bad++; }
+  else console.log(`    ${file}: ${got} cases (floor ${min})`);
 }
 process.exit(bad ? 1 : 0);
 '
@@ -39,7 +53,7 @@ process.exit(bad ? 1 : 0);
 echo "==> GA: build (typecheck) the two packages"
 npx tsc -b packages/vault/tsconfig.json packages/node/tsconfig.json
 
-echo "==> GA/1: transition-table conformance (26 cases, exact reason strings)"
+echo "==> GA/1: transition-table conformance (every vector case, exact reason strings)"
 npx vitest run packages/node/test/transitions-vectors.test.ts --reporter=dot
 
 echo

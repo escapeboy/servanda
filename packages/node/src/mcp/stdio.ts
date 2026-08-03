@@ -81,8 +81,14 @@ export class McpServer {
       protocolVersion: version,
       capabilities: { tools: {} },
       serverInfo: SERVER_INFO,
+      // Composed from TOOL_DEFINITIONS, never restated. The sentence here said "Five tools" and
+      // named five while `tools/list` served six — `act` was missing from the one text the
+      // ASSISTANT reads to decide what it can do, so the tool most likely to close a promise was
+      // the one it was told it did not have. A hand-written list beside a generated one is a
+      // second source of truth, and this is what happens to it.
       instructions:
-        'Servanda node (§7). Five tools: commit, expect, confirm, open_loops, brief. ' +
+        `Servanda node (§7). ${TOOL_DEFINITIONS.length} tools: ` +
+        `${TOOL_DEFINITIONS.map((t) => t.name).join(', ')}. ` +
         'A promise is owned by its giver — use `expect` for what someone else said they would do.',
     };
   }

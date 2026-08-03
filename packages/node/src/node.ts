@@ -27,7 +27,7 @@ import { ACT_TOOL_BINDINGS, type ActRejectionReason, PROTOCOL_VERSION } from '@s
 import { DEFAULT_ACCEPTANCE_WINDOW } from '@servanda/types';
 import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
 import { keyLineage } from '@servanda/identity';
-import { verifyAssertionChain, type ChainVerification, type KeyLineage } from './transitions.js';
+import { DISPUTE_WINDOW, verifyAssertionChain, type ChainVerification, type KeyLineage } from './transitions.js';
 import { actionsFor } from './actions.js';
 import { addDuration } from './duration.js';
 import { mayAutoEscalate } from './escalation.js';
@@ -116,7 +116,7 @@ const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
   // waiting is the only remedy.
   'expiry-dated-in-the-future': 'illegal-source-state',
   'acceptance-window-not-elapsed': 'acceptance-window-not-elapsed',
-  'dispute-window-not-elapsed': 'illegal-source-state',
+  'dispute-window-not-elapsed': 'dispute-window-not-elapsed',
   'malformed-edge-acceptance-window': 'malformed-edge-acceptance-window',
   // Unreachable through `act`, which reads an edge this node HOLDS, and the vault refuses to
   // store an edge whose identifier does not digest its body (§4.1). The map is total over
@@ -137,9 +137,28 @@ const ACT_REJECTION: Record<RejectionReason, ActRejectionReason> = {
 };
 
 /**
- * What `intent_or_expect` says when this node holds the edge but not the plaintext — either
- * because retention deleted it (§5.4, M-15) or because it never had it (a counterparty
- * receives the edge and its chain, never the commitment text: M-7). "Remember that, not what."
+ * What `intent_or_expect` says when this node holds the edge but not the plaintext.
+ *
+ * **Two causes, and they are opposite facts about the world.** M-15 retention DELETED the words:
+ * something existed here and is gone. M-7 means this node never had them: the commitment text
+ * stays with the person who wrote it, and a counterparty receives the edge and its chain by
+ * design. One is a loss; the other is the protocol working.
+ *
+ * They shared a string, and the shared string read as the loss. So the ORDINARY first-contact
+ * case — a proposal arriving from someone, the commonest thing that happens on this surface —
+ * was presented to the recipient as destroyed data, with `confirm` beside it. A person was being
+ * asked to put their signature on something the screen said had been erased.
+ *
+ * The node does not infer which: `EdgeMeta.plaintext_deleted_at` records the deletion, so the
+ * distinction is known rather than guessed from a role.
+ */
+export const PLAINTEXT_DELETED = '(the words were deleted after the keeping period)';
+export const PLAINTEXT_NEVER_HELD = '(the words stayed with the person who wrote them)';
+
+/**
+ * Kept for the surfaces that only need "not here", and as the value the two above replaced.
+ *
+ * @deprecated Prefer the two specific strings; this one cannot tell a person which happened.
  */
 export const NO_LOCAL_PLAINTEXT = '(no local plaintext for this commitment)';
 
@@ -427,6 +446,15 @@ export class ServandaNode {
       );
     }
     this.vault.appendAssertion(persona, assertion);
+    // Dismissal is a local shrug, and signing is the opposite of one. `dismissed` was never
+    // cleared here, and `itemsFor` drops a dismissed edge from EVERY view unconditionally — so a
+    // person who dismissed a proposal and then changed their mind made the promise binding on
+    // the other party's register and lost it from their own, in every view, for ever.
+    //
+    // Reachable without a mis-tap: `dismissed` is vault-local `EdgeMeta` and never travels, so
+    // dismissing on a laptop and confirming on a desktop lands here by construction.
+    const meta = this.vault.getEdgeMeta(persona, edge.edge_id);
+    if (meta.dismissed) this.vault.putEdgeMeta(persona, { ...meta, dismissed: false });
     return { state: 'confirmed' };
   }
 
@@ -465,8 +493,21 @@ export class ServandaNode {
 
     // `release` is the protocol's one unilateral act and it belongs to the party owed. Accepting
     // it from the owner would let a debtor forgive their own debt.
-    const requiredRole = input.act === 'done' ? edge.owner : edge.owed_to;
-    if (persona !== requiredRole) return refuse('wrong-role-for-act');
+    //
+    // `expire` belongs to NEITHER role, and that is §4.4's rule rather than an omission: the
+    // escape from a deadlock has to be available to whoever is trapped, and both of them are. So
+    // it is not role-gated, and the party test above (M-3) is the only standing it needs.
+    if (input.act !== 'expire') {
+      const requiredRole = input.act === 'done' ? edge.owner : edge.owed_to;
+      if (persona !== requiredRole) return refuse('wrong-role-for-act');
+    }
+
+    if (input.act === 'expire' && input.evidence_hash !== null) {
+      // Expiry decides nothing about the merits — §4.4 is explicit that both acts stay in the
+      // chain and the outcome names a window, never a verdict. Evidence here would record a
+      // judgement the protocol refuses to make.
+      return refuse('evidence-hash-must-be-null');
+    }
 
     if (input.act === 'release' && input.evidence_hash !== null) {
       // Releasing is giving up a claim, not evidencing delivery. Evidence here would record a
@@ -484,11 +525,16 @@ export class ServandaNode {
     // two it names; `expired` is the one that ends the edge, and it decides nothing about the
     // merits. This is a node-surface rule, not a table rule: the assertion remains valid if it
     // arrives over the wire with both halves.
-    if (input.act === 'done' && this.edgeState(persona, edge.edge_id).final_state === 'disputed') {
+    // `contested-closure` is here for the same reason and by the same argument: its `closed` row
+    // also requires both parties, and the counterparty cannot reach it through `act` at all,
+    // because `done` is bound to the owner above. An owner who signed here would record a closure
+    // that can never complete.
+    const stateNow = this.edgeState(persona, edge.edge_id).final_state;
+    if (input.act === 'done' && (stateNow === 'disputed' || stateNow === 'contested-closure')) {
       return refuse('illegal-source-state');
     }
 
-    const asserts = input.act === 'done' ? 'closed' : 'released';
+    const asserts = input.act === 'done' ? 'closed' : input.act === 'expire' ? 'expired' : 'released';
     const assertion = this.signAssertion(
       persona,
       edge.edge_id,
@@ -567,6 +613,19 @@ export class ServandaNode {
     return (key) => keyLineage(key, rotations);
   }
 
+  /**
+   * Which of the two reasons this node has no words for an edge.
+   *
+   * `plaintext_deleted_at` is set by retention (§5.4, M-15) and by nothing else, so its presence
+   * is a record of a deletion rather than an inference about a role. Absent, this node never had
+   * the text — which for a counterparty is M-7 working exactly as written.
+   */
+  private missingPlaintext(persona: string, edgeId: string): string {
+    return this.vault.getEdgeMeta(persona, edgeId).plaintext_deleted_at === null
+      ? PLAINTEXT_NEVER_HELD
+      : PLAINTEXT_DELETED;
+  }
+
   edgeState(persona: string, edge_id: string): ChainVerification {
     const edge = this.vault.getEdge(persona, edge_id);
     if (!edge) throw new NodeError(`no such edge: ${edge_id}`);
@@ -607,11 +666,27 @@ export class ServandaNode {
         return this.vault.getDomainAnchor(persona, attestation.org) ? '3' : '2';
       }
     }
-    // Level 1 continuity: ≥1 prior confirmed edge with this key.
+    // Level 1 continuity: ≥1 prior confirmed edge with this key — OR with a key it succeeded.
+    //
+    // §1.7: "verifiers MUST treat `new` as the successor for all open edges of `old`." This
+    // compared keys literally, so a counterparty who used §1.7's seedless recovery path came back
+    // as a level-0 STRANGER, while their old key kept the level they had earned. Their register
+    // showed one person as two, and — because §6.5's budget keys on the level — their next
+    // proposal was subject to the first-contact cap. **Recovering your key made you
+    // spam-suspect to the people who know you best**, which is the opposite of what §1.7 is for.
+    //
+    // Deliberately BELOW the attestation branch, and level 1 only. An org attestation is somebody
+    // else's statement about a specific key, and §1.7 transfers *edges*, not third-party
+    // vouching: carrying levels 2 and 3 across a rotation would let a successor inherit standing
+    // the org never granted. What a rotation carries is what this persona earned WITH them; the
+    // org re-attests or it does not.
+    const lineage = this.successorResolver(persona);
+    const sameParty = (key: string): boolean =>
+      key === counterparty || lineage(key).some((k) => k.key === counterparty);
     for (const id of this.vault.listEdgeIds(persona)) {
       const edge = this.vault.getEdge(persona, id);
       if (!edge) continue;
-      if (edge.owner !== counterparty && edge.owed_to !== counterparty) continue;
+      if (!sameParty(edge.owner) && !sameParty(edge.owed_to)) continue;
       const state = this.edgeState(persona, id).final_state;
       if (state !== 'none' && state !== 'proposed') return '1';
     }
@@ -668,7 +743,31 @@ export class ServandaNode {
   openLoops(input: OpenLoopsInput): OpenLoopsOutput {
     const persona = this.resolvePersona(input.persona);
     const items = this.itemsFor(persona, input.view);
-    return { items: items.slice(0, input.limit) };
+
+    // RANKED, and by the same function `brief` ranks with.
+    //
+    // `itemsFor` walks `listEdgeIds` (a directory listing, so edge-id hash order), then
+    // commitments, then pending, then expectations — and this used to `slice(0, limit)` that.
+    // So the 500 a client got back were an arbitrary hash-ordered subset, and the order within
+    // them carried no meaning at all. `brief` was ranked; `open_loops` was not; §7 said nothing,
+    // so a client could not know which it was holding.
+    //
+    // The attention market decides here too. A client renders the order as given — that is the
+    // doctrine, and it only means something if the order is one.
+    const scored = new Map<string, number>();
+    for (const key of this.vault.listOrderingKeys(persona)) {
+      scored.set(key.id, rank(key, this.now()).score);
+    }
+    // Ties break on id so the order is TOTAL and reproducible rather than dependent on traversal
+    // — the same rule the archaeology candidates already use.
+    const ordered = [...items].sort(
+      (a, b) => (scored.get(b.id) ?? 0) - (scored.get(a.id) ?? 0) || a.id.localeCompare(b.id),
+    );
+
+    // `total` is what this view HOLDS. Without it a client cannot distinguish a register of
+    // exactly `limit` items from one that was silently cut off at `limit`, and 500 is the
+    // schema's maximum, so there is no larger number to ask for.
+    return { items: ordered.slice(0, input.limit), total: ordered.length };
   }
 
   private itemsFor(persona: string, view: OpenLoopsInput['view']): OpenLoopItem[] {
@@ -682,11 +781,17 @@ export class ServandaNode {
       edgeCommitments.add(edge.commitment_hash);
       if (this.vault.getEdgeMeta(persona, id).dismissed) continue;
 
-      const state = this.edgeState(persona, id).final_state;
+      const verified = this.edgeState(persona, id);
+      const state = verified.final_state;
       const isOwner = edge.owner === persona;
       const counterparty = isOwner ? edge.owed_to : edge.owner;
+      // `contested-closure` is LIVE. It was absent from this list, so it fell to `view: 'closed'`
+      // and both parties were told a live disagreement had finished — while `disputed`, which has
+      // the same three-exit shape and the same "both parties or not at all" rule, sat in `owe`
+      // and `waiting` where it belongs. A state reached by two people acting in good faith is the
+      // last one that should be filed under things needing no attention.
       const live = state === 'open' || state === 'pending-acceptance' || state === 'proposed' ||
-        state === 'disputed';
+        state === 'disputed' || state === 'contested-closure';
 
       if (view === 'owe' && !(isOwner && live)) continue;
       if (view === 'waiting' && !(!isOwner && live)) continue;
@@ -698,8 +803,9 @@ export class ServandaNode {
         kind: 'edge',
         id,
         // M-15: after retention the plaintext is gone but the edge remains. What the record
-        // said is unrecoverable; that it existed is not.
-        intent_or_expect: commitment?.intent ?? NO_LOCAL_PLAINTEXT,
+        // said is unrecoverable; that it existed is not. And M-7: a counterparty never had it
+        // in the first place — one sentence for both said "erased" about the ordinary case.
+        intent_or_expect: commitment?.intent ?? this.missingPlaintext(persona, id),
         counterparty: counterpartyOf(counterparty),
         verification_level: this.verificationLevel(persona, counterparty),
         age_days: ageDays(edge.proposed_at, now),
@@ -710,6 +816,13 @@ export class ServandaNode {
           role: isOwner ? 'owner' : 'owed_to',
           edgeId: id,
           windowElapsed: this.acceptanceWindowElapsed(persona, edge, now),
+          // §4.4's third exit becomes advertisable the moment the window runs. The basis comes
+          // from the table (`deadlocked_since`) rather than from a second walk of the chain here,
+          // because the window runs from `disputed_at` in one state and `contested_at` in the
+          // other and only the table knows which.
+          disputeWindowElapsed:
+            verified.deadlocked_since !== null &&
+            now.getTime() >= addDuration(new Date(Date.parse(verified.deadlocked_since)), DISPUTE_WINDOW).getTime(),
         }),
       });
     }
@@ -848,7 +961,9 @@ export class ServandaNode {
       const state = this.edgeState(persona, key.id).final_state;
       const commitment = this.vault.getCommitment(persona, edge.commitment_hash);
       const isOwner = edge.owner === persona;
-      const headline = commitment?.intent ?? NO_LOCAL_PLAINTEXT;
+      // Same distinction on the brief. A slot for an edge whose words this node never held is
+      // not a slot about deleted data.
+      const headline = commitment?.intent ?? this.missingPlaintext(persona, key.id);
       return {
         headline,
         item_id: key.id,

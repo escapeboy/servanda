@@ -84,15 +84,54 @@ function intentFor(kind: string, payload: Record<string, unknown>): string | nul
  */
 export function archaeologyCandidates(
   envelopes: readonly Envelope[],
-  opts: { persona: string; createdAt: string },
-): ArchaeologyCandidate[] {
+  opts: {
+    persona: string;
+    createdAt: string;
+    /**
+     * The author identities that are this person's own — git emails, or names where the finding
+     * carries no email. **Required, because it is not derivable and the wrong default is
+     * catastrophic.**
+     *
+     * Every candidate here becomes a commitment with `owner: opts.persona`. The connector
+     * faithfully records who wrote the line in `envelope.actor`, and this function used to throw
+     * that away — so mining a repository you merely have a clone of made you the owner of
+     * everyone else's TODOs. Measured on a scratch repo: 10 000 findings authored by one other
+     * person, 10 000 candidates, every one stamped as mine, sorted oldest-first, uncapped. That
+     * is not a cold start; it is a register nobody can read.
+     *
+     * M-1 says a promise is owned by its giver. A TODO somebody else wrote is at most an
+     * expectation of them, and §3.3 has `expect` for that — it is not a promise I made.
+     */
+    mine: readonly string[];
+  },
+): { candidates: ArchaeologyCandidate[]; skipped: { notMine: number; unattributed: number } } {
   const out: ArchaeologyCandidate[] = [];
+  const mine = new Set(opts.mine);
+  let notMine = 0;
+  let unattributed = 0;
 
   for (const envelope of envelopes) {
     if (!envelope.kind.startsWith('archaeology_')) continue;
     const payload = envelope.payload as Record<string, unknown>;
     const intent = intentFor(envelope.kind, payload);
     if (intent === null) continue;
+
+    // Attribution first, before anything is built. An `external_id` is a git email and is the
+    // identity worth matching; `label` is a display name and is checked only where the finding
+    // carries no email, because some archaeology kinds record a branch tip's author and nothing
+    // more.
+    const actor = envelope.actor as { label?: string; external_id?: string } | undefined;
+    const identity = actor?.external_id ?? actor?.label;
+    if (identity === undefined || identity.length === 0) {
+      // Not "probably mine". A finding the connector could not attribute is not evidence that
+      // it is, and guessing here is the whole defect one layer up.
+      unattributed++;
+      continue;
+    }
+    if (!mine.has(identity)) {
+      notMine++;
+      continue;
+    }
 
     out.push({
       envelopeId: envelope.id,
@@ -116,5 +155,8 @@ export function archaeologyCandidates(
   // Oldest first — scenario 2's "five oldest findings". Ties break on envelope id so the order is
   // total and reproducible rather than dependent on traversal.
   out.sort((a, b) => b.ageDays - a.ageDays || a.envelopeId.localeCompare(b.envelopeId));
-  return out;
+  // The counts are returned, never swallowed. A person who connects a shared repository and gets
+  // twelve candidates out of ten thousand findings needs to be told the other 9 988 were somebody
+  // else's — otherwise a correct filter is indistinguishable from a broken connector.
+  return { candidates: out, skipped: { notMine, unattributed } };
 }

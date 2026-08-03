@@ -29,13 +29,21 @@ node --input-type=module -e '
 import { readFileSync } from "node:fs";
 const dir = process.env.SERVANDA_VECTORS ?? "vendor/vectors";
 const got = JSON.parse(readFileSync(`${dir}/transitions/invalid.json`, "utf8")).cases.length;
-// A SECOND copy of the count gates/g0-vectors.sh already pins, and it went stale when the family
+// A SECOND copy of the count gates/g0-vectors.sh already pins. It went stale when the family
 // grew from 19 to 21 — g0 was updated, this was not, and GF failed for a reason that had nothing
-// to do with federation. The count is still pinned rather than counted, because a family that
-// silently SHRINKS is the failure the oracle exists to catch; the two numbers just have to move
-// together.
-if (got !== 25) { console.error(`FAIL: transitions/invalid.json has ${got} cases, expected 25`); process.exit(1); }
-console.log(`    transitions/invalid.json: ${got} cases (reused as wire input)`);
+// to do with federation. The fix then was "the two numbers just have to move together".
+//
+// THEY DID NOT. The family grew to 34 with `contested-closure` and this failed again, the same
+// way, for the same reason — so "keep the copies in step" has now been tried and has broken
+// twice. An equality between a constant and a growing set is a promise about future edits, and
+// this repository has evidence that the promise is not kept.
+//
+// A floor keeps the property the check is FOR — the oracle silently shrinking or emptying, which
+// would make every case below pass vacuously — and stops punishing growth. Raised deliberately,
+// never auto-fitted to whatever is on disk.
+const FLOOR = 34;
+if (got < FLOOR) { console.error(`FAIL: transitions/invalid.json has ${got} cases, fewer than the floor of ${FLOOR}`); process.exit(1); }
+console.log(`    transitions/invalid.json: ${got} cases (floor ${FLOOR}, reused as wire input)`);
 '
 
 echo

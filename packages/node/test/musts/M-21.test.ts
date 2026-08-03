@@ -27,6 +27,8 @@ interface ActionCase {
   viewer: { role: string };
   effective_state: string;
   window_elapsed: boolean;
+  /** §4.4's window, and a different one from `window_elapsed`. */
+  dispute_window_elapsed?: boolean;
   expected_actions: unknown[];
   must_not_advertise: string[];
 }
@@ -39,7 +41,13 @@ beforeAll(() => {
 
 describe('M-21: the node surface carries acts, never copy', () => {
   it('replays every case the oracle states', () => {
-    expect(cases).toHaveLength(11);
+    // A FLOOR, not an equality. The loop below iterates whatever the oracle contains, so an
+    // emptied or truncated file would pass it silently — that is what this guards, and it is
+    // worth guarding. What it must NOT do is fail because the oracle got BIGGER: this said 11,
+    // `contested-closure` added the two seats §7 had never named, and a MUST test went red for a
+    // suite that had grown. That is the fourth time today a constant restating a number the
+    // source of truth already carries has gone stale, in four different files.
+    expect(cases.length).toBeGreaterThanOrEqual(16);
   });
 
   it('emits exactly the advertised actions, for every state and viewer', () => {
@@ -49,6 +57,7 @@ describe('M-21: the node surface carries acts, never copy', () => {
         role: c.viewer.role as ViewerRole,
         edgeId: c.edge.edge_id,
         windowElapsed: c.window_elapsed,
+        disputeWindowElapsed: c.dispute_window_elapsed ?? false,
       });
       expect(got, c.name).toEqual(c.expected_actions);
     }
@@ -63,6 +72,7 @@ describe('M-21: the node surface carries acts, never copy', () => {
         role: c.viewer.role as ViewerRole,
         edgeId: c.edge.edge_id,
         windowElapsed: c.window_elapsed,
+        disputeWindowElapsed: c.dispute_window_elapsed ?? false,
       }).map((a) => a.act);
       for (const forbidden of c.must_not_advertise) {
         expect(got, `${c.name} must not advertise ${forbidden}`).not.toContain(forbidden);
@@ -79,6 +89,7 @@ describe('M-21: the node surface carries acts, never copy', () => {
         role: c.viewer.role as ViewerRole,
         edgeId: c.edge.edge_id,
         windowElapsed: c.window_elapsed,
+        disputeWindowElapsed: c.dispute_window_elapsed ?? false,
       })) {
         expect(Object.keys(a).sort()).toEqual(['act', 'args', 'tool']);
         expect(ItemAction.parse(a)).toBeTruthy();
@@ -94,6 +105,7 @@ describe('M-21: the node surface carries acts, never copy', () => {
           role: c.viewer.role as ViewerRole,
           edgeId: c.edge.edge_id,
           windowElapsed: c.window_elapsed,
+          disputeWindowElapsed: c.dispute_window_elapsed ?? false,
         }),
       )
       .filter((a) => a.tool === null);
@@ -165,7 +177,9 @@ describe('M-21: the brief-slot oracle', () => {
   };
 
   it('replays every case the oracle states', () => {
-    expect(suite.cases).toHaveLength(7);
+    // A floor here too, for the reason given above — and the negative check beside it was
+    // already written as one, which is the shape the whole file should have had.
+    expect(suite.cases.length).toBeGreaterThanOrEqual(7);
     // A family with no negatives cannot catch the regression it exists for.
     expect(suite.cases.filter((c) => !c.expected.valid).length).toBeGreaterThanOrEqual(5);
   });

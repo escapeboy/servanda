@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { ACT_TOOL_BINDINGS, type ActInput, type ActOutput, type Assertion, type Edge } from '@servanda/types';
 import { makeFixture, persona, type Fixture } from '../support/fixture.js';
 
@@ -26,18 +26,27 @@ interface ActCase {
   assertions: Assertion[];
   effective_state: string;
   window_elapsed: boolean;
+  /** §4.4's window, and a DIFFERENT one from `window_elapsed`. */
+  dispute_window_elapsed?: boolean;
   call: { caller: { persona_id: string; role: string }; input: Record<string, unknown> };
   expected: { accepted: boolean; rejection_reason: string | null; asserts: string | null };
 }
 
-let cases: ActCase[];
-let bindings: { act: string; tool: string | null }[];
-
-beforeAll(() => {
-  const suite = JSON.parse(readFileSync(VECTORS, 'utf8'));
-  cases = suite.cases;
-  bindings = suite.act_tool_bindings;
-});
+/**
+ * Read at module scope, not in `beforeAll`, so `it.each` can enumerate the real cases.
+ *
+ * It could not before, so the replay was `it.each([0,1,...,13])` — a hand-written index list,
+ * which is the same hardcoded-count defect as the length assertion below and worse: it did not
+ * FAIL when the oracle grew, it silently stopped replaying the new cases. The three
+ * `contested-closure` refusals added today would have sat in the file, counted by the length
+ * check and run by nothing.
+ */
+const SUITE = JSON.parse(readFileSync(VECTORS, 'utf8')) as {
+  cases: ActCase[];
+  act_tool_bindings: { act: string; tool: string | null }[];
+};
+const cases: ActCase[] = SUITE.cases;
+const bindings = SUITE.act_tool_bindings;
 
 /** The vectors' alice/bob/carol are personas 0/1/2 of the published test mnemonic. */
 const PERSONA_INDEX = new Map([0, 1, 2].map((i) => [persona(i).personaId, i] as const));
@@ -57,7 +66,12 @@ function replay(c: ActCase): ActOutput {
   // giving it assertions would be asserting against something the table refuses to read.
   const last = c.assertions[c.assertions.length - 1];
   const lastAsserted = last ? Date.parse(last.asserted_at) : Date.parse(c.edge.proposed_at);
-  const now = new Date(lastAsserted + (c.window_elapsed ? 10 * 86_400_000 : 0) + 3_600_000);
+  // TWO windows, and they are not the same length. `window_elapsed` is §4.3's acceptance window;
+  // `dispute_window_elapsed` is §4.4's, which is P30D — so ten days past the last assertion, the
+  // clock this used to derive, is inside it. Deriving one from the other would have made
+  // `expire` unreachable in a replay of the case that exists to prove it is reachable.
+  const advance = c.dispute_window_elapsed ? 31 * 86_400_000 : c.window_elapsed ? 10 * 86_400_000 : 0;
+  const now = new Date(lastAsserted + advance + 3_600_000);
 
   const fx: Fixture = makeFixture({
     personas: [
@@ -79,8 +93,17 @@ function replay(c: ActCase): ActOutput {
 }
 
 describe('M-20: act signs only what it is bound to, for the role that owns it', () => {
-  it('the oracle states seventeen cases', () => {
-    expect(cases).toHaveLength(17);
+  it('the oracle is not empty, and every case it states is replayed below', () => {
+    // A FLOOR, and the number is out of the test's NAME as well — the title said "seventeen"
+    // and was a second copy of the same constant, so the two could disagree with each other on
+    // top of disagreeing with the file.
+    //
+    // What this guards is an oracle emptied or truncated: the replay below iterates whatever it
+    // finds, so zero cases would pass silently and the whole file would prove nothing while
+    // reporting green. What it must not do is fail because the oracle GREW — this said 17, the
+    // `contested-closure` refusals were added, and a MUST test went red for a suite that had
+    // got bigger. Sixth time today, in the sixth file.
+    expect(cases.length).toBeGreaterThanOrEqual(22);
   });
 
   /**
@@ -88,7 +111,7 @@ describe('M-20: act signs only what it is bound to, for the role that owns it', 
    * that the JSON says what the JSON says, which no implementation can fail. Nothing here ran the
    * node. This does, and it is the only thing in this file that can go red for a code change.
    */
-  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])('case %i, replayed against the node', (i) => {
+  it.each(cases.map((c, i) => [i, c.name] as const))('case %i (%s), replayed against the node', (i) => {
     const c = cases[i]!;
     expect({ name: c.name, ...replay(c) }).toEqual({ name: c.name, ...c.expected });
   });
@@ -100,12 +123,15 @@ describe('M-20: act signs only what it is bound to, for the role that owns it', 
     expect(ACT_TOOL_BINDINGS).toEqual(fromVectors);
   });
 
-  it('only done and release are bound to the act tool', () => {
+  it('only done, release and expire are bound to the act tool', () => {
+    // `expire` joined them when §4.4's third exit stopped being describable as "time and not an
+    // act": it is a single-signature assertion by a named party, gated on `dispute_window`, and
+    // it was reachable in the transition table and through no tool at all.
     const bound = Object.entries(ACT_TOOL_BINDINGS)
       .filter(([, tool]) => tool === 'act')
       .map(([act]) => act)
       .sort();
-    expect(bound).toEqual(['done', 'release']);
+    expect(bound).toEqual(['done', 'expire', 'release']);
   });
 
   it('every act the vectors advertise is known to this implementation', () => {

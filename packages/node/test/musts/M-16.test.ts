@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   ARGON2ID_CONSTRAINED,
-  ARGON2ID_DESKTOP,
   M16Violation,
   generateContentKey,
   sealContentKey,
+  unwrapWithPassphrase,
   wrapForDevice,
   wrapForPassphrase,
 } from '@servanda/crypto';
@@ -62,22 +62,38 @@ describe('M-16: a device key is never sole custodian of the content key', () => 
     }
   });
 
-  it('a passphrase wrap records the §9.3 profile it was made at', () => {
-    // §9.3 names two points and the default is the desktop one. Both are asserted, because the
-    // parameters are stored PER WRAP and that is what makes a later raise possible at all — a
-    // wrap is opened with its own values, never with today's.
+  it('a passphrase wrap is opened at the profile it was made at, not today’s', () => {
+    // The parameters are stored PER WRAP, and that is what makes a later raise possible at all.
+    //
+    // This used to make a wrap at the DESKTOP profile and assert the recorded numbers came back —
+    // 20 to 39 seconds of Argon2id at m = 1 GiB against a 30 s timeout, so which side of the
+    // timeout it landed on was a property of machine load. A MUST test that is a coin toss teaches
+    // people to re-run until green, which is worse than no test.
+    //
+    // The cost bought nothing: the assertion read `.kdf`, and a build that RECORDED the desktop
+    // profile while DERIVING at the floor would have passed it unchanged — which is precisely the
+    // divergence the published 0.4.0-pre build turned out to have. What the recorded numbers are
+    // is pinned for free in crypto's `m16-content-key.test.ts` ("names both §9.3 profiles, and
+    // defaults to the stronger one"), including `ARGON2ID_PARAMS === ARGON2ID_DESKTOP`.
+    //
+    // So this asserts the part that needs a derivation to be observable at all: tamper the
+    // RECORDED parameters and the wrap stops opening. That proves the stored values are the ones
+    // actually spent, which is the property `upgradeKdf` and every old vault depend on — and it
+    // proves it at the floor, in about a second.
     const key = generateContentKey();
-    expect(wrapForPassphrase(key, 'a passphrase').kdf).toMatchObject({
-      algo: 'argon2id',
-      m: ARGON2ID_DESKTOP.m,
-      t: ARGON2ID_DESKTOP.t,
-      p: ARGON2ID_DESKTOP.p,
-    });
-    expect(wrapForPassphrase(key, 'a passphrase', 'slot', ARGON2ID_CONSTRAINED).kdf).toMatchObject({
-      m: 65536,
-      t: 3,
-      p: 1,
-    });
+    const wrap = wrapForPassphrase(key, 'a passphrase', 'slot', ARGON2ID_CONSTRAINED);
+    expect(wrap.kdf).toMatchObject({ algo: 'argon2id', m: 65536, t: 3, p: 1 });
+
+    const keyset = sealContentKey(key, [wrap]);
+    expect(unwrapWithPassphrase(keyset, 'a passphrase')).toEqual(key);
+
+    // Same ciphertext, same salt, one iteration more than it was made with. Still a conforming
+    // profile, so nothing refuses it by declaration — it simply derives a different key.
+    const moved = structuredClone(keyset) as typeof keyset;
+    const tampered = moved.wraps[0]!;
+    if (tampered.kind !== 'passphrase' || !tampered.kdf) throw new Error('unreachable');
+    tampered.kdf.t = ARGON2ID_CONSTRAINED.t + 1;
+    expect(() => unwrapWithPassphrase(moved, 'a passphrase')).toThrow();
   });
 
   it('refuses to make a wrap below the §9.3 floor', () => {

@@ -57,6 +57,18 @@ export interface ChainVerification {
   resolved_at: string | null;
   /** §4.7 / M-8 / M-9: a collective edge with neither covering children nor a coordinator. */
   unverifiable: boolean;
+  /**
+   * §4.4: the instant `dispute_window` runs from, when the chain is deadlocked.
+   *
+   * `disputed` and `contested-closure` both leave by `expired`, asserted by either party alone
+   * once the window has run — and a node has to know WHEN to offer that act. Reported here rather
+   * than recomputed by whoever asks, because the window's basis is `disputed_at` for one state
+   * and `contested_at` for the other, and a second walk of the chain to rediscover which is a
+   * second implementation that will eventually disagree with this one.
+   *
+   * Null in every other state, including the terminal ones: nothing is waiting on a window.
+   */
+  deadlocked_since: string | null;
 }
 
 interface ChainState {
@@ -554,6 +566,7 @@ export function verifyAssertionChain(
       final_state: 'none',
       resolved_at: null,
       unverifiable: !collectiveDecompositionValid(edge),
+      deadlocked_since: null,
     };
   }
 
@@ -577,6 +590,12 @@ export function verifyAssertionChain(
     final_state: ctx.state,
     resolved_at: ctx.resolved_at,
     unverifiable: !collectiveDecompositionValid(edge),
+    deadlocked_since:
+      ctx.state === 'disputed'
+        ? ctx.disputed_at
+        : ctx.state === 'contested-closure'
+          ? ctx.contested_at
+          : null,
   };
 }
 

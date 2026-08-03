@@ -65,8 +65,8 @@ const expected = {
   "transitions/invalid.json": 34,
   "addressing/inbox-records.json": 4,
   "addressing/oob-bootstrap.json": 2,
-  "node-surface/actions.json": 11,
-  "node-surface/act-tool.json": 17,
+  "node-surface/actions.json": 16,
+  "node-surface/act-tool.json": 22,
   "node-surface/brief-slots.json": 7,
   "node-surface/verification-levels.json": 13,
 };

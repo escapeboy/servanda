@@ -13,6 +13,7 @@
   "act_vocabulary": [
     "done",
     "release",
+    "expire",
     "supersede",
     "delegate",
     "ping",
@@ -27,6 +28,10 @@
     },
     {
       "act": "release",
+      "tool": "act"
+    },
+    {
+      "act": "expire",
       "tool": "act"
     },
     {

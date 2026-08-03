@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, ScopeDescriptor, type Assertion } from '@servanda/types';
 import { runRetention, Vault } from '@servanda/vault';
-import { NO_LOCAL_PLAINTEXT } from '../../src/node.js';
+import { PLAINTEXT_DELETED, PLAINTEXT_NEVER_HELD } from '../../src/node.js';
 import { makeFixture, nodeAs, persona, syncEdge, type Fixture } from '../support/fixture.js';
 
 /**
@@ -92,7 +92,11 @@ describe('M-15: retention deletes the plaintext and preserves the proof', () => 
       .openLoops({ view: 'closed', persona: null, limit: 50 })
       .items.find((i) => i.id === edgeId);
     expect(item?.state).toBe('released');
-    expect(item?.intent_or_expect).toBe(NO_LOCAL_PLAINTEXT);
+    // The DELETION notice, and not the shared one it used to be. M-15 losing the words and M-7
+    // never having them are opposite facts, and one string for both told the ordinary
+    // first-contact case that its data had been destroyed.
+    expect(item?.intent_or_expect).toBe(PLAINTEXT_DELETED);
+    expect(item?.intent_or_expect).not.toBe(PLAINTEXT_NEVER_HELD);
   });
 
   it('an open edge’s plaintext is never a retention candidate, however old', () => {

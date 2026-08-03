@@ -7,6 +7,7 @@
   "act_vocabulary": [
     "done",
     "release",
+    "expire",
     "supersede",
     "delegate",
     "ping",
@@ -21,6 +22,10 @@
     },
     {
       "act": "release",
+      "tool": "act"
+    },
+    {
+      "act": "expire",
       "tool": "act"
     },
     {
@@ -85,6 +90,7 @@
       },
       "effective_state": "proposed",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "ping",
@@ -95,6 +101,7 @@
       "must_not_advertise": [
         "done",
         "release",
+        "expire",
         "supersede",
         "delegate",
         "confirm",
@@ -138,6 +145,7 @@
       },
       "effective_state": "proposed",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "confirm",
@@ -159,6 +167,7 @@
       "must_not_advertise": [
         "done",
         "release",
+        "expire",
         "supersede",
         "delegate",
         "ping",
@@ -201,10 +210,12 @@
       },
       "effective_state": "proposed",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [],
       "must_not_advertise": [
         "done",
         "release",
+        "expire",
         "supersede",
         "delegate",
         "ping",
@@ -259,6 +270,7 @@
       },
       "effective_state": "open",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "done",
@@ -281,6 +293,7 @@
       ],
       "must_not_advertise": [
         "release",
+        "expire",
         "ping",
         "confirm",
         "dismiss",
@@ -333,6 +346,7 @@
       },
       "effective_state": "open",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "release",
@@ -355,6 +369,7 @@
       ],
       "must_not_advertise": [
         "done",
+        "expire",
         "delegate",
         "confirm",
         "dismiss",
@@ -417,6 +432,7 @@
       },
       "effective_state": "pending-acceptance",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "supersede",
@@ -432,6 +448,7 @@
       "must_not_advertise": [
         "done",
         "release",
+        "expire",
         "ping",
         "confirm",
         "dismiss",
@@ -494,6 +511,7 @@
       },
       "effective_state": "pending-acceptance",
       "window_elapsed": true,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "done",
@@ -516,6 +534,7 @@
       ],
       "must_not_advertise": [
         "release",
+        "expire",
         "ping",
         "confirm",
         "dismiss",
@@ -578,6 +597,7 @@
       },
       "effective_state": "pending-acceptance",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "supersede",
@@ -588,6 +608,7 @@
       "must_not_advertise": [
         "done",
         "release",
+        "expire",
         "delegate",
         "ping",
         "confirm",
@@ -651,7 +672,445 @@
       },
       "effective_state": "disputed",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
+        {
+          "act": "supersede",
+          "tool": null,
+          "args": {}
+        }
+      ],
+      "must_not_advertise": [
+        "done",
+        "release",
+        "expire",
+        "delegate",
+        "ping",
+        "confirm",
+        "dismiss",
+        "propose"
+      ]
+    },
+    {
+      "name": "contested-closure-owner",
+      "description": "§4.4: `contested-closure` is NOT terminal, and a node that treats it as one advertises nothing to a person who has three exits. It is left the way `disputed` is left — both parties, or not at all — so `supersede` is the only thing shown, and it is unbound. **`done` is not advertised to the owner**, even though §4.3 gives them a `closed` row here: that row needs BOTH parties, and §7 binds `done` to the owner alone, so the counterparty has no advertised way to sign their half. An owner who signed would record a closure that can never complete — the person is told their promise is closed and the edge stays contested for ever. That is the failure M-20 exists to prevent, and it is the same argument §7 already settled for `disputed`. The exit that ends this edge is `expired`, which is time rather than an act.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-evidence",
+        "acceptance_window": null,
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "released",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "09ba10cdbc632726d58fc811fa1667da1dee4bdf92891386f2ced1ad42890968e461ccd48323129770d1dc088081e297d735940e12f00c8d88af54c276295600"
+        }
+      ],
+      "viewer": {
+        "label": "alice (owner)",
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "role": "owner"
+      },
+      "effective_state": "contested-closure",
+      "window_elapsed": false,
+      "dispute_window_elapsed": false,
+      "expected_actions": [
+        {
+          "act": "supersede",
+          "tool": null,
+          "args": {}
+        }
+      ],
+      "must_not_advertise": [
+        "done",
+        "release",
+        "expire",
+        "delegate",
+        "ping",
+        "confirm",
+        "dismiss",
+        "propose"
+      ]
+    },
+    {
+      "name": "contested-closure-owed-to",
+      "description": "The same array from the other seat. Both parties reached this state by acting, both are blocked on the other, and neither is offered more than the other — an asymmetry here would say one of two legal acts was the wrong one.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-evidence",
+        "acceptance_window": null,
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "released",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "09ba10cdbc632726d58fc811fa1667da1dee4bdf92891386f2ced1ad42890968e461ccd48323129770d1dc088081e297d735940e12f00c8d88af54c276295600"
+        }
+      ],
+      "viewer": {
+        "label": "bob (owed_to)",
+        "persona_id": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "role": "owed_to"
+      },
+      "effective_state": "contested-closure",
+      "window_elapsed": false,
+      "dispute_window_elapsed": false,
+      "expected_actions": [
+        {
+          "act": "supersede",
+          "tool": null,
+          "args": {}
+        }
+      ],
+      "must_not_advertise": [
+        "done",
+        "release",
+        "expire",
+        "delegate",
+        "ping",
+        "confirm",
+        "dismiss",
+        "propose"
+      ]
+    },
+    {
+      "name": "contested-closure-owner-after-the-dispute-window",
+      "description": "§4.4 gives this state a THIRD exit — `expired`, by either party alone, once `dispute_window` has run — and §7 binds it to `act` as `expire`. Before the window it is not advertised (see `contested-closure-owner`); after it, it is, because a state two people can enter by accident and cannot leave alone is a worse trap than the divergence it replaces. It was reachable in the transition table and through no tool at all.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-evidence",
+        "acceptance_window": null,
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "released",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "09ba10cdbc632726d58fc811fa1667da1dee4bdf92891386f2ced1ad42890968e461ccd48323129770d1dc088081e297d735940e12f00c8d88af54c276295600"
+        }
+      ],
+      "viewer": {
+        "label": "alice (owner)",
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "role": "owner"
+      },
+      "effective_state": "contested-closure",
+      "window_elapsed": false,
+      "dispute_window_elapsed": true,
+      "expected_actions": [
+        {
+          "act": "expire",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "act": "expire"
+          }
+        },
+        {
+          "act": "supersede",
+          "tool": null,
+          "args": {}
+        }
+      ],
+      "must_not_advertise": [
+        "done",
+        "release",
+        "delegate",
+        "ping",
+        "confirm",
+        "dismiss",
+        "propose"
+      ]
+    },
+    {
+      "name": "contested-closure-owed-to-after-the-dispute-window",
+      "description": "The same, from the other seat, and the asymmetry that would matter if it were absent: `done` is the owner’s and `release` is the party-owed’s, so an `expire` gated on role would leave one of the two people trapped — and which one depends on who contested first. §4.4 gates it on the window and on nothing else.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-evidence",
+        "acceptance_window": null,
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "closed",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": "b0dcb57992ddbbca584d976045d87aa31716c293c482f9fe93621f8e2176d6d8",
+          "sig": "a93279e6e2314ab31b2607ff7d7fe2208b0f7aefd2ca4f5efdc14d724b7af7d7d8971b214763a258ac4adc70c72d3abbdd2452007c8c1865248b8a0ab6fc980f"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "released",
+          "asserted_at": "2026-08-02T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "09ba10cdbc632726d58fc811fa1667da1dee4bdf92891386f2ced1ad42890968e461ccd48323129770d1dc088081e297d735940e12f00c8d88af54c276295600"
+        }
+      ],
+      "viewer": {
+        "label": "bob (owed_to)",
+        "persona_id": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "role": "owed_to"
+      },
+      "effective_state": "contested-closure",
+      "window_elapsed": false,
+      "dispute_window_elapsed": true,
+      "expected_actions": [
+        {
+          "act": "expire",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "act": "expire"
+          }
+        },
+        {
+          "act": "supersede",
+          "tool": null,
+          "args": {}
+        }
+      ],
+      "must_not_advertise": [
+        "done",
+        "release",
+        "delegate",
+        "ping",
+        "confirm",
+        "dismiss",
+        "propose"
+      ]
+    },
+    {
+      "name": "disputed-after-the-dispute-window",
+      "description": "`disputed` leaves the same way and on the same terms. §4.4 says so, and states that an implementation which gives `disputed` the third exit and withholds it from `contested-closure` \"has built the stronger weapon and handed it out for free\" — so this pair is pinned together or neither is pinned at all.",
+      "edge": {
+        "v": "servanda/0.2",
+        "type": "edge",
+        "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+        "commitment_hash": "9b1ac57fc1d466240ff28c10f70b74d5a9bf8344325b3130504955e7cd53cec5",
+        "owner": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "owed_to": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+        "proposed_at": "2026-07-25T09:00:00Z",
+        "due": "2026-08-01T00:00:00Z",
+        "closure_policy": "on-acceptance",
+        "acceptance_window": "P5D",
+        "blocked_by": [],
+        "supersedes": null
+      },
+      "assertions": [
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "proposed",
+          "asserted_at": "2026-07-25T09:00:00Z",
+          "by": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+          "evidence_hash": null,
+          "sig": "95b0d02d85057eddbcb45dee5ffe2e985d6f5521a2c01fcfac40fea76661c279ba41f464b96e6576671b0c12b4e87c0a6a185ccc15db831373ce197d1d02cd0e"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "confirmed",
+          "asserted_at": "2026-07-25T10:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": null,
+          "sig": "62e37ec7bc8591f916a5c85aba792c8bf42d2d3e7adfa53951c236eed53284adb2274c85e4d00f03715419336687d17305be08dc648b3aeb0607fad8b6738d08"
+        },
+        {
+          "v": "servanda/0.2",
+          "type": "assertion",
+          "edge_id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+          "state": "disputed",
+          "asserted_at": "2026-08-03T12:00:00Z",
+          "by": "72d2b4360c12a3be02c3dd4092410c18c18870985891e7a099d94a93e3b38c0f",
+          "evidence_hash": "b303d988a8d0ef0fb280fbfec50a953133b6b88de5f948fee3d48b73335bfacb",
+          "sig": "6615ed955fede5446ec5618751dbe37cc2053887d462c4b18aa4bd3d9195e63ec5bfd32ed5eac8bb796822b88fe33ea05432447f63823a7bbcf4ba20062ab508"
+        }
+      ],
+      "viewer": {
+        "label": "alice (owner)",
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "role": "owner"
+      },
+      "effective_state": "disputed",
+      "window_elapsed": false,
+      "dispute_window_elapsed": true,
+      "expected_actions": [
+        {
+          "act": "expire",
+          "tool": "act",
+          "args": {
+            "id": "141ffc0642fe610224ede93212bc2526d577a2d8ec2a29024afadba0ca5ffe0a",
+            "act": "expire"
+          }
+        },
         {
           "act": "supersede",
           "tool": null,
@@ -724,10 +1183,12 @@
       },
       "effective_state": "released",
       "window_elapsed": true,
+      "dispute_window_elapsed": false,
       "expected_actions": [],
       "must_not_advertise": [
         "done",
         "release",
+        "expire",
         "supersede",
         "delegate",
         "ping",
@@ -782,6 +1243,7 @@
       },
       "effective_state": "open",
       "window_elapsed": false,
+      "dispute_window_elapsed": false,
       "expected_actions": [
         {
           "act": "done",
@@ -804,6 +1266,7 @@
       ],
       "must_not_advertise": [
         "release",
+        "expire",
         "ping",
         "confirm",
         "dismiss",

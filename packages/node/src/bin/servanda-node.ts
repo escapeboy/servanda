@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+import { pathToFileURL } from 'node:url';
 import { Vault } from '@servanda/vault';
 import { ServandaNode } from '../node.js';
 import { McpServer } from '../mcp/stdio.js';
+import { InitError, openFailure, type Env } from './servanda-init.js';
 
 /**
  * Entry point: a §7 node speaking MCP over stdio.
@@ -11,26 +13,67 @@ import { McpServer } from '../mcp/stdio.js';
  *
  *   SERVANDA_VAULT       vault directory (required)
  *   SERVANDA_PASSPHRASE  vault passphrase (required)
- *   SERVANDA_PERSONA     active persona_id (defaults to the vault's first persona)
+ *   SERVANDA_PERSONA     active persona, by persona_id or by its local label
+ *                        (defaults to the vault's first persona)
  */
-function main(): Promise<void> {
-  const dir = process.env['SERVANDA_VAULT'];
-  const passphrase = process.env['SERVANDA_PASSPHRASE'];
+
+function fail(message: string): never {
+  throw new InitError(message);
+}
+
+/**
+ * Open the vault and settle which persona this process acts as, before a byte of MCP is spoken.
+ *
+ * Every way of getting this wrong used to arrive as an uncaught exception, which under an MCP
+ * client is the worst possible shape: the client reports that the server failed to start, and
+ * the stack trace holding the only sentence that says why is somewhere the user is not looking.
+ */
+export function openNode(env: Env): { vault: Vault; activePersona: string } {
+  const dir = env['SERVANDA_VAULT'];
+  const passphrase = env['SERVANDA_PASSPHRASE'];
   if (!dir || passphrase === undefined) {
-    process.stderr.write('SERVANDA_VAULT and SERVANDA_PASSPHRASE are required\n');
-    process.exit(2);
+    fail('SERVANDA_VAULT and SERVANDA_PASSPHRASE are required');
   }
 
-  const vault = Vault.open({ dir, passphrase });
+  let vault: Vault;
+  try {
+    vault = Vault.open({ dir, passphrase });
+  } catch (err) {
+    fail(openFailure(dir, err));
+  }
+
+  const wanted = env['SERVANDA_PERSONA'];
   const personas = vault.listPersonaIds();
-  const activePersona = process.env['SERVANDA_PERSONA'] ?? personas[0];
-  if (!activePersona) {
-    process.stderr.write('vault has no persona; nothing to act as\n');
-    process.exit(2);
+  // §1.2: a persona may be named by its persona_id or by its local context label, which is what
+  // the register already accepts under this same variable. Passing the value through unresolved
+  // started the server on a persona that does not exist, so the failure surfaced one tool call
+  // later, inside the assistant, as "persona_id must be lowercase hex".
+  const activePersona =
+    wanted === undefined
+      ? personas[0]
+      : personas.find((id) => id === wanted || vault.getPersona(id).label === wanted);
+  if (activePersona === undefined) {
+    if (personas.length === 0) fail(`the vault at ${dir} has no persona; nothing to act as`);
+    fail(`no persona in ${dir} matches SERVANDA_PERSONA=${wanted} (neither a persona_id nor a label)`);
   }
 
-  const node = new ServandaNode({ vault, activePersona });
+  return { vault, activePersona };
+}
+
+function main(): Promise<void> | void {
+  let opened: { vault: Vault; activePersona: string };
+  try {
+    opened = openNode(process.env);
+  } catch (err) {
+    if (err instanceof InitError) {
+      process.stderr.write(`servanda-node: ${err.message}\n`);
+      process.exit(2);
+    }
+    throw err;
+  }
+  const node = new ServandaNode(opened);
   return new McpServer(node).serve(process.stdin, process.stdout);
 }
 
-void main();
+const entry = process.argv[1];
+if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) void main();

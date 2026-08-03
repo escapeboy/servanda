@@ -105,6 +105,25 @@ describe('§7 over MCP stdio', () => {
     expect(() => BriefOutput.parse(result.structuredContent)).not.toThrow();
   });
 
+  it('tells the assistant about every tool it will actually serve', () => {
+    // `instructions` is the text the ASSISTANT reads to decide what it can do, and it said
+    // "Five tools:" and named five while `tools/list` served six. The missing one was `act` —
+    // the tool that closes a promise. Nothing compared the sentence to the surface, because the
+    // sentence was a hand-written copy of a list that already existed.
+    //
+    // Asserted against NODE_TOOL_NAMES (§7's own list in @servanda/types), not against the
+    // registry the string is now built from: comparing a value to itself would pass the day
+    // somebody drops a tool from both.
+    const server = new McpServer(fx.node);
+    const init = server.handle({ jsonrpc: '2.0', id: 6, method: 'initialize', params: {} });
+    const instructions = (init?.result as { instructions: string }).instructions;
+
+    for (const name of NODE_TOOL_NAMES) {
+      expect(instructions, `${name} is served but not announced`).toContain(name);
+    }
+    expect(instructions).toContain(`${NODE_TOOL_NAMES.length} tools`);
+  });
+
   it('reports a refused tool as an error result, not a transport failure', () => {
     const server = new McpServer(fx.node);
     const call = server.handle({

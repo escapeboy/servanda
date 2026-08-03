@@ -83,6 +83,23 @@ export type OpenLoopAction = z.infer<typeof OpenLoopAction>;
 export const ACT_TOOL_BINDINGS = {
   done: 'act',
   release: 'act',
+  /**
+   * §4.4's third exit, at last reachable.
+   *
+   * `disputed` and `contested-closure` both leave by `expired`, asserted by EITHER party alone
+   * once `dispute_window` has run — and §4.4 argues at length that this exit is not optional:
+   * "a state two people can enter by accident and cannot leave alone is a worse trap than the
+   * divergence it replaces", and an implementation that withholds it "has built the stronger
+   * weapon and handed it out for free".
+   *
+   * §7 then withheld it, and described the withholding as a fact about the world — "which is
+   * time and not an act". It is not time: it is a single-signature assertion by a named party,
+   * gated on a window, the same shape as `release`, which this table has always bound. So the
+   * escape §4.4 insists on existed in the transition table and nowhere a person could reach —
+   * the same defect §1.7 rotation had, found the same way, by somebody implementing from the
+   * text and asking what a party is supposed to press.
+   */
+  expire: 'act',
   supersede: null,
   delegate: null,
   ping: null,
@@ -99,7 +116,7 @@ export type Act = z.infer<typeof Act>;
 /** The acts `act` itself will sign. Derived, so the binding table stays the single source. */
 export const ACT_TOOL_ACTS = Object.entries(ACT_TOOL_BINDINGS)
   .filter(([, tool]) => tool === 'act')
-  .map(([act]) => act) as ('done' | 'release')[];
+  .map(([act]) => act) as ('done' | 'release' | 'expire')[];
 
 /** §7 act — the only tool that signs an assertion. */
 export const ActInput = z.object({
@@ -123,6 +140,15 @@ export const ActRejectionReason = z.enum([
   'evidence-hash-must-be-null',
   'evidence-hash-required',
   'acceptance-window-not-elapsed',
+  /**
+   * §4.4's window, and it needs its own name for exactly the reason the one above does.
+   *
+   * Without it an `expire` refused because the dispute window is still running reports
+   * `illegal-source-state` — "you may never do this" — when `contested-closure` is the one state
+   * from which `expire` IS legal and the only thing wrong is the clock. That is the complaint
+   * this enum was rewritten to end, reproduced on its newest act.
+   */
+  'dispute-window-not-elapsed',
   'illegal-source-state',
   /**
    * v0.2 (§7, upstream #41). v0.1 fixed seven values while the §4.3 table produced fifteen, so
@@ -140,7 +166,7 @@ export const ActOutput = z.object({
   accepted: z.boolean(),
   rejection_reason: ActRejectionReason.nullable(),
   /** The state signed, when accepted. */
-  asserts: z.enum(['closed', 'released']).nullable(),
+  asserts: z.enum(['closed', 'released', 'expired']).nullable(),
 });
 export type ActOutput = z.infer<typeof ActOutput>;
 
@@ -237,7 +263,24 @@ export const OpenLoopItem = z.object({
 });
 export type OpenLoopItem = z.infer<typeof OpenLoopItem>;
 
-export const OpenLoopsOutput = z.object({ items: z.array(OpenLoopItem) });
+export const OpenLoopsOutput = z.object({
+  items: z.array(OpenLoopItem),
+  /**
+   * How many items this view HOLDS, not how many were returned.
+   *
+   * `limit` is capped at 500 by the input schema, and the output carried only `items` — so a
+   * register with more than 500 open loops was unreadable by any conforming client, and, worse,
+   * indistinguishable from one with exactly 500. The only signal available was "I got back
+   * exactly what I asked for", which is a guess, and `brief`'s own `below_the_line_count` would
+   * cheerfully say "894 more, further down" while there was no further down.
+   *
+   * A count rather than a cursor, deliberately. What a client cannot currently do is TELL that it
+   * is truncated; paging through a register that mutates between calls is a second problem with
+   * its own failure modes (a stable order under insertion, cursor expiry, items deleted mid-page)
+   * and none of them should be invented on the way to fixing the first.
+   */
+  total: z.number().int().nonnegative(),
+});
 export type OpenLoopsOutput = z.infer<typeof OpenLoopsOutput>;
 
 /** §7 brief */
