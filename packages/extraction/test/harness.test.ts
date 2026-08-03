@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseArgs, runHarness } from '../src/index.js';
@@ -32,6 +32,22 @@ describe('precision harness', () => {
     expect(result.mode).toBe('stub');
     expect(result.liveRunSkippedReason).toBe('--dry-run was requested');
     expect(result.rows.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * The report is the most quotable document this repository produces about its user: thirty
+   * days of what they typed to their agent, verbatim, including whatever they pasted into a
+   * prompt. §7 has them run it into a working directory rather than a vault, and it is not
+   * encrypted there — so the mode is the only thing that makes it theirs.
+   */
+  it('writes the report readable only by its owner', async () => {
+    const root = transcriptFixture(LINES);
+    const out = join(root, 'precision-report.md');
+
+    await runHarness({ dryRun: true, root, out, now: NOW, days: 30 });
+
+    expect(readFileSync(out, 'utf8')).toContain('send it to Maria by Friday');
+    expect(statSync(out).mode & 0o777).toBe(0o600);
   });
 
   it('puts every result in the pending queue and confirms none of them', async () => {

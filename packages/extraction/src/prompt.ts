@@ -18,6 +18,10 @@ task is to report the commitments visible in it.
 A commitment is a specific thing a person has undertaken to do. Extract one only when the text
 states an undertaking. Do not extract:
 - wishes, questions, options being weighed, or hypotheticals ("we could", "should we", "maybe")
+- undertakings the text declines or negates ("I won't send it", "I will not be at the review",
+  "I'm no longer handling this"). A refusal wears the same words as a promise and means the
+  opposite; reporting one records the reverse of what the person said, which is worse than
+  reporting nothing.
 - descriptions of work already finished
 - instructions given to a tool or an assistant (an agent is never a party; a request to software
   is not a promise between people)

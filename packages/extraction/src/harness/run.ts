@@ -207,7 +207,12 @@ export async function runHarness(options: HarnessOptions = {}): Promise<HarnessR
     ...(liveRunSkippedReason !== undefined ? { liveRunSkippedReason } : {}),
   });
 
-  if (options.out !== undefined) writeFileSync(options.out, markdown, 'utf8');
+  // Owner-only. The report's whole value is that it quotes the person verbatim — thirty days of
+  // what they typed to their agent, whatever they pasted into it included — and it is written
+  // into a working directory rather than a vault. Its mode is all that stands between that and
+  // any other account on the machine. (A file that already exists keeps the mode its owner gave
+  // it; this governs the one the harness creates.)
+  if (options.out !== undefined) writeFileSync(options.out, markdown, { encoding: 'utf8', mode: 0o600 });
 
   return {
     markdown,

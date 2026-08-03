@@ -35,6 +35,16 @@ export function readSignals(request: ModelRequest): RenderedSignal[] {
 
 const FIRST_PERSON =
   /\bI['’]ll\b|\bI will\b|\bI am going to\b|\bI['’]m going to\b|\bI promise to\b/gi;
+/**
+ * What follows the modal when the undertaking is declined rather than made.
+ *
+ * "I will not be sending the quote to Maria by Friday" carries every token this rule table
+ * looks for — first person, future modal, named counterparty, resolvable deadline — and scored
+ * higher than the genuine promise it inverts. A miss here costs an empty line in the report; a
+ * negated hit costs the person a promise they have to disown, recorded as the opposite of what
+ * they said. Anchored to the modal so a `not` elsewhere in the sentence suppresses nothing.
+ */
+const DECLINED = /^\s+(?:\w+ly\s+)?(?:not|never|no longer)\b/iu;
 const THIRD_PERSON =
   /\b([A-Z][a-zA-Z]{1,20})\s+(?:said|says|promised|told me)\s+(?:he|she|they)\s*(?:'d|’d|would|will)\s+([^.!?\n]{3,160})/g;
 const OWED_TO = /\b(?:for|to)\s+([A-Z][a-zA-Z]{1,20})\b/;
@@ -122,6 +132,7 @@ function extractFromSignal(signal: RenderedSignal): StubResult[] {
   FIRST_PERSON.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = FIRST_PERSON.exec(text)) !== null && results.length < MAX_PER_SIGNAL) {
+    if (DECLINED.test(text.slice(match.index + match[0].length))) continue;
     const quote = sentenceAround(text, match.index);
     if (quote.length < 12) continue;
     const dueMatch = DUE.exec(quote);
