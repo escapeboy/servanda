@@ -1,6 +1,6 @@
 {
   "name": "@servanda/vault",
-  "version": "0.4.0-pre",
+  "version": "0.5.0-pre",
   "description": "Servanda sovereign local store (L0): encrypted, git-backed, persona-scoped",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

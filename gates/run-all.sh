@@ -21,6 +21,7 @@ declare -a GATES=(
   "GE:Clients (brief latency, keyboard walkthrough, vocabulary):gates/ge-clients.sh"
   "GL:Gestures (in-situ confirm, M-1 uncompilable):gates/gl-gestures.sh"
   "G3:Integration (scenarios 1, 2, 3, 6 end to end):gates/g3-integration.sh"
+  "GM:Release (the published build is the one you build):gates/gm-release.sh"
 )
 
 # The lockfile check runs FIRST, because it is the one failure that makes every gate below

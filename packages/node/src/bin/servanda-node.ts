@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { Vault } from '@servanda/vault';
 import { ServandaNode } from '../node.js';
 import { McpServer } from '../mcp/stdio.js';
-import { InitError, openFailure, type Env } from './servanda-init.js';
+import { InitError, kdfAdvisoryFor, openFailure, type Env } from './servanda-init.js';
 
 /**
  * Entry point: a §7 node speaking MCP over stdio.
@@ -71,6 +71,12 @@ function main(): Promise<void> | void {
     }
     throw err;
   }
+  // stderr, and before a byte of MCP is spoken. stdout is the protocol channel here, so this is
+  // the only place a sentence for a human can go — and a vault made by a build up to 0.4.0-pre is
+  // at the old profile for the rest of its life unless somebody is told.
+  const advisory = kdfAdvisoryFor(opened.vault, process.env['SERVANDA_VAULT'] ?? '');
+  if (advisory) process.stderr.write(`servanda-node:\n${advisory}`);
+
   const node = new ServandaNode(opened);
   return new McpServer(node).serve(process.stdin, process.stdout);
 }

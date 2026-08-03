@@ -1,6 +1,6 @@
 {
   "name": "@servanda/identity",
-  "version": "0.4.0-pre",
+  "version": "0.5.0-pre",
   "description": "Servanda identity (§1): attestation, revocation, domain anchor, binding-proof ladder, rotation, persona linking",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

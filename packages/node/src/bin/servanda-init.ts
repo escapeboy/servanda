@@ -2,7 +2,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { derivePersona, generateRootMnemonic, isValidMnemonic, mnemonicToSeed } from '@servanda/crypto';
+import { derivePersona, generateRootMnemonic, isValidMnemonic, kdfAdvisory, mnemonicToSeed } from '@servanda/crypto';
 import { Vault, VAULT_MARKER } from '@servanda/vault';
 
 /**
@@ -17,6 +17,7 @@ import { Vault, VAULT_MARKER } from '@servanda/vault';
  *   SERVANDA_MNEMONIC    24-word BIP-39 recovery phrase (optional on create; required to add)
  *   SERVANDA_LABEL       what this persona is for (default "personal")
  *   SERVANDA_INDEX       persona index within the seed (default 0)
+ *   SERVANDA_UPGRADE_KEY  "1" — re-wrap an existing vault's key at this build's profile and stop
  *
  * The passphrase is read from the environment rather than a flag because a flag lands in shell
  * history and in `ps`. The recovery phrase is printed once, to stdout, and never stored: §1.1
@@ -168,6 +169,12 @@ function addPersona(env: Env, io: InitIo, dir: string, passphrase: string, index
 
   printPersona(io, 'Persona added to vault at', dir, persona.personaId, persona.path, label);
   io.out('\nAdded to the existing vault. Same phrase, same keys — always.\n');
+
+  // The one moment this program has a vault somebody ELSE's build made. Said last, so it cannot
+  // be mistaken for a failure of the thing they asked for, and to stderr, so it never lands in
+  // whatever is reading the persona block on stdout.
+  const advisory = kdfAdvisoryFor(vault, dir);
+  if (advisory) io.log(`\n${advisory}`);
 }
 
 /**
@@ -181,6 +188,76 @@ function addPersona(env: Env, io: InitIo, dir: string, passphrase: string, index
  */
 export function openFailure(dir: string, err: unknown): string {
   return `cannot open the vault at ${dir}: ${err instanceof Error ? err.message : String(err)}`;
+}
+
+/**
+ * The command a person is told to run when their vault is behind this build's KDF profile.
+ *
+ * One string, exported, because two surfaces print it and a second copy is a second thing to get
+ * wrong. It is a full command line rather than a description — the reader is at a shell, and
+ * "re-wrap your vault key" is not something anybody can type.
+ */
+export function upgradeKeyCommand(dir: string): string {
+  return `SERVANDA_VAULT=${dir} SERVANDA_PASSPHRASE=… SERVANDA_UPGRADE_KEY=1 npx servanda-init`;
+}
+
+/** The advisory for an already-open vault, or null when there is nothing to say. */
+export function kdfAdvisoryFor(vault: Vault, dir: string): string | null {
+  return kdfAdvisory(vault.kdfProfile(), upgradeKeyCommand(dir));
+}
+
+/**
+ * Re-wrap an existing vault's key at this build's profile.
+ *
+ * `Vault.upgradeKdf` and `rewrapPassphrase` have both existed since the raise landed, and no
+ * command reached either of them: §9.3's "MAY raise" was a permission the owner of a vault had no
+ * way to exercise. Every vault made by a published build up to 0.4.0-pre is at the floor, for
+ * good, until somebody runs this.
+ *
+ * Deliberately its own mode rather than something `servanda-init` does on the way past. Rewriting
+ * key material is not a side effect a person should discover afterwards, and the cost is a
+ * minute of one core — announced before it is spent, because said after, it was a hang.
+ */
+function upgradeKey(io: InitIo, dir: string, passphrase: string): void {
+  let vault: Vault;
+  try {
+    vault = Vault.open({ dir, passphrase });
+  } catch (err) {
+    fail(openFailure(dir, err));
+  }
+
+  const before = vault.kdfProfile();
+  if (before === null || !before.behindDefault) {
+    io.out(`\nThe vault at ${dir} is already at this build's profile. Nothing to do.\n`);
+    return;
+  }
+
+  io.log('Re-wrapping the vault key (Argon2id — about a minute, and about a gigabyte of memory)…\n');
+  vault.upgradeKdf(passphrase);
+  const after = vault.kdfProfile();
+
+  io.out(`\nVault key raised at ${dir}\n`);
+  io.out(`Was       m=${before.m} t=${before.t} p=${before.p}\n`);
+  if (after) io.out(`Now       m=${after.m} t=${after.t} p=${after.p}\n`);
+  io.out('\nSame passphrase, same recovery phrase, same personas. Only the cost of guessing changed.\n');
+}
+
+/**
+ * `SERVANDA_UPGRADE_KEY` is a mode switch, so an unrecognised value is refused rather than read as
+ * false. "0" and "no" mean the opposite of what they say to anybody who typed them expecting the
+ * variable's PRESENCE to be the signal, and the two readings differ by whether key material gets
+ * rewritten.
+ */
+function wantsKeyUpgrade(env: Env): boolean {
+  const raw = env['SERVANDA_UPGRADE_KEY'];
+  if (raw === undefined || raw.trim() === '') return false;
+  const value = raw.trim().toLowerCase();
+  if (value === '1' || value === 'true') return true;
+  fail(
+    `SERVANDA_UPGRADE_KEY must be "1" to re-wrap the vault key, or be unset; got ${JSON.stringify(raw)}. ` +
+      'It is refused rather than ignored because the two readings of a value like "0" differ by ' +
+      'whether this command rewrites key material.',
+  );
 }
 
 function createVault(env: Env, io: InitIo, dir: string, passphrase: string, index: number, label: string): void {
@@ -246,8 +323,18 @@ export function runInit(env: Env, io: InitIo): void {
   const label = env['SERVANDA_LABEL'] ?? 'personal';
 
   if (existsSync(join(dir, VAULT_MARKER))) {
+    if (wantsKeyUpgrade(env)) {
+      upgradeKey(io, dir, passphrase);
+      return;
+    }
     addPersona(env, io, dir, passphrase, index, label);
     return;
+  }
+  // Asked for on a directory with no vault in it. Creating one and calling it an upgrade would
+  // hand back a brand-new vault — new keys, new personas — to somebody who came to strengthen the
+  // one they have and would have no reason to look.
+  if (wantsKeyUpgrade(env)) {
+    fail(`SERVANDA_UPGRADE_KEY re-wraps the key of a vault that exists; there is no vault at ${dir}`);
   }
   // A directory with a `.git` and no vault marker is somebody's repository, not a vault of
   // theirs. Saying "a vault already exists" there sends them looking for one that is not there;

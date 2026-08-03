@@ -293,6 +293,69 @@ export function kdfProfileOf(keyset: ContentKeySet): { m: number; t: number; p: 
   return kdfs.reduce((weakest, k) => (k.m * k.t * k.p < weakest.m * weakest.t * weakest.p ? k : weakest));
 }
 
+/**
+ * What to tell the owner of a vault whose passphrase wrap is weaker than the one this build makes.
+ *
+ * `kdfProfileOf` answers the question and answers it in numbers, which is the right shape for a
+ * caller and the wrong one for a person: `{m: 65536, t: 3, p: 1}` is not a sentence, and the
+ * `behindDefault: true` that `Vault.kdfProfile` adds to it was reaching nobody at all. A vault made
+ * by an older build stays at the profile it was made at for its whole life — that is what storing
+ * the parameters per wrap MEANS — so "weaker than today's" is a permanent state that nothing was
+ * going to announce.
+ *
+ * Three things this has to say, and it is the third that makes the first two worth saying:
+ *
+ *   - It is weaker, and by how much, in a unit somebody can weigh.
+ *   - Nothing is on fire. A warning that reads like a breach gets a vault deleted at 2am.
+ *   - The exact command that fixes it. `rewrapPassphrase` has existed since the raise landed and
+ *     no surface named it, which is a permission nobody could exercise — the same shape of defect
+ *     as §9.3's "MAY raise" before `rewrapPassphrase` existed at all.
+ *
+ * `howToFix` is the caller's because the command differs per surface, and a sentence that told
+ * every reader to run the same binary would be wrong for most of them. The word "Argon2id" appears
+ * once, in the last line and in brackets: the reader who knows it wants the numbers, and the reader
+ * who does not must never need it to understand what to do.
+ *
+ * Returns null when there is nothing to say — no passphrase wrap, or one at or above today's
+ * profile. Null rather than an empty string so a caller cannot print a blank line for a vault that
+ * is fine.
+ */
+export function kdfAdvisory(
+  profile: { m: number; t: number; p: number } | null,
+  howToFix: string,
+): string | null {
+  if (profile === null) return null;
+  const current = ARGON2ID_PARAMS;
+  const work = profile.m * profile.t * profile.p;
+  const currentWork = current.m * current.t * current.p;
+  if (work >= currentWork) return null;
+
+  // Memory and work are reported separately because they buy different things, and the gap between
+  // them is the point §9.3 is making: the published 0.4.0-pre floor is 16× less memory but only
+  // ~43× less work, and it is the memory factor that decides how many guesses fit on one GPU.
+  const times = (ratio: number): string => (ratio >= 10 ? `${Math.round(ratio)}` : ratio.toFixed(1));
+  const memoryFactor = times(current.m / profile.m);
+  const workFactor = times(currentWork / work);
+
+  return (
+    "This vault's key was made by an older build of servanda, and it is weaker than the one this " +
+    'build makes.\n' +
+    '\n' +
+    'Nothing has leaked and nothing is broken — the vault opens normally and its contents are as ' +
+    'private today as they were yesterday. What is weaker is GUESSING: somebody who takes a copy ' +
+    `of this directory and tries passphrases against it needs about ${memoryFactor}× less memory ` +
+    `and about ${workFactor}× less work per guess than they would against a vault made today.\n` +
+    '\n' +
+    'To raise it — about a minute, asks for the same passphrase, changes nothing else about the ' +
+    'vault:\n' +
+    '\n' +
+    `  ${howToFix}\n` +
+    '\n' +
+    `(Argon2id m=${profile.m} t=${profile.t} p=${profile.p}; this build makes m=${current.m} ` +
+    `t=${current.t} p=${current.p}.)\n`
+  );
+}
+
 export function wrapForDevice(
   contentKey: Uint8Array,
   deviceKeyHex: string,

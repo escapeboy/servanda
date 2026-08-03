@@ -88,6 +88,24 @@ persona later (§1.2). An index the vault already holds is refused rather than r
 a phrase that is valid but is not the one this vault's personas came from: one vault holding two
 seeds is a vault no single phrase restores.
 
+### If your vault was made by an older build
+
+Every published version through `0.4.0-pre` made vaults at the §9.3 **floor** (m = 64 MiB) rather
+than the desktop point above. A wrap is opened at the profile it was written at, so such a vault
+stays there for its whole life: it opens normally and nothing about it has leaked, but somebody who
+copies the directory and guesses passphrases against it needs about sixteen times less memory per
+guess than against a vault made today. The tools say so themselves, on stderr, whenever they open
+one.
+
+```bash
+SERVANDA_VAULT=~/.servanda SERVANDA_PASSPHRASE='…' SERVANDA_UPGRADE_KEY=1 \
+  node packages/node/dist/bin/servanda-init.js
+```
+
+About a minute of one core. Same passphrase, same recovery phrase, same personas, same promises —
+the content key does not change, so every device wrap still opens too. Running it on a vault that
+is already current says so and does nothing.
+
 ---
 
 ## 2. Run the node

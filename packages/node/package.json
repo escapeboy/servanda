@@ -1,6 +1,6 @@
 {
   "name": "@servanda/node",
-  "version": "0.4.0-pre",
+  "version": "0.5.0-pre",
   "description": "Servanda node (L1): §4.3 transition table, edge lifecycle, and the §7 MCP surface",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

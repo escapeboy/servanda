@@ -9,7 +9,44 @@ one so far changes derived keys. A vault does not migrate across any of them.
 
 ## [Unreleased]
 
-### Added
+### Security
+
+- **The published build was not the build you build, and the difference was the vault key.** Every
+  published version through `0.4.0-pre` made vaults at `{m: 65536, t: 3, p: 1}` — the §9.3 floor —
+  because that was `ARGON2ID_PARAMS` at every one of those tags. The raise to the desktop point
+  (`m = 1 GiB`, sixteen times the memory) landed in the commit *after* `v0.4.0-pre`, and the
+  version in the manifests did not move. So `npm install @servanda/node` and `git clone` gave
+  different cryptography under one version string, for thirty-six commits, and nothing said so.
+
+  A wrap is opened at the profile it was **written** at — that is what storing the parameters per
+  wrap means, and it is what keeps a raise from stranding an old vault. The corollary is that
+  **every vault made by a published build is at the floor for the rest of its life** unless its
+  owner re-wraps it. `Vault.kdfProfile()` had reported `behindDefault: true` for those vaults since
+  the raise, to nobody: no surface called it.
+
+  Three changes, and the third is the one that would have prevented the first two:
+
+  - **`SERVANDA_UPGRADE_KEY=1 npx servanda-init`** re-wraps an existing vault's key at this build's
+    profile. Same passphrase, same recovery phrase, same personas; about a minute of one core.
+    `rewrapPassphrase` and `Vault.upgradeKdf` have both existed since the raise and no command
+    reached either, which made §9.3's "MAY raise" a permission its holder could not exercise.
+  - **`servanda-node` and `servanda-init` now say it**, in words, on stderr, with that command in
+    them — `kdfAdvisory()` in `@servanda/crypto`. It says what is weaker (guessing, by roughly 16×
+    in memory and 43× in work), what is not (nothing has leaked; the vault opens normally), and it
+    is written to be actionable by somebody who has never heard of Argon2id.
+  - **Gate GM (`gates/gm-release.sh`)** packs the artifact a release would publish, unpacks it into
+    a tree with no source in it, makes a vault with it and opens that vault. A build whose default
+    is the floor fails; so does a build that *records* the desktop profile while *deriving* at the
+    floor, which no assertion over a constant can catch. Both were verified by mutation.
+
+### Changed
+
+- **The version in the manifests now names the release being prepared, not the last one shipped.**
+  This is a convention change and it is the root of the entry above: while `packages/*/package.json`
+  held `0.4.0-pre` — an already-published version — every build from `main` claimed to be an
+  artifact that exists on npm and is not the same code. Gate GM fails the workspace whenever the
+  version is already tagged and `packages/` has moved since. The workspace is therefore `0.5.0-pre`
+  from here, and this section will carry that heading when it ships.
 
 - **`@servanda/client-conformance` — the client half of the suite.** §8 recorded that the client
   halves of M-12 and M-21 were prose obligations "until a client-side conformance harness exists".

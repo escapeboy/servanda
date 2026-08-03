@@ -7,7 +7,8 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status: v0.4.0-pre**, tracking **spec v0.1, frozen 2026-08-01**, conformance suite `0.1.0`.
+> **Status: v0.5.0-pre (unreleased; v0.4.0-pre is the newest on npm)**, tracking **spec v0.1,
+> frozen 2026-08-01**, conformance suite `0.1.0`.
 > The protocol is the product; this is the implementation that proves it runs.
 >
 > The spec being frozen does not make this release stable: a normative change now needs
@@ -17,6 +18,12 @@ optional federation.
 > domain-separation break; 0.3.0-pre gave personas their own X25519 key; 0.4.0-pre replaced the
 > transport with HPKE and put the recipient inside the signature. Each changes keys or
 > identifiers a previous vault holds — see [CHANGELOG.md](CHANGELOG.md).
+>
+> **If you made a vault with a published build (0.4.0-pre or earlier), its key is at the §9.3
+> floor** — sixteen times less memory than this build uses, for the life of that vault, because a
+> wrap is opened at the profile it was written at. It opens normally; only guessing got cheaper.
+> Raise it with `SERVANDA_UPGRADE_KEY=1 npx servanda-init` (about a minute; same passphrase, same
+> personas). The tools now say so themselves.
 >
 > **The cryptography has not been externally reviewed** — see [SECURITY.md](SECURITY.md). Upstream
 > [#7](https://github.com/escapeboy/servanda-protocol/issues/7) is closed, and it is worth being
