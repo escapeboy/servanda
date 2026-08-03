@@ -114,13 +114,22 @@ describe('a promise to someone who will never answer', () => {
     // §4.3 gives the owner no transition out of `proposed`, so the one affordance signs nothing.
     expect(item.actions.map((a) => a.act)).toEqual(['ping']);
 
-    // REPORTED — nothing on this screen distinguishes "never delivered" from "delivered and
-    // ignored". The wire message is still in the outbox, which has no delivered/acknowledged
-    // state at all (`OutboxItem` is `{id, recipient, message, queued_at}`), so a year of silence
-    // and a year of being ignored render identically. The register cannot say "sent, not yet
-    // acknowledged" because nothing in the vault records that it was sent.
-    expect(me!.vault.listOutbox(me!.persona.personaId)).toHaveLength(1);
-    expect(Object.keys(me!.vault.listOutbox(me!.persona.personaId)[0]!)).not.toContain('delivered_at');
+    // Was REPORTED: the outbox had no delivery state at all — `{id, recipient, message,
+    // queued_at}` — so a year of silence and a year of being ignored rendered identically, and
+    // the register could not say "handed over, never answered" because nothing recorded that it
+    // had been handed over. The register still says `proposed`, correctly: §4.3 knows of no
+    // delivery, and inventing a state there would be a protocol change to solve a product problem.
+    // The distinction lives beside it, on the message rather than on the edge.
+    const [status] = me!.fed.outbound();
+    expect(status!.edge_id).toBe(edge);
+    expect(status!.state).toBe('sent');
+    expect(status!.acknowledged_at).toBeNull();
+    // And the sentence is careful about which of the two years this is. A git push that returned
+    // zero proves the file is in a repository; the stranger has never cloned it, and no courier
+    // can tell her that. What it must not do is imply he read it and shrugged.
+    expect(status!.explanation).toContain('365 day(s) ago');
+    expect(status!.explanation).toContain('not that');
+    expect(status!.explanation).toContain('nothing has come back');
   });
 });
 
