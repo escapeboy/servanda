@@ -1,5 +1,5 @@
 import type { BriefView, CardView } from '@servanda/client-web';
-import { COPY, THEME_CSS, briefEl, renderToHtml } from '@servanda/client-web';
+import { COPY, THEME_CSS, briefEl, escapeLine, renderToHtml } from '@servanda/client-web';
 
 /**
  * The brief as a push projection.
@@ -20,14 +20,24 @@ export interface BriefEmail {
   readonly html: string;
 }
 
-/** The plain-text part. Same lines, same order, no markup. */
+/**
+ * The plain-text part. Same lines, same order, no markup.
+ *
+ * `escapeLine` on the way out, exactly as the terminal does it and for the same reason: this
+ * part has no structure but where the lines break, so a newline inside a person's own recorded
+ * words is not a character here, it is a card the register never held — and an escape sequence
+ * is one a mail reader may obey. The HTML part needs none of this because it has `escapeHtml`
+ * and real elements: a newline inside a `<p>` is whitespace and cannot forge a row. Two media,
+ * two escapings, one content — which is what "identical content" has to mean.
+ */
 export function briefText(brief: BriefView): string {
   const lines: string[] = [brief.heading, brief.generatedLine, '', COPY.email.intro, ''];
   if (brief.cards.length === 0) lines.push(brief.empty, '');
   for (const card of brief.cards) lines.push(...cardText(card));
   if (brief.belowTheLine !== null) lines.push(brief.belowTheLine, '');
+  if (brief.unresolvedLine !== null) lines.push(brief.unresolvedLine, '');
   lines.push(COPY.email.footer);
-  return lines.join('\n');
+  return lines.map(escapeLine).join('\n');
 }
 
 function cardText(card: CardView): string[] {

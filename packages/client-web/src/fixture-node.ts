@@ -25,6 +25,17 @@ import type { TeamInput } from './team.js';
  */
 export interface FixtureState {
   readonly items: readonly OpenLoopItem[];
+  /**
+   * The three views §7 defines, held apart, because a real node holds them apart.
+   *
+   * `open_loops` here was `input.view === 'all' ? this.state.items : this.state.items` — a
+   * ternary whose branches are the same expression, so every client test in this package ran
+   * against a node that never bucketed anything. That is why the ledger's role inversion was
+   * invisible for the whole of v0: the stand-in could not have exposed it.
+   */
+  readonly owe: readonly OpenLoopItem[];
+  readonly waiting: readonly OpenLoopItem[];
+  readonly closed: readonly OpenLoopItem[];
   readonly pending: readonly OpenLoopItem[];
   readonly brief: BriefOutput;
 }
@@ -54,8 +65,19 @@ export class FixtureNodeClient implements NodeClient {
   }
 
   async open_loops(input: OpenLoopsInput): Promise<OpenLoopsOutput> {
-    const all = input.view === 'all' ? this.state.items : this.state.items;
-    return { items: all.slice(0, input.limit) };
+    const view =
+      input.view === 'owe'
+        ? this.state.owe
+        : input.view === 'waiting'
+          ? this.state.waiting
+          : input.view === 'closed'
+            ? this.state.closed
+            : input.view === 'pending'
+              ? this.state.pending
+              : this.state.items;
+    // `total` is the view's size, never the page's — a stand-in that returned the page size
+    // would agree with a truncating node about everything and prove nothing about truncation.
+    return { items: view.slice(0, input.limit), total: view.length };
   }
 
   async brief(_input: BriefInput): Promise<BriefOutput> {
@@ -63,7 +85,7 @@ export class FixtureNodeClient implements NodeClient {
   }
 
   pendingLoops(): OpenLoopsOutput {
-    return { items: [...this.state.pending] };
+    return { items: [...this.state.pending], total: this.state.pending.length };
   }
 }
 
@@ -91,7 +113,12 @@ export function makeFixture(size = 24, now = '2026-03-01T09:00:00Z'): FixtureSta
     const levels = ['0', '1', '2', '3', 'ext'] as const;
     const itemId = `item-${String(i).padStart(4, '0')}`;
     items.push({
-      kind: waiting ? 'expectation' : 'commitment',
+      // A promise made TO you is an `edge` — the same kind the promise you made carries, because
+      // an edge is one object with two parties. The fixture used to make every waiting item an
+      // `expectation`, which is the ONE shape where `kind` happens to imply the role, so the
+      // client's `kind === 'expectation'` test looked correct here and inverted the register in
+      // production. Half the waiting items are edges now, and they are the half that matters.
+      kind: waiting ? (i % 2 === 0 ? 'edge' : 'expectation') : 'commitment',
       id: itemId,
       intent_or_expect: `${INTENTS[i % INTENTS.length]} (${i + 1})`,
       // v0.2 (#39): the fixture must exercise BOTH origins, or a client that ignores the
@@ -137,8 +164,16 @@ export function makeFixture(size = 24, now = '2026-03-01T09:00:00Z'): FixtureSta
     primary_action: { act: 'done' as const, tool: 'act' as const, args: { id: item.id, act: 'done' } },
   }));
 
+  // Bucketed the way `ServandaNode.itemsFor` buckets: closed wins over role, and role is the
+  // fixture's own `waiting`, never re-derived from `kind`.
+  const isClosed = (item: OpenLoopItem) => item.state === 'closed';
+  const wasWaiting = new Set(items.filter((_, i) => i % 3 === 2).map((item) => item.id));
+
   return {
     items,
+    owe: items.filter((item) => !isClosed(item) && !wasWaiting.has(item.id)),
+    waiting: items.filter((item) => !isClosed(item) && wasWaiting.has(item.id)),
+    closed: items.filter(isClosed),
     pending,
     brief: {
       generated_at: now,

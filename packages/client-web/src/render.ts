@@ -189,6 +189,12 @@ export function briefEl(brief: BriefView): El {
     ...(brief.belowTheLine === null
       ? []
       : [textEl('p', brief.belowTheLine, { class: 'below-the-line' })]),
+    // What the brief ranked and this view could not fetch. Below the cards, because it is not
+    // one of them — and present, because its absence is what made an incomplete brief look
+    // like a complete one.
+    ...(brief.unresolvedLine === null
+      ? []
+      : [textEl('p', brief.unresolvedLine, { class: 'below-the-line' })]),
   ]);
 }
 

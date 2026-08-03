@@ -13,6 +13,8 @@ export interface TuiState {
   readonly app: AppView;
   readonly cursor: number;
   readonly quit: boolean;
+  /** Which register this is. Carried through every key, because `FrameState` draws it. */
+  readonly banner?: string | undefined;
 }
 
 export interface KeyResult {
@@ -23,13 +25,29 @@ export interface KeyResult {
   readonly surface: SurfaceId | null;
 }
 
-/** Ctrl-C, written by code point so no control character sits literally in the source. */
+/** Ctrl-C and Escape, by code point so no control character sits literally in the source. */
 const INTERRUPT = String.fromCharCode(3);
+const ESCAPE = String.fromCharCode(27);
 const ACTIVATION = new Set(['\r', '\n', ' ']);
 const FORWARD = new Set(['\t', 'j', '[B']);
 const BACKWARD = new Set(['[Z', 'k', '[A']);
 
-export function handleKey(state: TuiState, key: string): KeyResult {
+/**
+ * What a terminal in raw mode sends, reduced to what this module answers to.
+ *
+ * The arrow keys and shift-tab were named here as `[A`, `[B` and `[Z` — which is what the Ink
+ * layer hands back, and is not what a terminal sends. A terminal sends the same bytes behind
+ * an escape, so every one of them fell through to "no key matched" and the plain renderer had
+ * no arrows and no way to walk backwards but `k`. "Full keyboard operation" was true of the
+ * Ink path alone. A bare escape is left alone: it means the person pressed Escape, and moving
+ * the cursor is not what that asks for.
+ */
+function normalise(key: string): string {
+  return key.length > 1 && key.startsWith(ESCAPE) ? key.slice(1) : key;
+}
+
+export function handleKey(state: TuiState, raw: string): KeyResult {
+  const key = normalise(raw);
   const stops: Stop[] = stopsFor(state.app);
 
   if (key === 'q' || key === INTERRUPT) {

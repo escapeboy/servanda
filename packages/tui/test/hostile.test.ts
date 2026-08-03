@@ -59,6 +59,12 @@ function hostileState(): FixtureState {
   };
   return {
     items: [item],
+    // The three §7 views, held apart as a node holds them. This item is one the viewer owes;
+    // the hostile string reaches the same renderer either way, and putting it in a bucket rather
+    // than leaving the client to guess is the whole of the fix these members exist for.
+    owe: [item],
+    waiting: [],
+    closed: [],
     pending: [{ ...item, id: 'hostile-pending', state: 'proposed', actions: [] }],
     brief: {
       generated_at: NOW,

@@ -3,7 +3,7 @@ import { COPY } from './copy.js';
 import type { SealView } from './seal.js';
 import { sealFor } from './seal.js';
 import type { ConsequenceTone, PartyView } from './view.js';
-import { consequenceFor, isWaiting, partyFor } from './view.js';
+import { consequenceFor, partyFor } from './view.js';
 
 /**
  * The team surface — doctrine surface 6: "the blocking graph as auto-standup; a 40-second
@@ -104,7 +104,14 @@ function partiesOf(publication: TeamPublication): PartyView[] {
 
 function entryFor(publication: TeamPublication, now: string): TeamEntryView {
   const item = publication.item;
-  const consequence = consequenceFor(item, now, isWaiting(item));
+  // `false`, and not a role lookup: the team surface has no viewer role to read. M-4 makes this
+  // a list of promises PARTIES chose to publish into a scope, and the person reading it is
+  // usually neither of them — so "their date passed", which asserts the reader is the one owed,
+  // would be false for almost every reader. The owner-framing describes the promise rather than
+  // the reader's position, which is what a standup is. This is what the old `isWaiting(item)`
+  // already evaluated to here (a published item is an edge, never an expectation); it is written
+  // out because it was an accident and is now a decision.
+  const consequence = consequenceFor(item, now, false);
   const between = partiesOf(publication);
   const blocks = publication.blocks ?? [];
   return {

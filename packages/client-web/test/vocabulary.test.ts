@@ -12,6 +12,7 @@ import {
   scanVocabulary,
   visibleText,
 } from '../src/index.js';
+import type { OpenLoopItem } from '@servanda/types';
 import { NOW, everySurface, everyViewAnywhere } from './fixture.js';
 
 /**
@@ -59,13 +60,16 @@ describe('no surface speaks the vocabulary of its own machinery', () => {
 describe('the words come from the interface, never from the connection', () => {
   it('renders a person’s own text verbatim even when it uses machinery words', () => {
     const fixture = makeFixture(4, NOW);
-    const hostile = {
-      items: fixture.items.map((item) => ({
+    const reword = (items: readonly OpenLoopItem[]) => ({
+      items: items.map((item) => ({
         ...item,
         intent_or_expect: 'Migrate the vault and retire the old node',
       })),
-    };
-    const ledger = buildLedger(hostile, NOW);
+    });
+    const ledger = buildLedger(
+      { owe: reword(fixture.owe), waiting: reword(fixture.waiting), closed: reword(fixture.closed) },
+      NOW,
+    );
     const owed = ledger.sections.find((s) => s.id === 'owe')?.cards ?? [];
     expect(owed.length).toBeGreaterThan(0);
     expect(owed[0]?.what).toBe('Migrate the vault and retire the old node');

@@ -94,6 +94,12 @@ export interface BriefView {
    * surface that shows nothing about them presents a partial ranking as the whole one.
    */
   readonly unresolved: number;
+  /**
+   * `unresolved` said as a sentence, or null when there is nothing to say. The count alone
+   * was carried on this view model for a while and no renderer read it, so a brief with two
+   * unreachable slots and no reachable ones still printed "Nothing is waiting on you today."
+   */
+  readonly unresolvedLine: string | null;
   /** For the email subject line, which needs counts before it has cards. */
   readonly counts: { readonly owe: number; readonly waiting: number };
 }
@@ -112,9 +118,34 @@ export interface InboxView {
 const KEY_SHAPE = /^[0-9a-f]{64}$/u;
 const DAY_MS = 86_400_000;
 
-/** Whole days between two instants, floored towards the past. */
+/** The UTC midnight that starts the day an instant falls in, or null if it cannot be read. */
+function startOfDay(iso: string): number | null {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  const d = new Date(t);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/**
+ * Whole days between two instants, counted the way a calendar counts them.
+ *
+ * This was elapsed milliseconds divided by a day and floored, which is a different quantity
+ * and agrees with this one only when the two instants sit at the same time of day — which is
+ * exactly how every fixture was written and is never how a morning is read. A promise that
+ * came due at nine this morning was three quarters of a day old by evening, so the division
+ * floored to −1 and the card said "The date passed yesterday" about today. In the other
+ * direction the same arithmetic pulled tomorrow morning into "Due today" from lunchtime
+ * onwards. Both are the interface stating a wrong fact on the one line a person reads first.
+ *
+ * UTC, because this module is forbidden to read a zone (see `readableInstant`) and the whole
+ * surface already names its hours in UTC. Guessing the machine's zone here would make the
+ * same register render differently on the laptop that shows it and the server that mails it.
+ */
 function daysBetween(fromIso: string, toIso: string): number {
-  return Math.floor((Date.parse(toIso) - Date.parse(fromIso)) / DAY_MS);
+  const from = startOfDay(fromIso);
+  const to = startOfDay(toIso);
+  if (from === null || to === null) return Number.NaN;
+  return Math.round((to - from) / DAY_MS);
 }
 
 /** A raw 64-character key is not a name and is never shown as one. */
@@ -179,16 +210,42 @@ export function consequenceFor(
   if (item.state === 'closed' || item.state === 'released' || item.state === 'expired') {
     return { text: COPY.consequence.settled, tone: 'settled' };
   }
-  if (item.due === null) {
+  // The two states where a DATE says nothing true.
+  //
+  // Both are live, both are blocked on the other party, and neither is governed by `due` any
+  // more — so falling through to the arithmetic below produced "Due tomorrow." for a promise its
+  // owner had closed with evidence three days ago and that the counterparty had already released
+  // them from. The tone is `passed` rather than `plain`: nothing is on fire, but something is
+  // waiting on a person and a settled grey would say the opposite.
+  if (item.state === 'contested-closure') {
+    return { text: COPY.consequence.contested, tone: 'passed' };
+  }
+  if (item.state === 'disputed') {
+    return { text: COPY.consequence.disputed, tone: 'passed' };
+  }
+  // A date this client cannot read is a date it can say nothing about. `due` is an RFC 3339
+  // string at the §7 boundary, so a conforming node cannot send one — but the client is the
+  // last stop, and the arithmetic below produced "The date passed NaN days ago" rather than
+  // failing, which is the one outcome a person must never be shown.
+  const delta = item.due === null ? Number.NaN : daysBetween(now, item.due);
+  if (Number.isNaN(delta)) {
     const days = Math.max(0, Math.floor(item.age_days));
     return {
       text: waiting ? COPY.consequence.waitingNoDate(days) : COPY.consequence.openNoDate(days),
       tone: 'plain',
     };
   }
-  const delta = daysBetween(now, item.due);
   if (delta === 0) {
-    return { text: waiting ? COPY.consequence.theirsToday : COPY.consequence.dueToday, tone: 'plain' };
+    // The date is today's. Whether the hour has been and gone is the difference between a
+    // thing still to do today and a thing that did not happen, and both readings exist here.
+    // At the due instant exactly it is due, not missed: the hour has to be behind you.
+    if (Date.parse(item.due as string) >= Date.parse(now)) {
+      return { text: waiting ? COPY.consequence.theirsToday : COPY.consequence.dueToday, tone: 'plain' };
+    }
+    return {
+      text: waiting ? COPY.consequence.theirsPassedToday : COPY.consequence.passedToday,
+      tone: 'passed',
+    };
   }
   if (delta === 1) {
     return {
@@ -202,14 +259,11 @@ export function consequenceFor(
       tone: 'plain',
     };
   }
+  // Whole calendar days, so this is at least one: today's date is the branch above.
   const passed = Math.abs(delta);
   const text = waiting
-    ? passed === 0
-      ? COPY.consequence.theirsPassedToday
-      : COPY.consequence.theirsPassedDays(passed)
-    : passed === 0
-      ? COPY.consequence.passedToday
-      : COPY.consequence.passedDays(passed);
+    ? COPY.consequence.theirsPassedDays(passed)
+    : COPY.consequence.passedDays(passed);
   return { text, tone: 'passed' };
 }
 
@@ -249,25 +303,44 @@ export function cardFor(item: OpenLoopItem, now: string, waiting: boolean): Card
   };
 }
 
-/** Which side of the register an item sits on, from the shape of the item itself. */
-export function isWaiting(item: OpenLoopItem): boolean {
-  return item.kind === 'expectation';
+/**
+ * The three views §7 already defines, fetched as themselves.
+ *
+ * This replaces `isWaiting(item)`, which was `item.kind === 'expectation'` — and an edge is
+ * `kind: 'edge'` for BOTH parties, so nothing in the ledger ever read the role. Ana promises
+ * Boyan something and he confirms it; his screen then says **"You owe"**, with `Let it go`
+ * (release — the act of the party who is OWED) sitting under that heading. `You are waiting` was
+ * empty on both screens and structurally could hold only expectations, which by M-1 are exactly
+ * the promises nobody has signed. The register's central distinction was inverted for one of the
+ * two people it exists to serve.
+ *
+ * The node was never confused: `itemsFor` computes `isOwner` and buckets `view: 'owe'` and
+ * `view: 'waiting'` correctly. The client asked for `view: 'all'` — which flattens the role away
+ * — and then re-derived the answer with a rule that could not carry it. So the fix is not a new
+ * member on the item; it is to stop asking a question whose answer is thrown away, and to take
+ * the buckets from the surface that knows. The same doctrine as ordering: the node decides, the
+ * client renders.
+ */
+export interface LedgerBuckets {
+  readonly owe: OpenLoopsOutput;
+  readonly waiting: OpenLoopsOutput;
+  readonly closed: OpenLoopsOutput;
 }
 
-const CLOSED_STATES = new Set(['closed', 'released', 'expired', 'superseded']);
+/** Ids the node placed in `view: 'waiting'` — the viewer is owed these, not obliged by them. */
+export function waitingIdsOf(buckets: LedgerBuckets): ReadonlySet<string> {
+  return new Set(buckets.waiting.items.map((i) => i.id));
+}
 
-export function buildLedger(loops: OpenLoopsOutput, now: string): LedgerView {
-  const owe: CardView[] = [];
-  const waiting: CardView[] = [];
-  const closed: CardView[] = [];
+export function buildLedger(buckets: LedgerBuckets, now: string): LedgerView {
   // Order is the node's: the attention market decides, never a sort control (doctrine).
-  for (const item of loops.items) {
-    const wait = isWaiting(item);
-    const card = cardFor(item, now, wait);
-    if (CLOSED_STATES.has(item.state)) closed.push(card);
-    else if (wait) waiting.push(card);
-    else owe.push(card);
-  }
+  const owe = buckets.owe.items.map((item) => cardFor(item, now, false));
+  const waiting = buckets.waiting.items.map((item) => cardFor(item, now, true));
+  const closed = buckets.closed.items.map((item) =>
+    // A closed item's `ifIDoNothing` is settled wording either way, but the role still decides
+    // whose failing a date sentence describes, so it is not guessed here either.
+    cardFor(item, now, item.kind === 'expectation'),
+  );
   return {
     sections: [
       { id: 'owe', heading: COPY.sections.owe, empty: COPY.empty.owe, cards: owe },
@@ -287,7 +360,20 @@ export function buildLedger(loops: OpenLoopsOutput, now: string): LedgerView {
  * exactly where the register would slip. Which action leads is honoured; what it is called
  * is not.
  */
-export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: string): BriefView {
+export function buildBrief(
+  brief: BriefOutput,
+  loops: OpenLoopsOutput,
+  now: string,
+  /**
+   * The ids the node put in `view: 'waiting'`. The brief's `counts` and each card's "if I do
+   * nothing" both turn on the role, and this surface had the same inversion the ledger did — a
+   * promise made TO you was counted as one you owe, and its consequence sentence named your
+   * failing rather than theirs. Defaults to empty so a caller with no buckets gets "everything
+   * is mine", which is the safe direction: it over-states what you owe rather than quietly
+   * relieving you of it.
+   */
+  waitingIds: ReadonlySet<string> = new Set(),
+): BriefView {
   const byId = new Map(loops.items.map((item) => [item.id, item]));
   const cards: CardView[] = [];
   let owe = 0;
@@ -309,7 +395,7 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
       unresolved++;
       continue;
     }
-    const wait = isWaiting(item);
+    const wait = waitingIds.has(item.id);
     if (wait) waiting++;
     else owe++;
     const card = cardFor(item, now, wait);
@@ -333,6 +419,7 @@ export function buildBrief(brief: BriefOutput, loops: OpenLoopsOutput, now: stri
     belowTheLine:
       brief.below_the_line_count > 0 ? COPY.brief.belowTheLine(brief.below_the_line_count) : null,
     unresolved,
+    unresolvedLine: unresolved > 0 ? COPY.brief.unresolved(unresolved) : null,
     counts: { owe, waiting },
   };
 }
@@ -360,7 +447,10 @@ export function buildInbox(pending: OpenLoopsOutput, now: string): InboxView {
     empty: COPY.inbox.empty,
     consequence: COPY.inbox.consequence,
     cards: pending.items.map((item) => ({
-      ...cardFor(item, now, isWaiting(item)),
+      // `false` and not a guess: every card here has its `ifIDoNothing` and `tone` replaced two
+      // lines down with the inbox's own settled wording, so the role decides nothing on this
+      // surface. A queue item is awaiting YOUR decision whichever side of it you are on.
+      ...cardFor(item, now, false),
       ifIDoNothing: COPY.inbox.consequence,
       tone: 'plain' as const,
       actions: [

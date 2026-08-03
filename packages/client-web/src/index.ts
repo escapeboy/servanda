@@ -24,7 +24,7 @@ import { buildProof } from './proof.js';
 import type { AppView, SurfaceId } from './render.js';
 import type { TeamInput } from './team.js';
 import { NO_TEAM, buildTeam } from './team.js';
-import { buildBrief, buildInbox, buildLedger } from './view.js';
+import { buildBrief, buildInbox, buildLedger, waitingIdsOf } from './view.js';
 import type { OpenLoopsOutput } from '@servanda/types';
 
 export interface LoadAppOptions {
@@ -53,16 +53,25 @@ export interface LoadAppOptions {
  */
 export async function loadApp(client: NodeClient, options: LoadAppOptions): Promise<AppView> {
   const persona = options.persona ?? null;
-  const [brief, loops] = await Promise.all([
+  // Four reads, not one. `view: 'all'` is the brief's index — it must reach every item a slot can
+  // name — but it flattens away WHICH SIDE of each promise the viewer is on, and the ledger is
+  // built on exactly that distinction. §7 already defines the three views; asking for them is how
+  // the role survives the trip. Re-deriving it from `kind` put a promise made TO you under
+  // "You owe" for the whole of v0.
+  const [brief, loops, owe, waiting, closed] = await Promise.all([
     client.brief({ persona }),
     client.open_loops({ view: 'all', persona, limit: 500 }),
+    client.open_loops({ view: 'owe', persona, limit: 500 }),
+    client.open_loops({ view: 'waiting', persona, limit: 500 }),
+    client.open_loops({ view: 'closed', persona, limit: 500 }),
   ]);
+  const buckets = { owe, waiting, closed };
   const proof = options.proof ?? null;
   return {
     surface: options.surface,
-    brief: buildBrief(brief, loops, options.now),
-    ledger: buildLedger(loops, options.now),
-    inbox: buildInbox(options.pending ?? { items: [] }, options.now),
+    brief: buildBrief(brief, loops, options.now, waitingIdsOf(buckets)),
+    ledger: buildLedger(buckets, options.now),
+    inbox: buildInbox(options.pending ?? { items: [], total: 0 }, options.now),
     team: buildTeam(options.team ?? NO_TEAM, options.now),
     integrations: buildIntegrations(options.integrations ?? {}),
     onboarding: buildOnboarding(options.onboarding ?? {}),

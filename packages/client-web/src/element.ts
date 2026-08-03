@@ -47,6 +47,30 @@ export function escapeHtml(s: string): string {
     .replace(/'/gu, '&#39;');
 }
 
+/**
+ * What a line-structured medium — a terminal frame, the text part of a mail — has to do to a
+ * string before printing it, and the exact counterpart of `escapeHtml` above.
+ *
+ * The words of a promise are content and are shown verbatim (M-21), but "verbatim" is about
+ * the words: a cursor-movement sequence is not a word, and in a medium whose only structure
+ * is where the line breaks are, a newline inside a headline is not a character either — it is
+ * a second card the register never recorded. `ESC[8m` after a counterparty's name conceals
+ * everything printed after it on that line, which on a card is the verification level: the
+ * name survives and its evidence does not, which is precisely what M-12 forbids.
+ *
+ * Control characters become spaces so the line keeps its length rather than closing up around
+ * what was removed; bidi overrides go entirely, because there is no width for them to keep.
+ * Same two classes `@servanda/gestures` scrubs from a quote, and for the same reason — except
+ * that here the text arrives over §7, where `intent_or_expect` and `counterparty` are plain
+ * strings that no schema can make safe to print.
+ */
+const CONTROL_CHARS = new RegExp('[\\u0000-\\u001F\\u007F-\\u009F]', 'gu');
+const BIDI_CHARS = new RegExp('[\\u202A-\\u202E\\u2066-\\u2069]', 'gu');
+
+export function escapeLine(line: string): string {
+  return line.replace(CONTROL_CHARS, ' ').replace(BIDI_CHARS, '');
+}
+
 export function renderToHtml(node: El): string {
   const attrs = Object.entries(node.attrs ?? {})
     .filter(([, v]) => v !== false)

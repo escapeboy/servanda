@@ -18,11 +18,12 @@
 // The demonstration exists because the surfaces were built before anything could serve them
 // real data, and it is still the right thing to show someone who has no vault yet. What it
 // must never do is look like a register. So the program says which one you are looking at,
-// every time, in a line above the frame — a person who cannot tell their own promises from
-// a sample has no reason to trust either.
-import { FixtureNodeClient, loadApp, makeFixture } from '@servanda/client-web';
+// every time, as the first line OF the frame rather than a line above it — a person who
+// cannot tell their own promises from a sample has no reason to trust either, and a label
+// printed once outside the frame is a label the renderer is free to scroll or clear away.
+import { COPY, FixtureNodeClient, loadApp, makeFixture } from '@servanda/client-web';
 import { openRegister } from '@servanda/client-local';
-import { frame, handleKey, loadInk } from '@servanda/tui';
+import { frame, handleKey, loadInk, sourceFor } from '@servanda/tui';
 
 // Built by code point rather than written literally: an escape byte in a source file is a
 // byte nobody can see in a diff.
@@ -31,26 +32,22 @@ const CLEAR = `${ESC}[2J${ESC}[H`;
 
 const now = new Date().toISOString();
 
-const dir = process.env['SERVANDA_VAULT'];
-const passphrase = process.env['SERVANDA_PASSPHRASE'];
-const wantsLocal = dir !== undefined;
+const source = sourceFor(process.env);
 
 let client;
 let pending;
 let banner;
 
-if (wantsLocal) {
-  if (passphrase === undefined) {
-    process.stderr.write(
-      'SERVANDA_VAULT is set but SERVANDA_PASSPHRASE is not. The vault is encrypted; a\n' +
-        'register cannot be opened without it. Refusing to fall back to the demonstration,\n' +
-        'because a sample shown where your promises were expected is worse than an error.\n',
-    );
-    process.exit(2);
-  }
+if (source.kind === 'refuse') {
+  process.stderr.write(source.message);
+  process.exit(2);
+}
+
+if (source.kind === 'register') {
+  const { dir, passphrase, persona } = source;
   let opened;
   try {
-    opened = openRegister({ dir, passphrase, persona: process.env['SERVANDA_PERSONA'] });
+    opened = openRegister({ dir, passphrase, persona });
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exit(2);
@@ -60,19 +57,28 @@ if (wantsLocal) {
   // nothing hands one out (filed upstream). So the inbox is genuinely empty here rather than
   // borrowed from the sample — an empty queue is true, and a borrowed one is not.
   pending = { items: [] };
-  banner = `Your register · vault ${dir} · persona ${opened.personaId.slice(0, 8)}…`;
+  banner = COPY.source.yours(dir, `${opened.personaId.slice(0, 8)}…`);
 } else {
-  const fixture = makeFixture();
+  // Built for the instant the frame is rendered at, not for the fixture's own default. The
+  // two are the same parameter and were passed different values: the sample was composed
+  // around 1 March 2026 and rendered against today's clock, so a person opening Servanda for
+  // the first time met a brief dated five months ago in which every promise was 150-odd days
+  // past its date and nothing was due today. A demonstration is a claim about what a register
+  // looks like, and that one was a claim about an abandoned register.
+  const fixture = makeFixture(24, now);
   client = new FixtureNodeClient(fixture);
   pending = { items: fixture.pending };
-  banner =
-    'DEMONSTRATION — these promises are invented. Set SERVANDA_VAULT and SERVANDA_PASSPHRASE to read your own.';
+  banner = source.banner;
 }
 
+// The banner is part of the frame, not a line printed above it: Ink clears the whole terminal
+// as soon as the frame outgrows the window, and a label written once was then gone for the
+// rest of the session. Carried in the state, it is redrawn by whichever renderer is running.
 let state = {
   app: await loadApp(client, { surface: 'brief', now, pending }),
   cursor: 0,
   quit: false,
+  banner,
 };
 
 /** One key, applied. Returns the next state, or null when the answer is to stop. */
@@ -92,7 +98,6 @@ const ink = wantsInk ? await loadInk() : null;
 
 if (ink !== null) {
   const { runInk } = await import('../ink/servanda-ink.mjs');
-  process.stdout.write(`${banner}\n`);
   runInk(ink, { initialState: state, onKey: step });
 } else {
   if (wantsInk) {
@@ -101,7 +106,6 @@ if (ink !== null) {
 
   const draw = () => {
     process.stdout.write(CLEAR);
-    process.stdout.write(`${banner}\n`);
     process.stdout.write(`${frame(state)}\n`);
   };
 

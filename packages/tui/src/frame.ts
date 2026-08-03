@@ -9,7 +9,7 @@ import type {
   Stop,
   TeamView,
 } from '@servanda/client-web';
-import { COPY, STANDALONE_SURFACES, SURFACES, stopsFor } from '@servanda/client-web';
+import { COPY, STANDALONE_SURFACES, SURFACES, escapeLine, stopsFor } from '@servanda/client-web';
 
 /**
  * The terminal rendering: view model in, lines of text out.
@@ -67,6 +67,14 @@ export interface FrameState {
   readonly app: AppView;
   /** The stop the cursor is on, as an index into `stopsFor(app)`. */
   readonly cursor: number;
+  /**
+   * Which register this is — your own, or the demonstration on invented promises. It belongs
+   * to the frame rather than to the entry point that knows the answer, because a line written
+   * once above the frame is a line that can be lost: Ink clears the whole terminal the moment
+   * the frame is taller than the window, which any register with a few cards is, and it never
+   * came back. A sample that survives its own label is a sample mistakable for a register.
+   */
+  readonly banner?: string | undefined;
 }
 
 /** A row of controls that does not belong to a card: sources, consents, first-run steps. */
@@ -151,34 +159,15 @@ function proofLines(view: ProofView, focused: string | null): string[] {
 }
 
 /**
- * What a terminal reads as an instruction rather than as a letter, and what makes a line read
- * differently from what it contains. Same two classes `@servanda/gestures` scrubs from a
- * quote, and for the same reason — except that here the text arrives over §7 rather than from
- * a chat platform, and §7's `intent_or_expect` and `counterparty` are plain unbounded strings.
- */
-const CONTROL_CHARS = new RegExp('[\\u0000-\\u001F\\u007F-\\u009F]', 'gu');
-const BIDI_CHARS = new RegExp('[\\u202A-\\u202E\\u2066-\\u2069]', 'gu');
-
-/**
- * The renderer's last act, on every line it emits.
- *
- * The words of a promise are content and are shown verbatim (M-21) — but "verbatim" is about
- * the words, and a cursor-movement sequence is not a word. Left in, `ESC[8m` after a
- * counterparty's name conceals everything the terminal prints after it, which on a card is
- * the verification level: the name survives and its evidence does not, which is precisely
- * what M-12 forbids. Control characters become spaces so the line keeps its length rather
- * than closing up around what was removed; bidi overrides go entirely, because there is no
- * width for them to keep.
+ * The renderer's last act, on every line it emits — `escapeLine`, which is the shared rule
+ * for every medium whose structure is where the lines break. The morning mail's text part
+ * needs the same treatment for the same reasons, and had none until it shared this one.
  *
  * Nothing this file writes contains either class, so this can never alter the interface's own
  * words: the marks are ASCII parentheses and the rule is a box-drawing dash.
  */
-function terminalSafe(line: string): string {
-  return line.replace(CONTROL_CHARS, ' ').replace(BIDI_CHARS, '');
-}
-
 export function frameLines(state: FrameState): string[] {
-  return composeLines(state).map(terminalSafe);
+  return composeLines(state).map(escapeLine);
 }
 
 function composeLines(state: FrameState): string[] {
@@ -186,9 +175,10 @@ function composeLines(state: FrameState): string[] {
   const focused = stops[state.cursor]?.id ?? null;
   // A standalone surface has no navigation in the browser, so it has none here either.
   const standalone = STANDALONE_SURFACES.includes(state.app.surface);
+  const head = state.banner === undefined ? [] : [state.banner];
   const lines: string[] = standalone
-    ? [COPY.appName, RULE]
-    : [COPY.appName, navLine(state.app.surface, focused), RULE];
+    ? [...head, COPY.appName, RULE]
+    : [...head, COPY.appName, navLine(state.app.surface, focused), RULE];
 
   if (state.app.surface === 'team') {
     lines.push(...teamLines(state.app.team));
@@ -215,6 +205,7 @@ function composeLines(state: FrameState): string[] {
     if (state.app.brief.cards.length === 0) lines.push(state.app.brief.empty, '');
     for (const card of state.app.brief.cards) lines.push(...cardLines(card, focused));
     if (state.app.brief.belowTheLine !== null) lines.push(state.app.brief.belowTheLine);
+    if (state.app.brief.unresolvedLine !== null) lines.push(state.app.brief.unresolvedLine);
     return lines;
   }
 

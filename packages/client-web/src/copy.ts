@@ -49,6 +49,17 @@ export const COPY = {
     /** Everything the attention market ranked below the fold. Count, never a nudge. */
     belowTheLine: (n: number): string => (n === 1 ? '1 more, further down.' : `${n} more, further down.`),
     generated: (when: string): string => `As of ${readableInstant(when)}.`,
+    /**
+     * What was ranked for this morning and could not be shown. It is one line and it is
+     * unavoidable: a brief that quietly drops what it was given is a brief that says "nothing
+     * is waiting on you" while something is. The reason cannot be stated here — it is that the
+     * ranking crosses contexts and the read does not — because naming it needs the machinery
+     * words this table exists to keep off the surface. The count is the part that matters.
+     */
+    unresolved: (n: number): string =>
+      n === 1
+        ? '1 more was ranked for this morning and is kept somewhere this view cannot reach.'
+        : `${n} more were ranked for this morning and are kept somewhere this view cannot reach.`,
   },
 
   sections: {
@@ -130,6 +141,17 @@ export const COPY = {
     waitingNoDate: (days: number): string =>
       days === 1 ? 'No date. Waiting 1 day.' : `No date. Waiting ${days} days.`,
     settled: 'Nothing further.',
+    /**
+     * `contested-closure`, and it needs its own sentence for the same reason it needed a name.
+     *
+     * Without one it fell through to the date arithmetic and read the edge's `due` — so the
+     * person who closed a promise with evidence three days ago was told "Due tomorrow." The
+     * question this line answers is "what happens if I do nothing", and here the honest answer
+     * is that the disagreement stands until one of you replaces it or the window runs out.
+     */
+    contested: 'Both of you ended it, differently. It stands until you agree or the window runs out.',
+    /** `disputed` had the same gap and the same wrong sentence. */
+    disputed: 'Disagreed. It stands until you agree or replace it.',
   },
 
   /**
@@ -144,6 +166,15 @@ export const COPY = {
     supersede: 'Change the date',
     delegate: 'Hand to someone',
     ping: 'Ask for an update',
+    /**
+     * §4.4's escape from a deadlock, offered to whoever is trapped once the window has run.
+     *
+     * Worded as an ending and not as a verdict, because that is what the act is: §4.4 says both
+     * parties' assertions stay in the chain and the outcome names a window, never who was right.
+     * "Close it unresolved" would be a judgement; "Let the time run out" would suggest waiting is
+     * still required when the waiting is what just finished.
+     */
+    expire: 'End it, unsettled',
     confirm: 'Confirm',
     dismiss: 'Not a promise',
     propose: 'Send it to them',
@@ -173,6 +204,11 @@ export const COPY = {
     released: 'Let go by agreement',
     expired: 'The time ran out',
     disputed: 'Disagreed',
+    // The only state a person had never met, because it was the only one with no sentence.
+    // It is reached when both people act at the same moment without having seen each other —
+    // one marks it done, the other lets it go. Both acts are legal and neither is discarded, so
+    // the wording says what happened rather than naming a fault.
+    'contested-closure': 'Both of you ended it, differently',
     superseded: 'Replaced by a newer promise',
   },
 
@@ -283,6 +319,21 @@ export const COPY = {
     recoveryPrint: 'Print the sheet',
     recoverySkip: 'Skip for now',
     recoveryLater: 'You can print it later, from Sources and trust.',
+  },
+
+  /**
+   * Which register you are looking at — your own promises, or the invented ones.
+   *
+   * This line lived in the terminal's entry point, written by hand and outside this table, so
+   * gate GE never scanned the one sentence the terminal prints on every frame: it said "vault"
+   * and "persona", two of the seven words this table exists to keep off a surface. The env
+   * variable names survive the scan because `SERVANDA_VAULT` is one word, and they are the
+   * literal thing to type.
+   */
+  source: {
+    demonstration:
+      'DEMONSTRATION — these promises are invented. Set SERVANDA_VAULT and SERVANDA_PASSPHRASE to read your own.',
+    yours: (where: string, who: string): string => `Your own promises · ${where} · ${who}`,
   },
 
   email: {
