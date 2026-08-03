@@ -25,6 +25,19 @@ A Claude Code hook's stdout re-enters the model's context. A capture hook that s
 feed captured signal straight back to the model as text it reads — turning observation into
 instruction and inverting M-6 at the very first hop. The quiet is the safety property.
 
+## Who reads the log
+
+`@servanda/extraction`'s `ingestEnvelopeLog` — the other half of the same file. It opens the log
+`O_RDONLY`, keeps a three-integer cursor, survives rotation and truncation, and hands what it finds
+to a `PendingProposalSink` that `@servanda/node` supplies.
+
+The path is not end-to-end until that sink exists. Until then the log is read by a library and by
+tests, not by anything a person has running.
+
+The reader applies the same not-a-regular-file refusal as the writer, for a different reason: a
+FIFO has no stable byte offset, so a cursor over one cannot make anything idempotent, and whatever
+process is on the far end would get to decide what "the log" says.
+
 ## Defensive parsing
 
 The transcript format is treated as untrusted and versionless: malformed lines are skipped, never

@@ -9,3 +9,4 @@ export * from './harness/transcripts.js';
 export * from './harness/report.js';
 export * from './harness/run.js';
 export * from './claude-cli.js';
+export * from './ingest/index.js';
