@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -11,7 +12,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { ARGON2ID_CONSTRAINED, derivePersona, mnemonicToSeed } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Commitment } from '@servanda/types';
 import {
@@ -72,16 +73,46 @@ function commitment(intent: string): Commitment {
   };
 }
 
-/** A vault with two personas and two promises, which is the smallest thing worth losing. */
-function newVault(): { dir: string; vault: Vault } {
-  const dir = mkdtempSync(join(tmpdir(), 'servanda-bad-day-'));
-  dirs.push(dir);
-  const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
+/**
+ * A vault with two personas and two promises, which is the smallest thing worth losing.
+ *
+ * Built ONCE and copied per test, and the reason is a gate that reported red over 311 green
+ * tests. Vitest's worker→main `onTaskUpdate` call carries birpc's 60 s timeout, and the timer
+ * that enforces it lives in the WORKER. A file of synchronous tests never reaches the poll
+ * phase, so the main process's reply sits unread in the IPC queue while the timer runs; the
+ * clock is therefore CUMULATIVE OVER THE FILE, not per test. Measured: five tests blocking
+ * 14 s each — none of them near any timeout — produce `Timeout calling "onTaskUpdate"` with
+ * 5 of 5 passing and a non-zero exit.
+ *
+ * Building this vault per test cost one Argon2id derivation (~1.4 s at the constrained
+ * profile) plus about thirty git subprocesses, eight times over, and that is what carried the
+ * file across 60 s. A copy is a few milliseconds and is the same bytes and the same git
+ * history, so every test below still gets a vault nothing else has touched.
+ *
+ * What did NOT change is what any test checks. This is scaffolding cost only — the per-test
+ * `Vault.open` that each scenario actually exercises is still a real open, at the real KDF
+ * profile, against a real repository.
+ */
+let template: string;
+
+beforeAll(() => {
+  template = mkdtempSync(join(tmpdir(), 'servanda-bad-day-template-'));
+  const vault = Vault.create({ dir: template, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
   vault.putPersona(personaRecord(p0, 0, 'me'));
   vault.putPersona(personaRecord(p1, 1, 'them'));
   vault.putCommitment(p0.personaId, commitment('send Maria the quote'));
   vault.putCommitment(p0.personaId, commitment('call the accountant'));
-  return { dir, vault };
+});
+
+afterAll(() => {
+  rmSync(template, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+});
+
+function newVault(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'servanda-bad-day-'));
+  dirs.push(dir);
+  cpSync(template, dir, { recursive: true });
+  return dir;
 }
 
 function commitmentsDir(dir: string): string {
@@ -94,7 +125,7 @@ function git(dir: string, args: string[]): string {
 
 describe('a half-written record', () => {
   it('names the file, and everything else in the vault still reads', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     const names = readdirSync(commitmentsDir(dir));
     const torn = names[0]!;
     const intact = names[1]!;
@@ -129,7 +160,7 @@ describe('a half-written record', () => {
 
 describe('a file that moved inside the vault', () => {
   it('says where it belongs, and putting it back opens it', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     const name = readdirSync(commitmentsDir(dir))[0]!;
     const elsewhere = join(dir, 'personas', p1.personaId, 'commitments');
     mkdirSync(elsewhere, { recursive: true });
@@ -154,7 +185,7 @@ describe('a file that moved inside the vault', () => {
 
 describe('a vault directory two machines both wrote', () => {
   it('names the sync conflict copy instead of failing to decrypt it', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     const name = readdirSync(commitmentsDir(dir))[0]!;
     // Exactly what Dropbox and iCloud leave behind, in the directory they leave it in.
     const conflict = `${name.replace(/\.json$/, '')} (Nikola's conflicted copy 2026-08-01).json`;
@@ -175,7 +206,7 @@ describe('a vault directory two machines both wrote', () => {
 
 describe('the passphrase that did not work', () => {
   it('says there is no lockout, and says the other thing it might be', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     let err: unknown;
     try {
       Vault.open({ dir, passphrase: 'not the passphrase' });
@@ -190,7 +221,7 @@ describe('the passphrase that did not work', () => {
   });
 
   it('is not what a damaged keyset says', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     const path = join(dir, 'keyset.json');
     writeFileSync(path, readFileSync(path, 'utf8').slice(0, 40));
     let err: unknown;
@@ -205,7 +236,7 @@ describe('the passphrase that did not work', () => {
   });
 
   it('is not what a missing keyset says', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     rmSync(join(dir, 'keyset.json'));
     expect(() => Vault.open({ dir, passphrase: PASSPHRASE })).toThrow(/keyset\.json is missing/);
   });
@@ -213,7 +244,7 @@ describe('the passphrase that did not work', () => {
 
 describe('a vault written by a newer Servanda', () => {
   it('is refused by version, not misreported as a wrong passphrase', () => {
-    const { dir } = newVault();
+    const dir = newVault();
     const marker = join(dir, 'servanda-vault.json');
     const descriptor = JSON.parse(readFileSync(marker, 'utf8')) as { v: string };
     descriptor.v = 'servanda/0.9';
@@ -234,7 +265,7 @@ describe('a vault written by a newer Servanda', () => {
 
 describe('a vault checked out at an old commit', () => {
   it('refuses to write, because a commit made there belongs to no branch', () => {
-    const { dir, vault } = newVault();
+    const dir = newVault();
     const shas = git(dir, ['log', '--format=%H']).trim().split('\n');
     const older = shas[2]!;
     git(dir, ['checkout', '--quiet', older]);
@@ -244,9 +275,14 @@ describe('a vault checked out at an old commit', () => {
     expect(past.listCommitments(p0.personaId)).toHaveLength(0);
 
     // … and writing is not, because nothing else would ever tell them where they are.
+    //
+    // The write goes through the SAME handle that just read, rather than through a second one
+    // opened before the checkout. `commitAll` reads `.git/HEAD` on every call and a `Vault` holds
+    // no branch state at all, so the two are one code path — and one handle that reads and is then
+    // refused a write is the closer reading of the sentence above it.
     let err: unknown;
     try {
-      vault.putCommitment(p0.personaId, commitment('a promise made in the past'));
+      past.putCommitment(p0.personaId, commitment('a promise made in the past'));
     } catch (e) {
       err = e;
     }

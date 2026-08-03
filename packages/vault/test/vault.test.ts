@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { ARGON2ID_CONSTRAINED, derivePersona, edgeId, mnemonicToSeed, withSignature } from '@servanda/crypto';
 import { PROTOCOL_VERSION, type Assertion, type Commitment, type Edge } from '@servanda/types';
 import { GIT_CONFIG, logMessages, ScopeViolation, Vault, VaultGitError, type PersonaRecord } from '../src/index.js';
@@ -29,13 +29,45 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 });
 
-function newVault(): { dir: string; vault: Vault } {
-  const dir = mkdtempSync(join(tmpdir(), 'servanda-vault-test-'));
-  dirs.push(dir);
-  const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
+/**
+ * A two-persona vault, built ONCE and copied per test.
+ *
+ * The reason is a gate that reported red over 311 green tests: vitest's worker→main
+ * `onTaskUpdate` call carries birpc's 60 s timeout, the timer that enforces it lives in the
+ * WORKER, and a file of synchronous tests never reaches the poll phase where the main
+ * process's reply would be read. The clock is therefore CUMULATIVE OVER THE FILE and no
+ * single test has to be slow to blow it — measured, five tests blocking 14 s each produce the
+ * timeout with 5 of 5 passing. This file was spending ~70 s, almost all of it standing the
+ * same vault up ten times.
+ *
+ * A copy is a few milliseconds and is the same bytes and the same git history. Nothing a test
+ * checks moved: the `Vault.open` below is a real open at the real §9.3 constrained profile,
+ * against a real repository, and each test still gets a directory nothing else has touched.
+ */
+let template: string;
+
+beforeAll(() => {
+  template = mkdtempSync(join(tmpdir(), 'servanda-vault-template-'));
+  const vault = Vault.create({ dir: template, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
   vault.putPersona(personaRecord(p0, 0, 'me'));
   vault.putPersona(personaRecord(p1, 1, 'them'));
-  return { dir, vault };
+});
+
+afterAll(() => {
+  rmSync(template, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+});
+
+/** A private copy of the template. No key is derived — for tests that only need the directory. */
+function newVaultDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'servanda-vault-test-'));
+  dirs.push(dir);
+  cpSync(template, dir, { recursive: true });
+  return dir;
+}
+
+function newVault(): { dir: string; vault: Vault } {
+  const dir = newVaultDir();
+  return { dir, vault: Vault.open({ dir, passphrase: PASSPHRASE }) };
 }
 
 function personaRecord(
@@ -132,8 +164,7 @@ describe('vault: encrypted at rest', () => {
   });
 
   it('refuses to open with the wrong passphrase', () => {
-    const { dir } = newVault();
-    expect(() => Vault.open({ dir, passphrase: 'wrong' })).toThrow();
+    expect(() => Vault.open({ dir: newVaultDir(), passphrase: 'wrong' })).toThrow();
   });
 });
 
@@ -243,10 +274,10 @@ describe('vault: nothing keeps writing after a commit returns', () => {
    * through `GIT_TRACE` rather than waiting to be told about it by a flaky teardown.
    */
   it('forks no background maintenance process', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'servanda-vault-trace-'));
-    dirs.push(dir);
-    const vault = Vault.create({ dir, passphrase: PASSPHRASE, kdf: ARGON2ID_CONSTRAINED });
-    vault.putPersona(personaRecord(p0, 0, 'me'));
+    // A copy of the template rather than a fresh `Vault.create`: what this observes is what git
+    // does under GIT_CONFIG in a directory a vault has committed to, and a copied repository is
+    // that. No content key is needed — nothing below opens the vault.
+    const dir = newVaultDir();
 
     // GIT_CONFIG is imported from the vault's own module rather than restated here. A test that
     // spelled the flags out would keep passing if someone changed the real ones, which is the

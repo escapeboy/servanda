@@ -36,6 +36,42 @@ export const PendingExtraction = z.object({
 export type PendingExtraction = z.infer<typeof PendingExtraction>;
 
 /**
+ * What is known about one queued message's journey — and, as load-bearing, what is not.
+ *
+ * There are two positive states rather than one because the two transports establish two
+ * different things and collapsing them would make the register lie. A git push that returned
+ * zero proves the bytes are in a shared repository; a hub that answered 200 proves a relay
+ * accepted a sealed blob it cannot read. Neither proves that a node, let alone a person, has
+ * read anything — §6.7 lets a courier "lose, duplicate or reorder", and a hub queue has a TTL.
+ * So `sent_at` is a statement about the COURIER and stops there.
+ *
+ * `acknowledged_at` is the only member that says anything about the recipient, and no transport
+ * can set it. It is set when a signature by the recipient arrives that could not exist unless
+ * they held this message's edge: §4.1 binds `edge_id` to the edge body, so an assertion naming
+ * it is proof of receipt a courier cannot forge and a recipient cannot deny.
+ */
+export const OutboxDelivery = z.object({
+  /** When a courier ACCEPTED the bytes. Not a claim that anybody read them. */
+  sent_at: Rfc3339.nullable().default(null),
+  /** The accepting courier's `kind`. A string, not an enum: the transport set is not the vault's. */
+  sent_via: z.string().min(1).nullable().default(null),
+  /** Proof of receipt, signed by the recipient. Only the recipient can cause this to be set. */
+  acknowledged_at: Rfc3339.nullable().default(null),
+  attempts: z.number().int().nonnegative().default(0),
+  last_attempt_at: Rfc3339.nullable().default(null),
+  /** The last refusal, worded by whatever refused. Cleared once a later attempt is accepted. */
+  last_error: z.string().nullable().default(null),
+  /**
+   * Set while this node holds NO courier that reaches the recipient. Distinct from `last_error`
+   * on purpose: a hub that answered 503 will be retried and may yet work, whereas this message
+   * cannot arrive at all until somebody configures a route. Those are different sentences to
+   * show a person, and a product that showed one for both would keep them waiting for ever.
+   */
+  unroutable_since: Rfc3339.nullable().default(null),
+});
+export type OutboxDelivery = z.infer<typeof OutboxDelivery>;
+
+/**
  * A wire message this node produced but has not handed to any transport. L0–L1 has no
  * network (M-10): `propose` writes here and stops. Stream B's transports drain it.
  */
@@ -47,8 +83,12 @@ export const OutboxItem = z.object({
   recipient: PersonaId,
   message: z.record(z.unknown()),
   queued_at: Rfc3339,
+  /** The only mutable member: the message is signed, its journey is not. */
+  delivery: OutboxDelivery.default({}),
 });
 export type OutboxItem = z.infer<typeof OutboxItem>;
+/** What a PRODUCER supplies: L1 queues a message and knows nothing about its journey yet. */
+export type OutboxItemInput = z.input<typeof OutboxItem>;
 
 /** Local bookkeeping attached to an edge: dismissal, retention state. Never on the wire. */
 export const EdgeMeta = z.object({

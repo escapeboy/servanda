@@ -142,6 +142,7 @@ describe('the vault commits identifiers, never content', () => {
       'feat(anchor): <id>',
       'feat(pending): queue <id>',
       'feat(outbox): queue <id>',
+      'chore(outbox): delivery <id>',
     ]);
     const masked = subjects(busyVault()).map((s) =>
       s.replace(/[0-9a-f]{12}/g, '<id>').replace(/\b\d+d\b/, '<n>d'),

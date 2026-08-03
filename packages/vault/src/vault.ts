@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import {
   type Argon2idParams,
   type ContentKeySet,
@@ -35,7 +35,9 @@ import {
   DEFAULT_RETENTION_DAYS,
   type EdgeMeta,
   type OrderingKey,
-  type OutboxItem,
+  type OutboxDelivery,
+  OutboxItem,
+  type OutboxItemInput,
   type PendingExtraction,
   type PersonaRecord,
   type RetentionPolicy,
@@ -123,9 +125,42 @@ const DEFAULT_AUTHOR: VaultAuthor = { name: 'servanda', email: 'vault@servanda.l
  */
 export const CROSS_PERSONA_APIS = ['listOrderingKeysAcrossPersonas'] as const;
 
+/** A device key as its holder has it: the label this vault knows it by, and the key itself. */
+export interface DeviceKey {
+  label: string;
+  keyHex: string;
+}
+
+export interface RekeyOptions {
+  /** Verified against the current keyset first, then used to wrap the NEW content key. */
+  passphrase: string;
+  /**
+   * The COMPLETE set of device keys the vault should have afterwards. Every device wrap not
+   * named here stops opening this vault — that omission is the revocation. See `Vault.rekey`
+   * for why this is a whole set and not a label to drop.
+   */
+  deviceKeys?: DeviceKey[];
+  /** Defaults to the profile the vault's current passphrase wrap was made at. */
+  kdf?: Argon2idParams;
+}
+
+export interface RekeyReport {
+  /** How many sealed records were opened under the old key and written back under the new one. */
+  resealed: number;
+  deviceLabelsBefore: string[];
+  deviceLabelsAfter: string[];
+  /**
+   * The commit at which the old content key stopped being this vault's key — and therefore the
+   * exact point up to which a revoked credential still reads everything, out of this vault's own
+   * git history. See `Vault.rekey` for the full account of what a re-key does not reach.
+   */
+  commit: string | null;
+}
+
 export class Vault {
   readonly dir: string;
-  private readonly contentKey: Uint8Array;
+  /** Not readonly: `rekey` replaces it, and a stale handle reading with the old key is the bug. */
+  private contentKey: Uint8Array;
   private readonly clock: () => Date;
 
   private constructor(dir: string, contentKey: Uint8Array, clock: () => Date) {
@@ -226,6 +261,180 @@ export class Vault {
   /** Exposed so the M-16 test can assert on the custody arrangement of a real vault. */
   keyset(): ContentKeySet {
     return readJson<ContentKeySet>(join(this.dir, 'keyset.json'));
+  }
+
+  // ── device custody (§1.7, M-16) ─────────────────────────────────────────────────────────
+
+  /** The labels of every device wrap this vault currently carries, in keyset order. */
+  deviceKeyLabels(): string[] {
+    return this.keyset().wraps.flatMap((w) => (w.kind === 'device' ? [w.label] : []));
+  }
+
+  /**
+   * Wrap this vault's content key for one more device.
+   *
+   * Until this existed, `Vault.create`'s `deviceKeys` was the only moment a device could ever be
+   * admitted, so adding a phone to a vault made last year was not a thing the library could do.
+   *
+   * The label must be free, because a label is the whole of how a device is NAMED when custody is
+   * withdrawn (`rekey` below). Two devices sharing one label make "which device is this" a
+   * question the keyset cannot answer, and the answer matters exactly on the day it is asked.
+   */
+  addDeviceKey(device: DeviceKey): void {
+    const keyset = this.keyset();
+    if (keyset.wraps.some((w) => w.kind === 'device' && w.label === device.label)) {
+      throw new VaultError(
+        `this vault already has a device key labelled ${JSON.stringify(device.label)}. A label is ` +
+          `how a device is named when its access is withdrawn, so two devices cannot share one.`,
+      );
+    }
+    const wraps = [...keyset.wraps, wrapForDevice(this.contentKey, device.keyHex, device.label)];
+    // Through `sealContentKey`, so M-16 is re-checked against the arrangement being written and
+    // not merely against the one this process started with.
+    writeJson(join(this.dir, 'keyset.json'), sealContentKey(this.contentKey, wraps));
+    this.commit(`feat(keyset): add device wrap ${device.label}`);
+  }
+
+  /**
+   * Replace the content key, re-seal every record under the new one, and rebuild the keyset from
+   * the credentials named here — and NOTHING else.
+   *
+   * ## Why there is no `removeDeviceKey`
+   *
+   * Because it would be a lie. Deleting a wrap from `keyset.json` removes nothing from the person
+   * who has the laptop: they hold the whole directory, including the keyset as it was and every
+   * ciphertext it opened. A vault is a set of files, not a service that can refuse a request. The
+   * only thing that actually withdraws access is a new content key that the old credential never
+   * wrapped, and that is what this does.
+   *
+   * ## What this DOES protect, exactly
+   *
+   * Records written **after** the re-key. Nothing else.
+   *
+   * ## What it does NOT protect, exactly — three separate holes, none of them closable here
+   *
+   * 1. **Everything written before the theft is already gone.** The thief copied the directory;
+   *    re-keying this copy does not reach theirs. No re-key, here or anywhere, recovers a secret
+   *    that has already been read.
+   * 2. **This vault's own git history hands the old key back.** `.git` retains the previous
+   *    `keyset.json` — device wrap included — and every pre-re-key ciphertext. Anyone holding a
+   *    revoked device key who can read this directory at any later date recovers the OLD content
+   *    key from history and reads the vault as of the last commit before the re-key, even though
+   *    every file in the working tree has been rewritten. History is not purged, deliberately:
+   *    the vault's recoverable history is a property it is built on (§4.2 append-only chains rest
+   *    on it), any clone or backup keeps its own copy anyway, and destroying it would buy a
+   *    guarantee against one adversary by removing a guarantee relied on against several.
+   * 3. **The passphrase is a shared credential.** A device that was trusted enough to hold a wrap
+   *    was usually trusted enough to have seen the passphrase typed. This function withdraws a
+   *    device key; it cannot withdraw a memory. Change the passphrase in the same breath by
+   *    passing a different one — the new keyset is built from what is passed here, not from what
+   *    was there.
+   *
+   * So: this is a forward boundary, not an eraser. If the promise a caller needs is "they can
+   * never read what they already had", the honest answer is that no code in this repository can
+   * give it, and persona rotation (§1.7) — not a re-key — is what limits the damage of an
+   * identity that is already in someone else's hands.
+   *
+   * ## Why `deviceKeys` is the complete new set rather than a label to drop
+   *
+   * Because the vault holds each device's WRAP, never its key. A wrap cannot be re-made for a
+   * device whose key material the caller does not have, so "remove device B, keep A and C" is not
+   * expressible without A's and C's keys in hand — and an API that accepted a label would have to
+   * discover that at the point where it had already thrown the old key away. Naming the survivors
+   * makes the physical constraint visible before anything is written, and makes forgetting a
+   * device a loud mistake rather than a quiet one.
+   *
+   * The passphrase is verified against the CURRENT keyset before anything moves, so a typo cannot
+   * silently re-key the vault to a passphrase nobody knows. That costs one extra derivation and it
+   * buys the difference between a failed call and an unopenable vault.
+   */
+  rekey(opts: RekeyOptions): RekeyReport {
+    const before = this.keyset();
+    // Refuse before touching anything if this is not this vault's passphrase. Without the check
+    // the call would succeed and write a keyset whose only passphrase wrap opens with a string
+    // its owner mistyped once.
+    try {
+      unwrapWithPassphrase(before, opts.passphrase);
+    } catch (cause) {
+      throw new VaultError(
+        `refusing to re-key: the passphrase given does not open this vault's current keyset. ` +
+          `Re-keying builds the new keyset from what is passed here, so proceeding on a mistyped ` +
+          `passphrase would leave a vault nobody can open.`,
+        { cause },
+      );
+    }
+
+    // Read and decrypt EVERYTHING first. A record that will not open under the old key is a vault
+    // that must not be half re-keyed — the failure has to happen while the old keyset is still the
+    // one on disk and every file is still readable.
+    const records = this.sealedRecordPaths();
+    const opened = records.map((path) => {
+      const raw = readJson<{ kind: string }>(path);
+      return { path, kind: raw.kind, value: readSealed<unknown>(this.dir, path, this.contentKey) };
+    });
+
+    const contentKey = generateContentKey();
+    // The binding is (vault-relative path, kind) and neither moves, so each record is re-sealed
+    // into exactly the place and role it already had.
+    for (const r of opened) writeSealed(this.dir, r.path, contentKey, r.kind, r.value);
+
+    const wraps: WrappedKey[] = [
+      wrapForPassphrase(
+        contentKey,
+        opts.passphrase,
+        'passphrase',
+        // The vault's CURRENT profile by default. A re-key is about custody, and silently moving a
+        // constrained-device vault to the desktop profile would make the next open cost seconds it
+        // did not cost before — a change its owner did not ask for while asking for another one.
+        opts.kdf ?? profileOf(before),
+      ),
+    ];
+    for (const d of opts.deviceKeys ?? []) wraps.push(wrapForDevice(contentKey, d.keyHex, d.label));
+
+    // Records first, keyset last, one commit at the end: a crash between them leaves an
+    // uncommitted working tree that `git -C <dir> checkout .` restores whole, because the last
+    // commit is still the consistent pre-re-key state.
+    writeJson(join(this.dir, 'keyset.json'), sealContentKey(contentKey, wraps));
+    const sha = commitAll(this.dir, `chore(vault): re-key, ${opened.length} records re-sealed`);
+
+    this.contentKey = contentKey;
+    return {
+      resealed: opened.length,
+      deviceLabelsBefore: before.wraps.flatMap((w) => (w.kind === 'device' ? [w.label] : [])),
+      deviceLabelsAfter: wraps.flatMap((w) => (w.kind === 'device' ? [w.label] : [])),
+      commit: sha,
+    };
+  }
+
+  /**
+   * Every sealed record in the vault, found by what the file SAYS it is rather than by a list of
+   * the record kinds this class happens to know about today.
+   *
+   * A hardcoded list is the failure this repository already has a note about in
+   * `gates/must-coverage.sh`: it goes stale the first time the truth moves, silently and in the
+   * direction nobody is watching. A record kind added next year and missed here would be left
+   * sealed under a content key that no longer exists — a vault that opens and cannot read part of
+   * itself, discovered long after the re-key.
+   */
+  private sealedRecordPaths(): string[] {
+    const found: string[] = [];
+    for (const entry of readdirSync(this.dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name.startsWith('.')) continue;
+      const path = join(entry.parentPath, entry.name);
+      if (relative(this.dir, path).split(sep)[0] === '.git') continue;
+      let raw: unknown;
+      try {
+        raw = readJson<unknown>(path);
+      } catch (cause) {
+        throw new VaultError(
+          `refusing to re-key: ${relative(this.dir, path)} is not readable JSON, so this vault ` +
+            `cannot be read whole and re-sealing part of it would leave the rest unopenable.`,
+          { cause },
+        );
+      }
+      if ((raw as { type?: string } | null)?.type === 'vault_record') found.push(path);
+    }
+    return found;
   }
 
   /**
@@ -631,18 +840,43 @@ export class Vault {
 
   // ── outbox (M-10: producing a wire message must not require a network) ──────────────────
 
-  putOutbox(item: OutboxItem): void {
-    const dir = this.requirePersona(item.persona);
-    assertHexId(item.id, 'outbox id');
-    writeSealed(this.dir, join(dir, 'outbox', `${item.id}.json`), this.contentKey, 'outbox', item);
-    this.commit(`feat(outbox): queue ${item.id.slice(0, 12)}`);
+  putOutbox(item: OutboxItemInput): void {
+    // Parsed on the way in so a producer supplies only what it knows: L1 has queued a message
+    // and has not yet met a transport, so `delivery` is the schema's own "never attempted".
+    const queued = OutboxItem.parse(item);
+    const dir = this.requirePersona(queued.persona);
+    assertHexId(queued.id, 'outbox id');
+    writeSealed(this.dir, join(dir, 'outbox', `${queued.id}.json`), this.contentKey, 'outbox', queued);
+    this.commit(`feat(outbox): queue ${queued.id.slice(0, 12)}`);
   }
 
   listOutbox(persona: string): OutboxItem[] {
     const dir = this.requirePersona(persona);
     return listFiles(join(dir, 'outbox')).map((f) =>
-      readSealed<OutboxItem>(this.dir, join(dir, 'outbox', f), this.contentKey),
+      // Parsed rather than cast. An item written before delivery state existed carries no
+      // `delivery` member, and the schema's defaults are what make it read as "queued, never
+      // attempted" in every caller instead of `undefined` at the first property access.
+      OutboxItem.parse(readSealed<unknown>(this.dir, join(dir, 'outbox', f), this.contentKey)),
     );
+  }
+
+  /**
+   * Record what a courier did with a queued message.
+   *
+   * Only `delivery` is replaceable: the message itself is signed, so rewriting any other member
+   * would invalidate it. The write is read-modify-write because a caller learns one fact at a
+   * time — that a transport accepted it, and much later that the recipient acknowledged it.
+   */
+  recordOutboxDelivery(persona: string, id: string, patch: Partial<OutboxDelivery>): OutboxItem | null {
+    const dir = this.requirePersona(persona);
+    assertHexId(id, 'outbox id');
+    const path = join(dir, 'outbox', `${id}.json`);
+    if (!existsSync(path)) return null;
+    const item = OutboxItem.parse(readSealed<unknown>(this.dir, path, this.contentKey));
+    const updated: OutboxItem = { ...item, delivery: { ...item.delivery, ...patch } };
+    writeSealed(this.dir, path, this.contentKey, 'outbox', updated);
+    this.commit(`chore(outbox): delivery ${id.slice(0, 12)}`);
+    return updated;
   }
 
   // ── retention (§5.4) ────────────────────────────────────────────────────────────────────
@@ -746,6 +980,17 @@ export class Vault {
  * Refusing is the conservative direction and the only honest one: this code cannot know what a
  * later version changed, and a vault is the thing you cannot rebuild by reinstalling.
  */
+/**
+ * The §9.3 profile a keyset's passphrase wrap already uses, as a full parameter set.
+ *
+ * `kdfProfileOf` reports `m`, `t` and `p` because those are what a wrap records; `dkLen` is not
+ * a §9.3 parameter and is fixed by the content key's length, so it comes from the defaults.
+ */
+function profileOf(keyset: ContentKeySet): Argon2idParams {
+  const kdf = kdfProfileOf(keyset);
+  return kdf ? { ...kdf, dkLen: ARGON2ID_PARAMS.dkLen } : ARGON2ID_PARAMS;
+}
+
 function assertSupportedVersion(dir: string): void {
   const path = join(dir, VAULT_MARKER);
   let descriptor: Partial<VaultDescriptor>;
