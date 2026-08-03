@@ -30,6 +30,8 @@ export default defineConfig({
     include: ['packages/*/test/**/*.test.ts'],
     globals: false,
     testTimeout: 30_000,
+    /** See the file itself: it cures the `onTaskUpdate` timeout the numbers below never could. */
+    setupFiles: ['./vitest.setup.ts'],
     /**
      * Setup is expensive here on purpose.
      *
