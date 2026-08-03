@@ -42,10 +42,16 @@ describe('scenario 2 — cold start: value before configuration', () => {
     // Built here rather than inside an `it`, so every test below stands on its own. CI runs the
     // M-suite as `vitest -t 'M-'`, which executes the M-named tests and skips their siblings —
     // state assembled in one `it` and read in another is undefined under any such filter.
-    candidates = archaeologyCandidates(envelopes, {
+    // `mine` is required: the connector records who wrote each line, and stamping every finding
+    // as this persona's own is how a clone of a shared repository became ten thousand promises
+    // nobody made. The fixture repo has one author, given both ways — a git identity is a name
+    // AND an email, and some archaeology kinds (a dormant branch, an unrun migration) record only
+    // the name.
+    ({ candidates } = archaeologyCandidates(envelopes, {
       persona: alice.personaId,
       createdAt: install.clock.iso(),
-    });
+      mine: ['fixture@servanda.invalid', 'Fixture Author'],
+    }));
   });
 
   it('starts from a genuinely empty install — nothing is pre-seeded', () => {
@@ -79,6 +85,37 @@ describe('scenario 2 — cold start: value before configuration', () => {
     // Scenario 2's "6 over 300 days" — the fixture plants one comfortably past that.
     const oldest = Math.max(...todos.map((t) => t.payload['age_days'] as number));
     expect(oldest).toBeGreaterThan(300);
+  });
+
+  it('does not make me the owner of somebody else’s TODOs', () => {
+    // The whole reason `mine` is required. A clone of a shared repository is the ordinary case,
+    // not the adversarial one: measured on a scratch repo of 10 000 findings by one other person,
+    // this used to yield 10 000 candidates, every one stamped as mine, sorted oldest-first and
+    // uncapped. M-1 says a promise is owned by its giver; §3.3's `expect` is the object for what
+    // somebody else said they would do.
+    const theirs = archaeologyCandidates(envelopes, {
+      persona: alice.personaId,
+      createdAt: install.clock.iso(),
+      mine: ['someone.else@example.com', 'Someone Else'],
+    });
+    expect(theirs.candidates).toHaveLength(0);
+    // And it SAYS so, rather than looking like a connector that found nothing. A correct filter
+    // and a broken miner must not render identically.
+    expect(theirs.skipped.notMine).toBe(envelopes.length);
+  });
+
+  it('and refuses to guess when the finding names nobody', () => {
+    // Unattributed is not "probably mine" — assuming it is, is the defect one layer up. §2 makes
+    // `actor` required and `actor.external_id` optional, so the reachable shape is an actor that
+    // names nobody: an empty label and no email.
+    const anonymous = envelopes.map((e) => ({ ...e, actor: { label: '' } }));
+    const got = archaeologyCandidates(anonymous, {
+      persona: alice.personaId,
+      createdAt: install.clock.iso(),
+      mine: ['fixture@servanda.invalid', 'Fixture Author'],
+    });
+    expect(got.candidates).toHaveLength(0);
+    expect(got.skipped.unattributed).toBe(envelopes.length);
   });
 
   it('turns findings into commitments with no model in the path', () => {

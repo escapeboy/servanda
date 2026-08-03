@@ -4,7 +4,7 @@ import { verifyAssertionChain } from '@servanda/node';
 import type { Assertion, Edge, EffectiveState, RejectionReason } from '@servanda/types';
 import { Assertion as AssertionSchema, PROTOCOL_VERSION, Sha256Hex } from '@servanda/types';
 import type { Vault } from '@servanda/vault';
-import { isParty, mayServeEdge } from './serve.js';
+import { isParty, isPartyOrSuccessor, mayServeEdge, partyLineage } from './serve.js';
 
 /**
  * §6.4 reconciliation — "periodic pairwise sync between nodes sharing edges".
@@ -94,10 +94,16 @@ export function latestAssertionHash(assertions: Assertion[]): string {
 /** Edges this persona shares with `counterparty` that are still live (§6.4 "shared open edges"). */
 export function sharedOpenEdges(vault: Vault, persona: string, counterparty: string): Edge[] {
   const out: Edge[] = [];
+  const lineage = partyLineage(vault, persona);
   for (const id of vault.listEdgeIds(persona)) {
     const edge = vault.getEdge(persona, id);
-    if (!edge || !isParty(edge, persona) || !isParty(edge, counterparty)) continue;
-    const state = verifyAssertionChain(edge, vault.getAssertions(persona, id)).final_state;
+    // §1.7 on both sides: an edge is still shared with a counterparty who rotated, and asking
+    // their successor about it is the only way the two chains ever meet again. Without this the
+    // request went out empty and reconciliation had nothing to reconcile.
+    if (!edge || !isPartyOrSuccessor(edge, persona, lineage) || !isPartyOrSuccessor(edge, counterparty, lineage)) {
+      continue;
+    }
+    const state = verifyAssertionChain(edge, vault.getAssertions(persona, id), undefined, lineage).final_state;
     if (OPEN_FAMILY.includes(state)) out.push(edge);
   }
   return out;
@@ -185,13 +191,18 @@ export function applyReconResponse(
   response: ReconResponse,
 ): ReconApplyResult {
   const result: ReconApplyResult = { accepted: [], discarded: [], ignored: [] };
+  // §1.7, and the reason §6.4's guarantee needs it: "both sides see the same chain" was false the
+  // moment one side rotated. The responder is the successor of the party we share the edge with,
+  // and every assertion they hold is signed by that successor — so a literal comparison ignored
+  // the whole exchange, and the two nodes diverged permanently with nothing to say why.
+  const lineage = partyLineage(vault, persona);
 
   for (const entry of response.edges) {
     const edge = vault.getEdge(persona, entry.edge_id);
     // Reconciliation never introduces an edge. §6.4 exchanges assertions between nodes that
     // already share the edge; a new edge arrives as a `propose` and is admitted by the inbox,
     // where the anti-spam budget (§6.5) applies.
-    if (!edge || !isParty(edge, persona) || !isParty(edge, responder)) {
+    if (!edge || !isPartyOrSuccessor(edge, persona, lineage) || !isPartyOrSuccessor(edge, responder, lineage)) {
       result.ignored.push(entry.edge_id);
       continue;
     }
@@ -202,7 +213,7 @@ export function applyReconResponse(
     if (incoming.length === 0) continue;
 
     const candidate = [...local, ...incoming];
-    const { outcomes } = verifyAssertionChain(edge, candidate, vault.now());
+    const { outcomes } = verifyAssertionChain(edge, candidate, vault.now(), lineage);
     for (let i = 0; i < incoming.length; i++) {
       const assertion = incoming[i]!;
       const outcome = outcomes[local.length + i]!;

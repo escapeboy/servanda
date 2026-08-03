@@ -4,7 +4,7 @@ import type { ProposalBudget } from './antispam.js';
 import { Inbox, type IngestResult } from './inbox.js';
 import { messageId, signMessage, verifyMessage } from './messages.js';
 import { answerReconRequest, buildReconRequest, type ReconRequest } from './recon.js';
-import { isParty } from './serve.js';
+import { currentKeyOf, isPartyOrSuccessor, partyLineage } from './serve.js';
 import type { Transport } from './transport.js';
 import type { VerificationLevel } from '@servanda/types';
 
@@ -72,8 +72,14 @@ export class FederatedNode {
     }
     const id = messageId(message);
     if (this.sent.has(id)) return false;
-    this.sent.add(id);
+    // Marked sent only once the transport ACCEPTED it. Marking first meant a hub that answered
+    // 503 — the one case store-and-forward exists for — was recorded as a successful delivery:
+    // the next `push` skipped the message for the life of the process, and for a `propose` there
+    // is no second chance, because §6.4 reconciliation "never introduces an edge". A promise made
+    // during a five-minute outage was never delivered, and the owner's register read `proposed`
+    // for ever, indistinguishable from a counterparty ignoring it.
     await this.transport.send(recipient, message);
+    this.sent.add(id);
     return true;
   }
 
@@ -97,10 +103,16 @@ export class FederatedNode {
       if (assertion) this.sentAssertions.add(assertion.sig);
     }
 
+    const lineage = partyLineage(this.vault, this.persona);
     for (const edgeId of this.vault.listEdgeIds(this.persona)) {
       const edge = this.vault.getEdge(this.persona, edgeId);
-      if (!edge || !isParty(edge, this.persona)) continue;
-      const counterparty = edge.owner === this.persona ? edge.owed_to : edge.owner;
+      if (!edge || !isPartyOrSuccessor(edge, this.persona, lineage)) continue;
+      const named = edge.owner === this.persona ? edge.owed_to : edge.owner;
+      // §1.7: address the key the counterparty holds NOW. The edge body is immutable (§4.1) and
+      // still names the key they had, so sending to `named` after they rotated posts every act
+      // this side takes to a persona nobody is reading — the conversation goes one-way and neither
+      // register says why.
+      const counterparty = currentKeyOf(named, lineage);
       for (const assertion of this.vault.getAssertions(this.persona, edgeId)) {
         // Only our own assertions: relaying the counterparty's own signature back to them adds
         // nothing, and relaying it to a third party would be an M-4a leak.

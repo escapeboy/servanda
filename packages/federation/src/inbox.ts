@@ -15,7 +15,7 @@ import {
   type ReconRequest,
 } from './recon.js';
 import { RecoverRequestSchema, RecoverResponseSchema, type RecoverRequest, type RecoverResponse } from './recovery.js';
-import { isParty } from './serve.js';
+import { isParty, isPartyOrSuccessor, partyLineage } from './serve.js';
 
 /**
  * The inbound half of federation: everything that arrives over a transport passes through here
@@ -305,6 +305,27 @@ export class Inbox {
       return;
     }
 
+    // A REDELIVERY of a proposal already surfaced, before the budget is consulted.
+    //
+    // Both shipped transports re-present everything they hold on every read: the git transport
+    // returns every message in the tree, and §6.7 has a hub queue for 30 days that `inbox` does
+    // not drain. So `pull` legitimately hands this method the same `propose` on every poll, and
+    // §6.5's cap counted each one. A person polling four times an hour spent a level-0 sender's
+    // per-sender allowance on ONE proposal within the first hour, and the global cap shortly
+    // after — after which the next genuine first-contact proposal, from anyone, was suppressed.
+    // Suppressed is silent by design (§6.5 says "MUST NOT surface"), so the recipient never
+    // learned a promise had been made to them and the sender saw `proposed`, for ever.
+    //
+    // §6.5 caps what a node SURFACES. Something already surfaced is not surfaced again by being
+    // delivered again, so the count belongs to the proposal and not to the delivery.
+    const alreadyHeld =
+      this.vault.getEdge(this.persona, edge.edge_id) !== null &&
+      this.vault.getAssertions(this.persona, edge.edge_id).some((a) => a.sig === assertion.sig);
+    if (alreadyHeld) {
+      result.accepted.push({ type: 'propose', edge_id: edge.edge_id });
+      return;
+    }
+
     // §6.5 last, so a rejected proposal never consumes budget.
     if (this.budget) {
       const admission = this.budget.admit(message.sender, this.level(message.sender));
@@ -333,11 +354,19 @@ export class Inbox {
       result.discarded.push({ type: 'assert', edge_id: assertion.edge_id, reason: 'unknown-edge' });
       return;
     }
-    if (!isParty(edge, this.persona)) {
+    // §1.7 lineage, built once and used by both the gate and the table, so the two cannot
+    // disagree about who this edge's parties are.
+    const lineage = partyLineage(this.vault, this.persona);
+
+    if (!isPartyOrSuccessor(edge, this.persona, lineage)) {
       result.discarded.push({ type: 'assert', edge_id: edge.edge_id, reason: 'not-addressed-to-this-persona' });
       return;
     }
-    if (!isParty(edge, message.sender)) {
+    // §1.7: "verifiers MUST treat `new` as the successor for all open edges of `old`." A literal
+    // key comparison here meant a counterparty who rotated — the seedless recovery path — was
+    // refused at the door and could never close, release or dispute anything again, while the
+    // owner's register showed the promise open for ever against a key nobody holds.
+    if (!isPartyOrSuccessor(edge, message.sender, lineage)) {
       result.discarded.push({ type: 'assert', edge_id: edge.edge_id, reason: 'sender-is-not-a-party' });
       return;
     }
@@ -345,7 +374,7 @@ export class Inbox {
     const local = this.vault.getAssertions(this.persona, edge.edge_id);
     if (local.some((a) => a.sig === assertion.sig)) return; // transports may replay
 
-    const { outcomes } = verifyAssertionChain(edge, [...local, assertion], this.vault.now());
+    const { outcomes } = verifyAssertionChain(edge, [...local, assertion], this.vault.now(), lineage);
     const outcome = outcomes[local.length]!;
     if (!outcome.accepted) {
       result.discarded.push({
@@ -376,8 +405,13 @@ export function applyRecoverResponse(vault: Vault, persona: string, response: Re
 } {
   const restored: string[] = [];
   const discarded: { edge_id: string; index: number; reason: string }[] = [];
+  // §6.6 explicitly contemplates a requester "recovering under a rotated key", and the responder
+  // above answers for both identities — then this applier dropped every edge, because each names
+  // the OLD key and the comparison was literal. A node recovering under a new key must put its own
+  // §1.7 rotation statement in its vault first; that is what makes it a party to its own history.
+  const lineage = partyLineage(vault, persona);
   for (const { edge, assertions } of response.edges) {
-    if (!isParty(edge, persona)) continue;
+    if (!isPartyOrSuccessor(edge, persona, lineage)) continue;
     // §4.1 before the chain is even looked at. A responder chooses what it returns, and a node
     // that lost its vault is in the worst position to notice: it holds nothing to compare the
     // body against, so the identifier digesting its own body is the only check left standing.
@@ -389,7 +423,7 @@ export function applyRecoverResponse(vault: Vault, persona: string, response: Re
     const local = vault.getAssertions(persona, edge.edge_id);
     const held = new Set(local.map((a) => a.sig));
     const incoming = assertions.filter((a) => !held.has(a.sig)).sort(inWireOrder);
-    const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming], vault.now());
+    const { outcomes } = verifyAssertionChain(edge, [...local, ...incoming], vault.now(), lineage);
 
     // M-1 / M-14: an edge exists because its OWNER proposed it, and that proposal is signed.
     // The edge object itself is not — §4.2 puts every signature on the assertions, and `edge_id`

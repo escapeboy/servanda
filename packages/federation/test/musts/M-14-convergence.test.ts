@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { verifyAssertionChain } from '@servanda/node';
 import { makePair, settle, type Pair } from '../support/fixture.js';
 
@@ -23,32 +23,52 @@ import { makePair, settle, type Pair } from '../support/fixture.js';
  */
 
 let pair: Pair;
+let edge_id: string;
 afterAll(() => pair?.cleanup());
 
+/**
+ * The story runs in the hook, and that is not tidying.
+ *
+ * It used to run inside the first `it`, where the 30 s `testTimeout` applies — and it is eight
+ * settle rounds of git fetch/commit/push across two vaults, ~17 s on a quiet machine and past 30
+ * on a loaded one. So a MUST test failed by TIMEOUT, never by assertion, on a run where nothing
+ * was wrong; both an adversarial pass and an independent one hit it on the same afternoon.
+ *
+ * `vitest.config.ts` already draws the line this belongs on: `hookTimeout` is 180 s and
+ * `testTimeout` is 30 s because *"a slow setup is expected, a slow assertion still means
+ * something is wrong."* Expensive I/O was on the wrong side of it. Nothing here is faster; the
+ * three assertions below are now the only thing being timed, which is what the numbers meant.
+ *
+ * It also removes a hidden ordering dependency: the second and third cases already read state the
+ * first one produced.
+ */
+beforeAll(async () => {
+  pair = makePair();
+  const { a, b } = pair;
+
+  edge_id = a.node.commit({
+    intent: 'ship the migration',
+    owed_to: b.personaId,
+    due: null,
+    persona: null,
+    propose: true,
+  }).edge_id!;
+  await settle(pair);
+  b.node.confirm({ id: edge_id, decision: 'confirm' });
+  await settle(pair);
+
+  // The partition. Neither has seen the other's act when it signs its own, and both are legal:
+  // §4.3 `open → closed` is the owner's with evidence, `open → released` is the creditor's.
+  a.node.act({ id: edge_id, act: 'done', evidence_hash: 'e'.repeat(64) });
+  b.node.act({ id: edge_id, act: 'release', evidence_hash: null });
+
+  // Heal, and keep exchanging. Before the fix this ran forever without converging.
+  await settle(pair, 3);
+});
+
 describe('§6.4: two honest nodes converge even when they exit `open` concurrently', () => {
-  it('owner closes and creditor releases in the same window', async () => {
-    pair = makePair();
+  it('owner closes and creditor releases in the same window', () => {
     const { a, b } = pair;
-
-    const edge_id = a.node.commit({
-      intent: 'ship the migration',
-      owed_to: b.personaId,
-      due: null,
-      persona: null,
-      propose: true,
-    }).edge_id!;
-    await settle(pair);
-    b.node.confirm({ id: edge_id, decision: 'confirm' });
-    await settle(pair);
-
-    // The partition. Neither has seen the other's act when it signs its own, and both are legal:
-    // §4.3 `open → closed` is the owner's with evidence, `open → released` is the creditor's.
-    a.node.act({ id: edge_id, act: 'done', evidence_hash: 'e'.repeat(64) });
-    b.node.act({ id: edge_id, act: 'release', evidence_hash: null });
-
-    // Heal, and keep exchanging. Before the fix this ran forever without converging.
-    await settle(pair, 3);
-
     const stateOf = (peer: typeof a) => {
       const edge = peer.vault.getEdge(peer.personaId, edge_id)!;
       return verifyAssertionChain(edge, peer.vault.getAssertions(peer.personaId, edge_id)).final_state;
