@@ -143,7 +143,16 @@ const recovered = recoveryPaths({
   bindingProof: proofVerdict,
   rotationPublishedAt: CHANNEL,
 });
-const unrecoverable = recoveryPaths({ lostPersona: MARIA.id, freshPersona: FRESH.id });
+// Two different questions, and they used to give one answer. `seedAvailable` is optional, so
+// NOT ASKED and ASKED-AND-ANSWERED-NO both produced `unrecoverable-by-design` — ADR-0014's
+// designed dead end, the heaviest sentence this codebase can say, delivered to somebody whose
+// 24 words may be in their desk drawer. Not-asked is where every real caller starts.
+const unasked = recoveryPaths({ lostPersona: MARIA.id, freshPersona: FRESH.id });
+const unrecoverable = recoveryPaths({
+  lostPersona: MARIA.id,
+  freshPersona: FRESH.id,
+  seedAvailable: false,
+});
 
 // ── control: the trap WOULD have caught a transport that reached out ───────────────────────
 let trapWouldHaveCaught = false;
@@ -181,6 +190,8 @@ const checks = {
   'ADR-0014 (b) recovery path found': recovered.recoverable === true,
   'no seed, no org, no proof is unrecoverable by design':
     unrecoverable.recoverable === false && unrecoverable.reason === 'unrecoverable-by-design',
+  'nobody is told that before they have been asked about the seed':
+    unasked.recoverable === false && unasked.reason === 'seed-not-established',
   'a reaching transport degrades to unreachable, it does not crash':
     trappedResolution.ok === false && trappedResolution.reason === 'unreachable',
 };

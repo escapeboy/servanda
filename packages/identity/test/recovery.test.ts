@@ -150,8 +150,24 @@ describe('ADR-0014 seedless recovery', () => {
     expect(result.paths[0]?.kind).toBe('seed');
   });
 
-  it('no seed, no org, no external proof is unrecoverable BY DESIGN — there is no fallback', () => {
+  it('does not say "unrecoverable by design" to somebody nobody asked about the seed', () => {
+    // The heaviest sentence this module can produce, and the input that used to produce it is the
+    // one every caller starts from: lost persona, fresh persona, nothing else known yet. Telling
+    // that person their persona is gone forever — when the 24 words in their desk drawer would
+    // have restored it outright — is the module answering a question it was never asked.
     const result = recoveryPaths({ lostPersona: MARIA.id, freshPersona: FRESH.id });
+    expect(result.recoverable).toBe(false);
+    expect(result.paths).toEqual([]);
+    expect(result.reason).toBe('seed-not-established');
+  });
+
+  it('no seed, no org, no external proof is unrecoverable BY DESIGN — there is no fallback', () => {
+    const result = recoveryPaths({
+      lostPersona: MARIA.id,
+      freshPersona: FRESH.id,
+      // Asked, and answered: this is what earns the verdict below.
+      seedAvailable: false,
+    });
     expect(result.recoverable).toBe(false);
     expect(result.paths).toEqual([]);
     expect(result.reason).toBe('unrecoverable-by-design');

@@ -17,6 +17,9 @@ import { verifyRotation } from './rotation.js';
  * That last sentence is a requirement, not a gap to fill. `recoveryPaths` returns an empty set
  * and `unrecoverable-by-design` for that case; there is no fallback path in this module,
  * because any fallback would be a way to take over a persona whose owner cannot prove anything.
+ *
+ * "No seed" is a thing somebody has to have been ASKED, though, and that is the one distinction
+ * this module has to keep: see `reason`.
  */
 
 export type RecoveryPathKind = 'seed' | 'org-reattestation' | 'external-proof-rotation';
@@ -33,7 +36,12 @@ export interface RecoveryInput {
   readonly lostPersona: string;
   /** The persona the human is recovering onto. */
   readonly freshPersona: string;
-  /** Does the human still hold the BIP-39 seed? If so, §1.2 derivation restores everything. */
+  /**
+   * Does the human still hold the BIP-39 seed? If so, §1.2 derivation restores everything.
+   *
+   * Three values, not two. `undefined` means NOBODY HAS ASKED, and it must not be read as `false`
+   * — see `reason` for what that conflation would tell a person on the worst day of their year.
+   */
   readonly seedAvailable?: boolean;
   /** An org attestation of `freshPersona` — path (a). Already time-resolved. */
   readonly reattestation?: AttestationVerdict | null;
@@ -53,8 +61,23 @@ export interface RecoveryAssessment {
   readonly freshPersona: string;
   readonly paths: readonly RecoveryPath[];
   readonly recoverable: boolean;
-  /** Set only when nothing recovers this persona — ADR-0014's designed dead end. */
-  readonly reason: 'unrecoverable-by-design' | null;
+  /**
+   * Why there is no path, when there is none.
+   *
+   * `unrecoverable-by-design` is ADR-0014's designed dead end and it is a heavy sentence to put in
+   * front of somebody: no seed, no org, no external proof, and the honest answer is that this
+   * persona is gone. It must be earned, and it was not. `seedAvailable` is optional, so a caller
+   * that had not asked about the 24 words got the same verdict as one that had asked and been told
+   * no — the assessment could not tell "we did not ask" from "you have nothing", and the first is
+   * where nearly every real caller starts. The one path that always works is the one nobody had
+   * checked.
+   *
+   * `seed-not-established` says exactly that instead: nothing else offered a path, and the seed
+   * question is still open. It is not a recovery path — `recoverable` stays false — it is the
+   * difference between "you are locked out for good" and "go and look for the card you wrote them
+   * on".
+   */
+  readonly reason: 'unrecoverable-by-design' | 'seed-not-established' | null;
   /** Why an offered path did not hold. Empty when nothing was offered. */
   readonly rejected: readonly { readonly kind: RecoveryPathKind; readonly reason: string }[];
 }
@@ -131,7 +154,12 @@ export function recoveryPaths(input: RecoveryInput): RecoveryAssessment {
     freshPersona: input.freshPersona,
     paths,
     recoverable: paths.length > 0,
-    reason: paths.length > 0 ? null : 'unrecoverable-by-design',
+    reason:
+      paths.length > 0
+        ? null
+        : input.seedAvailable === false
+          ? 'unrecoverable-by-design'
+          : 'seed-not-established',
     rejected,
   };
 }

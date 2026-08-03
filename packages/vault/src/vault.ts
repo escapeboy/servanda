@@ -173,7 +173,8 @@ export class Vault {
   static open(opts: VaultOpenOptions): Vault {
     const { dir } = opts;
     assertVaultRepo(dir);
-    const keyset = readJson<ContentKeySet>(join(dir, 'keyset.json'));
+    assertSupportedVersion(dir);
+    const keyset = readKeyset(dir);
     // M-16 on every open, not only on create. `sealContentKey` proves no code here BUILDS a
     // device-only keyset; it proves nothing about the unsigned JSON file sitting in a directory
     // its owner can write. Deleting the passphrase wrap produced a keyset that satisfied every
@@ -181,7 +182,7 @@ export class Vault {
     assertM16(keyset.wraps);
     let contentKey: Uint8Array;
     if (opts.passphrase !== undefined) {
-      contentKey = unwrapWithPassphrase(keyset, opts.passphrase);
+      contentKey = unwrapPassphraseOrExplain(dir, keyset, opts.passphrase);
     } else if (opts.deviceKey) {
       contentKey = unwrapWithDevice(keyset, opts.deviceKey.keyHex, opts.deviceKey.label);
     } else {
@@ -258,8 +259,29 @@ export class Vault {
 
   // ── personas (§1.2) ─────────────────────────────────────────────────────────────────────
 
+  /**
+   * §1.2: a label is one of the two ways to name a persona, so two personas cannot share one.
+   *
+   * The guarantee has to live here rather than in `servanda-init`, which is where it started.
+   * `client-local`'s `openRegister` resolves `SERVANDA_PERSONA` with
+   * `p.persona_id === wanted || p.label === wanted` and takes the first match — so a duplicate
+   * label does not fail, it silently opens whichever persona happens to be enumerated first, and
+   * the person reads a register that is not the one they asked for. A CLI-only guard leaves that
+   * reachable through the published library, including from this repo's own fixtures.
+   *
+   * Re-putting the SAME persona is an update, not a collision — that is how a record is amended.
+   */
   putPersona(record: PersonaRecord): void {
     const dir = this.personaDir(record.persona_id);
+    for (const id of this.listPersonaIds()) {
+      if (id === record.persona_id) continue;
+      if (this.getPersona(id).label === record.label) {
+        throw new ScopeViolation(
+          `label ${JSON.stringify(record.label)} is already used by persona ${id.slice(0, 12)}; ` +
+            `a label names a persona, so two personas cannot share one`,
+        );
+      }
+    }
     writeSealed(this.dir, join(dir, 'persona.json'), this.contentKey, 'persona', record);
     this.commit(`feat(persona): add ${record.persona_id.slice(0, 12)}`);
   }
@@ -708,6 +730,108 @@ export class Vault {
       });
     }
     return keys;
+  }
+}
+
+/**
+ * The version the vault on disk was written at, checked before a key is derived from it.
+ *
+ * `assertVaultRepo` asked whether the marker file EXISTS; nothing read what it said. A vault
+ * written by a later Servanda therefore opened under this version's rules and was read with them,
+ * and the first sign of trouble was whatever that produced downstream — or, when the later version
+ * had also changed the keyset, the message "no passphrase wrap could be opened", which is what a
+ * WRONG PASSPHRASE says. Somebody whose newer laptop wrote the vault and whose older desktop reads
+ * it would have spent the evening retyping a passphrase that was correct every time.
+ *
+ * Refusing is the conservative direction and the only honest one: this code cannot know what a
+ * later version changed, and a vault is the thing you cannot rebuild by reinstalling.
+ */
+function assertSupportedVersion(dir: string): void {
+  const path = join(dir, VAULT_MARKER);
+  let descriptor: Partial<VaultDescriptor>;
+  try {
+    descriptor = readJson<VaultDescriptor>(path);
+  } catch (cause) {
+    throw new VaultError(
+      `${VAULT_MARKER} in ${dir} is damaged: it should be this vault's descriptor and it is not ` +
+        `readable JSON. It is a small file with no secret in it — this vault's git history has ` +
+        `the last good copy, and nothing else in the vault is affected.`,
+      { cause },
+    );
+  }
+  if (descriptor.v !== PROTOCOL_VERSION) {
+    throw new VaultError(
+      `this vault says it was written for ${String(descriptor.v)}; this build speaks ` +
+        `${PROTOCOL_VERSION}. Nothing here is lost and the passphrase is not the problem — open it ` +
+        `with the Servanda that wrote it, or upgrade this one.`,
+    );
+  }
+}
+
+/** Read `keyset.json`, distinguishing "no keyset" and "damaged keyset" from "wrong passphrase". */
+function readKeyset(dir: string): ContentKeySet {
+  const path = join(dir, 'keyset.json');
+  if (!existsSync(path)) {
+    throw new VaultError(
+      `${path} is missing. It holds the wrapped content key, so without it neither the passphrase ` +
+        `nor any device key opens this vault. It is in the vault's git history: recover it there ` +
+        `before anything else writes to the vault.`,
+    );
+  }
+  try {
+    return readJson<ContentKeySet>(path);
+  } catch (cause) {
+    throw new VaultError(
+      `${path} is not readable JSON, so it was damaged or written only partly. This is the one ` +
+        `file the whole vault depends on, and it is in the vault's git history — recover it from ` +
+        `there. The records themselves are untouched.`,
+      { cause },
+    );
+  }
+}
+
+/**
+ * The passphrase failure a person actually has, rather than the one the AEAD can prove.
+ *
+ * `unwrapWithPassphrase` reports exactly one thing — no wrap opened — and it says the same words
+ * whether the passphrase was mistyped or `keyset.json` lost a byte. Those have opposite first
+ * moves: one is "try again", the other is "stop typing, the file is damaged, get it out of git".
+ * The message below refuses to choose between them, which is honest, and names both moves.
+ *
+ * There is no attempt counter and no lockout, deliberately. Nothing here is a network service that
+ * an attacker could ask a thousand times; whoever can attempt an open is holding the directory and
+ * can copy it and attack the copy at whatever rate their hardware allows. A counter would not slow
+ * them by one derivation and would lock out the one person it can reach — its owner, at 2am, on
+ * the try before the right one. The Argon2id cost IS the rate limit.
+ *
+ * Anything else thrown from the unwrap is a REFUSAL rather than a failure to match: the wrap
+ * declared a cost this build will not spend, or the machine could not allocate it. That is not
+ * about the passphrase at all, and saying so keeps somebody from retyping against a phone-sized
+ * machine that cannot open a desktop-sized wrap.
+ */
+function unwrapPassphraseOrExplain(dir: string, keyset: ContentKeySet, passphrase: string): Uint8Array {
+  try {
+    return unwrapWithPassphrase(keyset, passphrase);
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    if (!message.startsWith('no passphrase wrap could be opened')) {
+      const kdf = kdfProfileOf(keyset);
+      throw new VaultError(
+        `the passphrase was never tried against ${join(dir, 'keyset.json')}: ${message}. ` +
+          `This vault's passphrase wrap asks for ${kdf ? `m=${kdf.m} KiB, t=${kdf.t}, p=${kdf.p}` : 'a cost'} ` +
+          `and this machine or this build would not spend it — it is not a wrong passphrase. Open ` +
+          `the vault on the machine that made it, or on one with more memory free.`,
+        { cause },
+      );
+    }
+    const slots = keyset.wraps.filter((w) => w.kind === 'passphrase').length;
+    throw new VaultError(
+      `none of the ${slots} passphrase wrap${slots === 1 ? '' : 's'} in ${join(dir, 'keyset.json')} ` +
+        `opened. Either the passphrase is wrong — there is no lockout, so try again as often as you ` +
+        `need — or keyset.json has been altered since it was written, in which case no passphrase ` +
+        `will ever open it and the last good copy is in this vault's git history.`,
+      { cause },
+    );
   }
 }
 

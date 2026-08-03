@@ -206,6 +206,28 @@ describe('vault: persona scoping', () => {
     expect(vault.listCommitments(p0.personaId)).toHaveLength(1);
     expect(vault.listCommitments(p1.personaId)).toHaveLength(0);
   });
+
+  it('refuses a label another persona already holds', () => {
+    // §1.2 makes a label one of the two ways to name a persona, and `client-local` resolves
+    // `SERVANDA_PERSONA` by `persona_id === wanted || label === wanted`, first match wins. A
+    // duplicate label therefore does not fail — it silently opens the wrong register.
+    //
+    // `servanda-init` refuses this, but the guard belonged here: @servanda/vault is published,
+    // and every fixture in this repository writes personas through the library, not the CLI.
+    const { vault } = newVault();
+    expect(() => vault.putPersona(personaRecord(derivePersona(seed, 2), 2, 'me'))).toThrow(
+      ScopeViolation,
+    );
+    expect(vault.listPersonaIds()).toHaveLength(2);
+  });
+
+  it('but re-putting the same persona is an update, not a collision', () => {
+    // Otherwise a record could never be amended — the persona would collide with itself.
+    const { vault } = newVault();
+    const amended = { ...personaRecord(p0, 0, 'me'), scope_kind: 'org' as const, org_root: p1.personaId };
+    expect(() => vault.putPersona(amended)).not.toThrow();
+    expect(vault.getPersona(p0.personaId).scope_kind).toBe('org');
+  });
 });
 
 describe('vault: nothing keeps writing after a commit returns', () => {
