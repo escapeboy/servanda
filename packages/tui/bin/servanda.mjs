@@ -23,7 +23,55 @@
 // printed once outside the frame is a label the renderer is free to scroll or clear away.
 import { COPY, FixtureNodeClient, loadApp, makeFixture } from '@servanda/client-web';
 import { openRegister } from '@servanda/client-local';
-import { frame, handleKey, loadInk, sourceFor } from '@servanda/tui';
+import { frame, handleKey, loadInk, parseArgs, runCommand, sourceFor, USAGE, UsageError } from '@servanda/tui';
+
+// The write half, before anything is rendered.
+//
+// `servanda` opened a register and nothing shipped could put a promise in one: `commit` had three
+// callers — a library method, an MCP tool, and a gesture runner nothing calls — so a person
+// needed an assistant speaking MCP or a model API key to record anything. §0's base rule is that
+// this works with no network, no server and no second participant; it did, and offered no way in.
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  process.stdout.write(`${USAGE}\n`);
+  process.exit(0);
+}
+{
+  let parsed = null;
+  try {
+    parsed = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n\n${USAGE}\n`);
+    process.exit(2);
+  }
+  if (parsed !== null) {
+    const src = sourceFor(process.env);
+    if (src.kind !== 'register') {
+      // Writing into a demonstration would be the one thing worse than not writing at all: a
+      // promise recorded nowhere, reported as recorded.
+      process.stderr.write(
+        'Writing needs your own register. Set SERVANDA_VAULT and SERVANDA_PASSPHRASE.\n',
+      );
+      process.exit(2);
+    }
+    const { openRegister: open } = await import('@servanda/client-local');
+    const opened = open({ dir: src.dir, passphrase: src.passphrase, persona: src.persona });
+    try {
+      // The vault's own labels, passed as a lookup so the message can be specific without this
+      // module being able to open anything.
+      const labelOf = (label) => {
+        for (const id of opened.vault.listPersonaIds()) {
+          if (opened.vault.getPersona(id).label === label) return id;
+        }
+        return null;
+      };
+      process.stdout.write(`${await runCommand(parsed, opened.client, labelOf)}\n`);
+      process.exit(0);
+    } catch (error) {
+      process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+      process.exit(1);
+    }
+  }
+}
 
 // Built by code point rather than written literally: an escape byte in a source file is a
 // byte nobody can see in a diff.

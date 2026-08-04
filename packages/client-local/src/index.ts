@@ -2,6 +2,8 @@ export * from './warnings.js';
 import type { NodeClient } from '@servanda/client-web';
 import { ServandaNode } from '@servanda/node';
 import type {
+  ActInput,
+  ActOutput,
   BriefInput,
   BriefOutput,
   CommitInput,
@@ -64,6 +66,11 @@ export class LocalNodeClient implements NodeClient {
 
   async brief(input: BriefInput): Promise<BriefOutput> {
     return this.node.brief(input);
+  }
+
+  /** The tool that signs. Present here because this client is backed by a vault that can. */
+  async act(input: ActInput): Promise<ActOutput> {
+    return this.node.act(input);
   }
 }
 
