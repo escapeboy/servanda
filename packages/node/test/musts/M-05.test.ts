@@ -79,6 +79,7 @@ describe('M-5: no org-context mixing; ordering is the sole exception', () => {
   it('a single-persona brief never surfaces another persona’s content', () => {
     const acmeOnly = new ServandaNode({
       vault: fx.vault,
+      localStore: fx.node.local,
       activePersona: fx.personas[0]!,
       now: () => fx.now,
     }).brief({ persona: 'acme' });

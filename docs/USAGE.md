@@ -154,17 +154,25 @@ The unique input nobody else watches: everyone watches your repository, nobody w
 *told your agent*.
 
 **Be clear about what this does today.** The hook captures utterances into an NDJSON log, and
-**nothing in this repository reads that log yet** — no ingest path takes it to `commit` or to the
-confirmation queue. What §7's precision harness reads is `~/.claude/projects/**/*.jsonl`, the
-transcripts themselves, directly; it never touches the envelope log. So the hook is a capture
-surface with its consumer still to be written, and a person who registers it and waits for
-promises to appear in their register will wait indefinitely.
+`ingestEnvelopeLog` reads that log, extracts §3.1 candidates from it, and puts them in the
+confirmation queue — so `open_loops({view: "pending"})` shows them and `confirm` acts on them.
+The path is joined; what is not yet written is a command a person runs. Ingestion is a library
+call today, so registering the hook and waiting will still not fill a register on its own until
+a daemon or CLI drives it.
 
-It earns its place now because the §2 envelope is the durable, hashed, persona-bound form of what
-you said, and the transcripts are not: they are Claude Code's own files, in Claude Code's own
-shape, on one machine. Recording that here rather than leaving §3 to imply an end-to-end path,
-because a document describing a capability that does not exist is how the last audit found four
-false claims in the release criteria.
+This paragraph said the opposite until the queue and the reader were connected, and the reason
+it could say so honestly for months is worth keeping: the hook wrote, the harness read
+`~/.claude/projects/**/*.jsonl` directly, and the envelope log sat between them touched by
+nothing. A document describing a capability that does not exist is how an audit found four false
+claims in the release criteria.
+
+**Where an unconfirmed candidate lives, and why it is not in the vault.** The queue is in
+`$SERVANDA_STATE_DIR` (default `~/.servanda-state`), sealed with the vault's content key but
+outside its git repository. The vault is a git repository — that is what makes §4.2's chains
+append-only and sound — so anything written there is written for ever: deleting a queued
+candidate removed it from the working tree while the sealed blob stayed in history under the same
+key. An unconfirmed candidate is a guess about what you meant, made by a model, that you have not
+agreed to. It does not earn permanence, and it is genuinely deletable here.
 
 Add the hook to `~/.claude/settings.json`:
 

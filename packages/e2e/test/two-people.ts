@@ -84,7 +84,12 @@ function makeSide(
     private_key: persona.privateKey,
     created_at: clock.iso(),
   });
-  const node = new ServandaNode({ vault, activePersona: persona.personaId, now: clock.now });
+  const node = new ServandaNode({
+    vault,
+    localStore: vault.localStore(`${dir}-state`),
+    activePersona: persona.personaId,
+    now: clock.now,
+  });
   const fed = new FederatedNode({
     vault,
     persona: persona.personaId,

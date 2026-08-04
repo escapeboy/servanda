@@ -57,7 +57,7 @@ describe('scenario 2 — cold start: value before configuration', () => {
   it('starts from a genuinely empty install — nothing is pre-seeded', () => {
     // If the ledger were not empty here, every assertion below would be meaningless.
     expect(install.vault.listCommitments(alice.personaId)).toHaveLength(0);
-    expect(install.vault.listPending(alice.personaId)).toHaveLength(0);
+    expect(install.node.local.listPending(alice.personaId)).toHaveLength(0);
     expect(install.node.brief({ persona: null }).slots).toHaveLength(0);
   });
 
@@ -155,13 +155,13 @@ describe('scenario 2 — cold start: value before configuration', () => {
     for (const c of candidates) {
       install.node.queuePendingExtraction(alice.personaId, c.commitment, c.envelopeId);
     }
-    expect(install.vault.listPending(alice.personaId).length).toBe(candidates.length);
+    expect(install.node.local.listPending(alice.personaId).length).toBe(candidates.length);
   });
 
   it('produces a brief within the first hour, from findings alone', () => {
     install.clock.advanceDays(BRIEF_AT_HOURS / 24);
 
-    const pending = install.vault.listPending(alice.personaId);
+    const pending = install.node.local.listPending(alice.personaId);
     expect(pending.length).toBeGreaterThan(0);
 
     // Confirming is one act per finding — the "quiet chance to dismiss a wrong extraction".

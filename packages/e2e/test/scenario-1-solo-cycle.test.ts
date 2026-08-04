@@ -126,7 +126,7 @@ describe('scenario 1 — solo: from a spoken sentence to a brief line', () => {
     // The containment claim, made concrete: a fooled model can produce at most an unconfirmed
     // proposal. Before the confirm below, the ledger is still empty.
     expect(install.vault.listCommitments(alice.personaId)).toHaveLength(0);
-    expect(install.vault.listPending(alice.personaId)).toHaveLength(1);
+    expect(install.node.local.listPending(alice.personaId)).toHaveLength(1);
   });
 
   it('confirms through the §7 confirm tool', () => {

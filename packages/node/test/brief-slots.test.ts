@@ -65,6 +65,7 @@ describe('brief: one item, one slot', () => {
 
     const theirs = new ServandaNode({
       vault: fx.vault,
+      localStore: fx.node.local,
       activePersona: fx.personas[1]!,
       now: () => fx.now,
     });

@@ -27,16 +27,20 @@ import type { Vault } from './vault.js';
  * superseded — exactly `TERMINAL_STATES`). An open edge's plaintext is never a retention
  * candidate, however old it is.
  *
- * **And one plaintext store is outside this pass entirely: the pending-extraction queue.**
- * `queuePendingExtraction` seals a whole `Commitment`, `intent` and all, under
- * `personas/<p>/pending/`, and nothing here iterates it — this walks `listEdgeIds`. A candidate
- * the user never confirmed and never dismissed sits there for the life of the vault.
+ * **The pending-extraction queue used to be the hole in this account, and is now out of the
+ * vault instead of unswept by it.** It sealed a whole `Commitment`, `intent` and all, under
+ * `personas/<p>/pending/`, which this pass never iterated — it walks `listEdgeIds` — so a
+ * candidate nobody confirmed and nobody dismissed sat there for the life of the vault. Harmless
+ * while nothing filled the queue automatically; with §3 ingestion wired it would have become an
+ * unbounded store of unconfirmed guesses, in a git repository, growing on its own.
  *
- * That is not a breach of M-15, which scopes retention to terminal EDGES and to nothing else, and
- * it is not silently a feature either: the queue holds the most speculative content in the system,
- * extracted without anyone agreeing to it, and "we keep it until you act" is a policy somebody
- * should choose rather than inherit. Named here because the retention story reads as complete
- * without it, which is how an unbounded store stays unnoticed.
+ * Deleting it was never the answer either: `deletePending` committed a removal that took the file
+ * out of the working tree while the sealed blob stayed in history under the same content key.
+ * A retention policy that cannot actually forget is a policy in name.
+ *
+ * So the queue moved to `LocalStore` — outside `$SERVANDA_VAULT`, still sealed, genuinely
+ * deletable — and this pass has nothing to say about it by construction rather than by omission.
+ * What retention covers is unchanged: terminal EDGES, per M-15 and §5.4.
  */
 
 export interface RetentionCandidate {

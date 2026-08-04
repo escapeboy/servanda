@@ -122,6 +122,11 @@ export async function freshInstall(startInstant: string, persona = alice): Promi
     private_key: persona.privateKey,
     created_at: clock.iso(),
   });
-  const node = new ServandaNode({ vault, activePersona: persona.personaId, now: clock.now });
+  const node = new ServandaNode({
+    vault,
+    localStore: vault.localStore(`${dir}-state`),
+    activePersona: persona.personaId,
+    now: clock.now,
+  });
   return { vault, node, clock, dir };
 }

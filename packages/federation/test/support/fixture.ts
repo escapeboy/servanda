@@ -124,7 +124,12 @@ function makePeer(
     created_at: clock().toISOString(),
   };
   vault.putPersona(record);
-  const node = new ServandaNode({ vault, activePersona: derived.personaId, now: clock });
+  const node = new ServandaNode({
+    vault,
+    localStore: vault.localStore(`${dir}-state`),
+    activePersona: derived.personaId,
+    now: clock,
+  });
   const fed = new FederatedNode({
     vault,
     persona: derived.personaId,

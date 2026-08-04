@@ -31,6 +31,7 @@ import type {
 } from '@servanda/types';
 import { PROTOCOL_VERSION } from '@servanda/types';
 import { assertVaultRepo, commitAll, initVaultRepo, VAULT_MARKER } from './git.js';
+import { LocalStore } from './local-store.js';
 import {
   DEFAULT_RETENTION_DAYS,
   type EdgeMeta,
@@ -38,7 +39,6 @@ import {
   type OutboxDelivery,
   OutboxItem,
   type OutboxItemInput,
-  type PendingExtraction,
   type PersonaRecord,
   type RetentionPolicy,
 } from './records.js';
@@ -806,36 +806,24 @@ export class Vault {
     return readSealed<DomainAnchor>(this.dir, path, this.contentKey);
   }
 
-  // ── pending extraction queue (§7 confirm) ───────────────────────────────────────────────
+  // ── node-local state, which this vault holds the key to but does not store ──────────────
 
-  putPending(item: PendingExtraction): void {
-    const dir = this.requirePersona(item.persona);
-    assertHexId(item.id, 'pending_extraction_id');
-    writeSealed(this.dir, join(dir, 'pending', `${item.id}.json`), this.contentKey, 'pending', item);
-    this.commit(`feat(pending): queue ${item.id.slice(0, 12)}`);
-  }
-
-  getPending(persona: string, id: string): PendingExtraction | null {
-    const dir = this.requirePersona(persona);
-    assertHexId(id, 'pending_extraction_id');
-    const path = join(dir, 'pending', `${id}.json`);
-    if (!existsSync(path)) return null;
-    return readSealed<PendingExtraction>(this.dir, path, this.contentKey);
-  }
-
-  listPending(persona: string): PendingExtraction[] {
-    const dir = this.requirePersona(persona);
-    return listFiles(join(dir, 'pending')).map((f) =>
-      readSealed<PendingExtraction>(this.dir, join(dir, 'pending', f), this.contentKey),
-    );
-  }
-
-  deletePending(persona: string, id: string): boolean {
-    const dir = this.requirePersona(persona);
-    assertHexId(id, 'pending_extraction_id');
-    const removed = removeFile(join(dir, 'pending', `${id}.json`));
-    if (removed) this.commit(`chore(pending): dequeue ${id.slice(0, 12)}`);
-    return removed;
+  /**
+   * The store for things that must NOT enter git history — today, the extraction-confirmation
+   * queue and the ingestion cursor.
+   *
+   * `putPending`/`getPending`/`listPending`/`deletePending` used to live on this class and wrote
+   * under `personas/<p>/pending/`. They were removed rather than deprecated: a second path that
+   * still commits unconfirmed candidates would make the rule unenforceable, and a rule nothing
+   * enforces is the defect class this repository keeps finding. See `LocalStore` for why an
+   * unconfirmed guess does not earn a permanent home.
+   *
+   * The key stays here. The vault is what a passphrase opens, so handing the content key out to
+   * let some other object seal with it would widen the one thing M-16 keeps narrow; instead the
+   * vault mints the store.
+   */
+  localStore(dir: string): LocalStore {
+    return new LocalStore(dir, this.contentKey);
   }
 
   // ── outbox (M-10: producing a wire message must not require a network) ──────────────────

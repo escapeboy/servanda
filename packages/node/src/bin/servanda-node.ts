@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { pathToFileURL } from 'node:url';
-import { Vault } from '@servanda/vault';
+import { defaultStateDir, LocalStore, Vault } from '@servanda/vault';
 import { ServandaNode } from '../node.js';
 import { McpServer } from '../mcp/stdio.js';
 import { InitError, kdfAdvisoryFor, openFailure, type Env } from './servanda-init.js';
@@ -28,7 +28,7 @@ function fail(message: string): never {
  * client is the worst possible shape: the client reports that the server failed to start, and
  * the stack trace holding the only sentence that says why is somewhere the user is not looking.
  */
-export function openNode(env: Env): { vault: Vault; activePersona: string } {
+export function openNode(env: Env): { vault: Vault; localStore: LocalStore; activePersona: string } {
   const dir = env['SERVANDA_VAULT'];
   const passphrase = env['SERVANDA_PASSPHRASE'];
   if (!dir || passphrase === undefined) {
@@ -57,11 +57,14 @@ export function openNode(env: Env): { vault: Vault; activePersona: string } {
     fail(`no persona in ${dir} matches SERVANDA_PERSONA=${wanted} (neither a persona_id nor a label)`);
   }
 
-  return { vault, activePersona };
+  // `SERVANDA_STATE_DIR`, or `~/.servanda-state`. Deliberately NOT under `SERVANDA_VAULT`:
+  // the vault commits everything in its tree, so a confirmation queue placed there would be
+  // committed by the next write no matter what this file intended.
+  return { vault, localStore: vault.localStore(defaultStateDir()), activePersona };
 }
 
 function main(): Promise<void> | void {
-  let opened: { vault: Vault; activePersona: string };
+  let opened: { vault: Vault; localStore: LocalStore; activePersona: string };
   try {
     opened = openNode(process.env);
   } catch (err) {

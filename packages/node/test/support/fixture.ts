@@ -79,7 +79,10 @@ export function makeFixture(opts: FixtureOptions = {}): Fixture {
   const active = personas[activeIndex];
   if (!active) throw new Error(`fixture has no persona ${activeIndex}`);
 
-  const node = new ServandaNode({ vault, activePersona: active, now: clock });
+  // Beside the vault dir, never inside it: the vault commits its whole tree, so a queue placed
+  // in there would be committed by the next write and the point of the store would be lost.
+  const localStore = vault.localStore(`${dir}-state`);
+  const node = new ServandaNode({ vault, localStore, activePersona: active, now: clock });
 
   return {
     dir,
@@ -99,6 +102,9 @@ export function makeFixture(opts: FixtureOptions = {}): Fixture {
       // documented remedy: node's rm retries EBUSY/EMFILE/ENFILE/ENOTEMPTY/EPERM, but only
       // when asked. Every temp-dir teardown in the repo carries the same options.
       rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
+      // The local store is a SIBLING of the vault dir, so it survives the line above. A fixture
+      // that leaves it behind leaks a queue into the next run's tmp sweep rather than the test.
+      rmSync(`${dir}-state`, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
     },
   };
 }
@@ -127,6 +133,11 @@ export function nodeAs(fixture: Fixture, personaIndex: number): ServandaNode {
   if (!id) throw new Error(`fixture has no persona ${personaIndex}`);
   return new ServandaNode({
     vault: fixture.vault,
+    // The SAME local store as the fixture's own node. Two personas in one vault are one human's
+    // contexts, and their confirmation queues live side by side under one state directory —
+    // giving this node a fresh one would make a queued candidate vanish when the caller looked
+    // at it from the other side.
+    localStore: fixture.node.local,
     activePersona: id,
     now: () => fixture.now,
   });

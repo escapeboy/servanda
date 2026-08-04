@@ -258,6 +258,9 @@ importers:
       '@servanda/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@servanda/extraction':
+        specifier: workspace:*
+        version: link:../extraction
       '@servanda/identity':
         specifier: workspace:*
         version: link:../identity

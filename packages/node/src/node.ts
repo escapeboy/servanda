@@ -26,7 +26,7 @@ import type {
 } from '@servanda/types';
 import { ACT_TOOL_BINDINGS, type ActRejectionReason, PROTOCOL_VERSION } from '@servanda/types';
 import { DEFAULT_ACCEPTANCE_WINDOW } from '@servanda/types';
-import type { OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
+import type { LocalStore, OrderingKey, PendingExtraction, Vault } from '@servanda/vault';
 import { keyLineage } from '@servanda/identity';
 import { DISPUTE_WINDOW, verifyAssertionChain, type ChainVerification, type KeyLineage } from './transitions.js';
 import { actionsFor } from './actions.js';
@@ -88,6 +88,8 @@ export class M11Violation extends NodeError {
 
 export interface ServandaNodeOptions {
   vault: Vault;
+  /** Node-local state outside the vault's git repository — `vault.localStore(dir)` mints it. */
+  localStore: LocalStore;
   /** persona_id of the active persona (§7: `persona: null` means "default active"). */
   activePersona: string;
   now?: () => Date;
@@ -192,12 +194,22 @@ export function assertNoForeignOwner(input: { owner?: unknown }): void {
 
 export class ServandaNode {
   readonly vault: Vault;
+  /**
+   * The store for what must not enter git history — the confirmation queue and the ingest cursor.
+   *
+   * Required rather than defaulted. A default rooted at `$HOME` would mean a test that touches
+   * the queue and forgets to point this somewhere writes a person's real state directory, and
+   * the failure would be invisible: the test passes, and the leak is a file nobody looks at.
+   * Nine construction sites is a small price for that not being possible.
+   */
+  readonly local: LocalStore;
   private readonly activePersona: string;
   private readonly clock: () => Date;
   private readonly briefSlots: number;
 
   constructor(opts: ServandaNodeOptions) {
     this.vault = opts.vault;
+    this.local = opts.localStore;
     this.activePersona = opts.activePersona;
     this.clock = opts.now ?? (() => new Date());
     this.briefSlots = opts.briefSlots ?? DEFAULT_BRIEF_SLOTS;
@@ -386,12 +398,25 @@ export class ServandaNode {
   }
 
   private confirmPending(persona: string, input: ConfirmInput): ConfirmOutput {
-    const pending = this.vault.getPending(persona, input.id);
+    const pending = this.local.getPending(persona, input.id);
     if (!pending) throw new NodeError(`no such pending extraction: ${input.id}`);
 
     if (input.decision === 'dismiss') {
-      this.vault.deletePending(persona, input.id);
+      this.local.deletePending(persona, input.id);
       return { state: 'dismissed' };
+    }
+
+    // An `expectation-only` candidate is somebody ELSE's promise, noticed in passing. M-1 keeps
+    // it off the wire and ADR-0013 keeps it local; confirming it records what this person expects,
+    // which is a different act from adopting a promise and lands in a different store. It is
+    // routed here rather than falling into the commitment path below, where the owner check would
+    // have refused it as an M-1 violation — a true statement about the wrong question, since the
+    // whole point of an expectation is that its owner is not you.
+    if (pending.candidate_kind === 'expectation') {
+      const expectation = pending.candidate as unknown as Expectation;
+      this.vault.putExpectation(persona, pending.id, expectation);
+      this.local.deletePending(persona, input.id);
+      return { state: 'confirmed' };
     }
 
     const candidate = { ...(pending.candidate as unknown as Commitment) };
@@ -408,7 +433,7 @@ export class ServandaNode {
       if (input.edit.due !== undefined) candidate.due = input.edit.due;
     }
     this.vault.putCommitment(persona, candidate);
-    this.vault.deletePending(persona, input.id);
+    this.local.deletePending(persona, input.id);
     return { state: input.decision === 'edit' ? 'revised' : 'confirmed' };
   }
 
@@ -578,14 +603,14 @@ export class ServandaNode {
     for (const key of this.vault.listOrderingKeys(this.activePersona)) {
       if (key.id === id) return { persona: key.persona, kind: key.kind };
     }
-    if (this.vault.getPending(this.activePersona, id)) {
+    if (this.local.getPending(this.activePersona, id)) {
       return { persona: this.activePersona, kind: 'pending' };
     }
     for (const key of this.vault.listOrderingKeysAcrossPersonas()) {
       if (key.id === id) return { persona: key.persona, kind: key.kind };
     }
     for (const persona of this.vault.listPersonaIds()) {
-      if (this.vault.getPending(persona, id)) return { persona, kind: 'pending' };
+      if (this.local.getPending(persona, id)) return { persona, kind: 'pending' };
     }
     return null;
   }
@@ -882,7 +907,17 @@ export class ServandaNode {
       if (view === 'owe' && !(isOwner && live)) continue;
       if (view === 'waiting' && !(!isOwner && live)) continue;
       if (view === 'closed' && live) continue;
-      if (view === 'pending') continue; // the confirm queue is not an edge view
+      // §7: `view: "pending"` lists "inbound `proposed` edges AND the local
+      // extraction-confirmation queue — exactly the items `confirm` takes as its `id`". Half of
+      // that sentence used to be implemented: this line was an unconditional `continue`, so a
+      // proposal made TO this persona — the commonest thing anybody has to decide — appeared only
+      // under `waiting`, alongside things that need no decision at all. The queue was the visible
+      // half and the proposals were the invisible one, which is backwards: a person meets an
+      // inbound proposal long before they meet an extracted candidate.
+      //
+      // Inbound means the OTHER party owns it. `isOwner` here is a proposal this persona made and
+      // is waiting on, which belongs in `waiting` and nowhere near a decision queue.
+      if (view === 'pending' && !(state === 'proposed' && !isOwner)) continue;
 
       const commitment = this.vault.getCommitment(persona, edge.commitment_hash);
       out.push({
@@ -942,7 +977,7 @@ export class ServandaNode {
     // learned the id some other way. Upstream #27. `dismiss` is bound here alongside `confirm`
     // because a queue you can only say yes to is not a queue.
     if (view === 'pending' || view === 'all') {
-      for (const pending of this.vault.listPending(persona)) {
+      for (const pending of this.local.listPending(persona)) {
         const candidate = pending.candidate as { intent?: string; owed_to?: string | null; due?: string | null };
         out.push({
           kind: 'commitment',
@@ -1106,20 +1141,55 @@ export class ServandaNode {
 
   // ── extraction queue plumbing (used by the extraction stream) ───────────────────────────
 
-  queuePendingExtraction(persona: string, candidate: Commitment, envelopeId: string | null): string {
-    const id = hashCanonical({ candidate, envelopeId, persona });
+  queuePendingExtraction(
+    persona: string,
+    candidate: Commitment | Expectation,
+    envelopeId: string | null,
+    kind: 'commitment' | 'expectation' = 'commitment',
+  ): string {
+    const id = pendingId(persona, candidate, envelopeId, kind);
     const item: PendingExtraction = {
       v: PROTOCOL_VERSION,
       type: 'pending_extraction',
       id,
       persona,
       candidate: candidate as unknown as Record<string, unknown>,
+      candidate_kind: kind,
       envelope_id: envelopeId,
       queued_at: this.now().toISOString(),
     };
-    this.vault.putPending(item);
+    this.local.putPending(item);
     return id;
   }
+}
+
+/**
+ * The identity of a queued candidate, and deliberately NOT a hash of the whole thing.
+ *
+ * It used to be `hashCanonical({candidate, envelopeId, persona})`, which looks content-addressed
+ * and therefore looks self-idempotent. It is not: `candidate.created_at` comes from the clock
+ * (`RoutingContext.createdAt`), so ingesting the SAME envelope twice produced two different
+ * hashes and two queue entries for one promise — and the second time is a restart after a crash,
+ * which is the hardest moment to notice a duplicate.
+ *
+ * What makes two candidates the same promise is what the person said and who it was to, in which
+ * envelope. `created_at` and `source` are facts about the reading, not about the promise.
+ */
+function pendingId(
+  persona: string,
+  candidate: Commitment | Expectation,
+  envelopeId: string | null,
+  kind: 'commitment' | 'expectation',
+): string {
+  const c = candidate as unknown as Record<string, unknown>;
+  return hashCanonical({
+    persona,
+    envelopeId,
+    kind,
+    intent: c.intent ?? c.expect ?? null,
+    owed_to: c.owed_to ?? c.owed_by ?? null,
+    due: c.due ?? null,
+  });
 }
 
 function ageDays(since: string, now: Date): number {

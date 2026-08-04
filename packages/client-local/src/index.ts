@@ -12,7 +12,7 @@ import type {
   OpenLoopsInput,
   OpenLoopsOutput,
 } from '@servanda/types';
-import { Vault } from '@servanda/vault';
+import { defaultStateDir, Vault } from '@servanda/vault';
 
 /**
  * The register, read from the vault it actually lives in.
@@ -69,6 +69,8 @@ export interface OpenVaultOptions {
   passphrase: string;
   /** persona_id or context label. Omitted means the first persona in the vault. */
   persona?: string | undefined;
+  /** Where node-local state lives. Omitted means `SERVANDA_STATE_DIR` or `~/.servanda-state`. */
+  stateDir?: string | undefined;
   now?: (() => Date) | undefined;
 }
 
@@ -124,6 +126,9 @@ export function openRegister(opts: OpenVaultOptions): OpenedRegister {
 
   const node = new ServandaNode({
     vault,
+    // `opts.stateDir` so an embedder can place it; otherwise `SERVANDA_STATE_DIR` or
+    // `~/.servanda-state`. Never inside the vault — see `LocalStore`.
+    localStore: vault.localStore(opts.stateDir ?? defaultStateDir()),
     activePersona: found.persona_id,
     ...(opts.now === undefined ? {} : { now: opts.now }),
   });

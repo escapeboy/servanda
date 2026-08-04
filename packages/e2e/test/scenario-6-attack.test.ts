@@ -174,7 +174,7 @@ describe('scenario 6 — the attack that did not happen', () => {
       candidate,
       envelope.id,
     );
-    pendingBeforeDismissal = install.vault.listPending(alice.personaId);
+    pendingBeforeDismissal = install.node.local.listPending(alice.personaId);
     commitmentsBeforeDismissal = install.vault.listCommitments(alice.personaId);
     briefBeforeDismissal = install.node.brief({ persona: null });
     dismissal = install.node.confirm({ id: pendingId, decision: 'dismiss' });
@@ -308,7 +308,7 @@ describe('scenario 6 — the attack that did not happen', () => {
     expect(briefBeforeDismissal.slots).toHaveLength(0);
 
     expect(dismissal.state).toBe('dismissed');
-    expect(install.vault.listPending(alice.personaId)).toHaveLength(0);
+    expect(install.node.local.listPending(alice.personaId)).toHaveLength(0);
     expect(install.vault.listCommitments(alice.personaId)).toHaveLength(0);
     expect(briefAfterDismissal.slots).toHaveLength(0);
 
@@ -410,7 +410,7 @@ describe('scenario 6 — the attack that did not happen', () => {
     expect(install.vault.listCommitments(alice.personaId)).toHaveLength(0);
     expect(install.vault.listEdgeIds(alice.personaId)).toHaveLength(0);
     expect(install.vault.listOutbox(alice.personaId)).toEqual([]);
-    expect(install.vault.listPending(alice.personaId)).toHaveLength(0);
+    expect(install.node.local.listPending(alice.personaId)).toHaveLength(0);
 
     const head = execFileSync('git', ['-C', FIXTURE_REPO, 'rev-parse', 'HEAD'], {
       encoding: 'utf8',

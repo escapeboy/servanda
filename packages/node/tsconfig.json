@@ -6,5 +6,5 @@
   },
   "include": ["src/**/*"],
   "references": [{ "path": "../types" }, { "path": "../crypto" }, { "path": "../vault" },
-    { "path": "../identity" }]
+    { "path": "../identity" }, { "path": "../extraction" }]
 }

@@ -30,6 +30,19 @@ export const PendingExtraction = z.object({
   persona: PersonaId,
   /** The §3.1 candidate, unconfirmed. `source` is always "extracted" (§3.4). */
   candidate: z.record(z.unknown()),
+  /**
+   * Which of the two §3.4 shapes the candidate is.
+   *
+   * Routing produces four dispositions and one of them — `expectation-only`, somebody else's
+   * promise — is not a commitment at all (M-1, ADR-0013). The queue took a `Commitment` and
+   * nothing else, so the three honest options were to drop those candidates silently, to write
+   * them straight into protocol state as an `Expectation` (which skips the human act §9.2 trades
+   * for admitting that extraction can be fooled), or to say which shape this is. This says it.
+   *
+   * Defaulted rather than required so the discriminator can never be the reason an item fails to
+   * parse: a queued candidate with no `kind` is the ordinary case, which is a commitment.
+   */
+  candidate_kind: z.enum(['commitment', 'expectation']).default('commitment'),
   envelope_id: Sha256Hex.nullable(),
   queued_at: Rfc3339,
 });

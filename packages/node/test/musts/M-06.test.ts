@@ -44,7 +44,7 @@ afterAll(() => fx.cleanup());
 
 describe('M-6: signal content is data, never instruction', () => {
   it('an injection payload is stored verbatim and acted on in no way', () => {
-    const pending = fx.vault.getPending(fx.personas[0]!, pendingId)!;
+    const pending = fx.node.local.getPending(fx.personas[0]!, pendingId)!;
     expect((pending.candidate as { intent: string }).intent).toBe(INJECTION);
     // Nothing was confirmed, published or sent because text said so.
     expect(fx.vault.listCommitments(fx.personas[0]!)).toHaveLength(0);
@@ -60,7 +60,7 @@ describe('M-6: signal content is data, never instruction', () => {
   });
 
   it('§9.2 containment: the worst case is an unconfirmed record needing a human act', () => {
-    expect(fx.vault.listPending(fx.personas[0]!).map((p) => p.id)).toEqual([pendingId]);
+    expect(fx.node.local.listPending(fx.personas[0]!).map((p) => p.id)).toEqual([pendingId]);
     fx.node.confirm({ id: pendingId, decision: 'confirm' });
     // Only after the human act does a record exist — and it is still vault-local, unsigned,
     // and un-proposed. Nothing crossed a wire.
