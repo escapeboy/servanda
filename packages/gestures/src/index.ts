@@ -3,6 +3,8 @@ export * from './copy.js';
 export * from './fixtures.js';
 export * from './intent.js';
 export * from './ports.js';
+export * from './queue.js';
+export * from './run.js';
 export * from './quote.js';
 export * from './reaction.js';
 export * from './utterance.js';

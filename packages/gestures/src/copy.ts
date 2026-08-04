@@ -19,7 +19,10 @@ import { COPY } from '@servanda/client-web';
  * Where a promise was spoken, as a closed set. Deliberately not a string from the payload:
  * the frame of the card is ours and only the quoted body is theirs (M-6).
  */
-export const PLACES = ['chat', 'pr-comment', 'meeting'] as const;
+// `agent` is where §3 captures — the hook reads what you type at your own assistant — and it
+// was missing while the other three were present. A closed set that omits the product's own
+// headline capture path forces every card from it to claim it came from somewhere else.
+export const PLACES = ['chat', 'pr-comment', 'meeting', 'agent'] as const;
 export type PlaceId = (typeof PLACES)[number];
 
 export const GESTURE_COPY = {
@@ -27,11 +30,13 @@ export const GESTURE_COPY = {
     chat: 'a message you sent',
     'pr-comment': 'a review comment you wrote',
     meeting: 'a meeting you were in',
+    agent: 'something you told your assistant',
   },
   theirPlace: {
     chat: 'a message they sent',
     'pr-comment': 'a review comment they wrote',
     meeting: 'a meeting you were both in',
+    agent: 'something they told their assistant',
   },
 
   confirm: {
