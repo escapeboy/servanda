@@ -39,6 +39,37 @@ one so far changes derived keys. A vault does not migrate across any of them.
     is the floor fails; so does a build that *records* the desktop profile while *deriving* at the
     floor, which no assertion over a constant can catch. Both were verified by mutation.
 
+  **Verified against the registry, not only against the tags.** The account above rested on tag
+  content plus the fact that `release.yml` publishes from a checkout of the tag — strong, and not
+  the same as having read what people install. `npm pack` on all four published versions of
+  `@servanda/crypto` says, in `dist/content-key.js`:
+
+  ```
+  0.1.0-pre  ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 }
+  0.2.0-pre  ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 }
+  0.3.0-pre  ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 }
+  0.4.0-pre  ARGON2ID_PARAMS = { m: 65536, t: 3, p: 1, dkLen: 32 }
+  ```
+
+  The same tarballs also confirm the repair path is real rather than assumed: `wrapForPassphrase`
+  in those builds writes `kdf: { algo, salt, m, t, p }` into every wrap, so a vault they made
+  carries its own parameters, this build opens it at those parameters, and the command below can
+  re-wrap it. Nothing is stranded and nothing needs the recovery phrase.
+
+### If you made a vault with any published version
+
+Every one of them is at the floor, permanently, until you re-wrap it. Nothing has leaked and
+nothing is broken — the vault opens normally and every promise in it is intact. What is true is
+that guessing your passphrase is about 16× cheaper against it than against a vault made today.
+
+```bash
+SERVANDA_UPGRADE_KEY=1 SERVANDA_VAULT=~/your-vault SERVANDA_PASSPHRASE=… npx servanda-init
+```
+
+One command, about a minute of one core. Same passphrase, same recovery phrase, same personas,
+same promises — only the cost of guessing changes. The register and `servanda-node` both say this
+on their own now, so you do not have to remember to check.
+
 ### Changed
 
 - **The version in the manifests now names the release being prepared, not the last one shipped.**
