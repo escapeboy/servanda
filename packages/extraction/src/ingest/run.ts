@@ -176,8 +176,37 @@ export async function ingestEnvelopeLog(options: IngestOptions): Promise<IngestR
   };
 }
 
+/**
+ * What went wrong, WITHOUT the third party's free text.
+ *
+ * This used to be `String(e.message).slice(0, 200)`, and the slice was mistaken for a defence.
+ * It is a truncation: an error whose message happens to begin with the payload carries it
+ * straight through. Demonstrated rather than argued — the same message with the canary at the
+ * front leaks and with the canary at 300 characters does not, which means the protection was the
+ * position of the text, not any rule.
+ *
+ * That matters here more than in most catch blocks. `ingest` is built to run unattended and its
+ * report is built to be logged, so anything in `detail` becomes a second copy of what §3
+ * captured, in a file with none of the vault's protections on it — and the ONE thing the
+ * envelope log's own regular-file rule exists to prevent is a second uncontrolled copy.
+ *
+ * The message is dropped entirely rather than redacted. Redaction means knowing what to look
+ * for, which is a denylist, and this repository has already made this exact choice once: the
+ * writer's target check is `fstat` says regular file, not a list of bad paths. One rule that
+ * cannot be evaded beats a filter that can be, and an SDK that escapes or encodes the payload
+ * would defeat any matcher.
+ *
+ * What survives is what an operator actually acts on: which class of failure, and the status.
+ * "Rate limited" and "bad request" and "the network is down" are different responses, and all
+ * three are visible here. What is lost is the vendor's sentence, which is a real loss and is the
+ * price of the guarantee.
+ */
 function describe(error: unknown): string {
-  const e = error as { message?: unknown; status?: unknown };
+  const e = error as { status?: unknown; name?: unknown };
   const status = typeof e?.status === 'number' ? ` (HTTP ${e.status})` : '';
-  return `${String(e?.message ?? error).slice(0, 200)}${status}`;
+  const kind =
+    typeof e?.name === 'string' && e.name.length > 0
+      ? e.name
+      : (error as object)?.constructor?.name ?? 'unknown error';
+  return `${kind}${status}`;
 }
