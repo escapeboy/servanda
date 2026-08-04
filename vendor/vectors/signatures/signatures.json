@@ -61,6 +61,36 @@
       "reason": null
     },
     {
+      "name": "inbox-auth-names-its-hub",
+      "description": "§6.1: a hub authentication signature names the hub it is for, INSIDE the preimage. `audience` is the hub's own base URL as the persona's §6.7 record spells it. Without it the signature is a bearer token valid at EVERY hub at once, and §6.7's ordered hub list — which exists so a persona stays reachable when one hub is down — becomes the attack surface: one compromised hub in that list serves an honest hub's challenge as its own, collects the signature and replays it. A challenge is public by construction and mintable by anyone, so `audience` is the only thing making the SIGNATURE non-transferable. Pinning it here pins the wire-visible half — an implementation that omits `audience` produces a different canonical form and a different preimage, and fails this case rather than passing a suite that never asked.",
+      "signer": {
+        "persona_id": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "derivation_path": "m/7391'/0'"
+      },
+      "unsigned_object": {
+        "v": "servanda/0.2",
+        "type": "inbox_auth",
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "audience": "https://hub.example.org",
+        "challenge": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "issued_at": "2026-07-25T09:00:00Z"
+      },
+      "canonical": "{\"audience\":\"https://hub.example.org\",\"challenge\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"issued_at\":\"2026-07-25T09:00:00Z\",\"persona\":\"a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a\",\"type\":\"inbox_auth\",\"v\":\"servanda/0.2\"}",
+      "sha256_preimage": "37a3dd12886c0ff1507e0bddca2d264350a24cb62ac8f8b41544c0a817a65420",
+      "signature": "4288f61d77c2323c0919f8316b5b3f6703ad414a8ea3ad623cbc16af7cf9c4bd1d4184e195a4e3f72fd4c0953dffe84f94769d51adce9e78a66bc05b9bfadd09",
+      "signed_object": {
+        "v": "servanda/0.2",
+        "type": "inbox_auth",
+        "persona": "a8a49af4e897c55abaab67d4933c14395d7a5d2ede1b4421981970468864351a",
+        "audience": "https://hub.example.org",
+        "challenge": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "issued_at": "2026-07-25T09:00:00Z",
+        "sig": "4288f61d77c2323c0919f8316b5b3f6703ad414a8ea3ad623cbc16af7cf9c4bd1d4184e195a4e3f72fd4c0953dffe84f94769d51adce9e78a66bc05b9bfadd09"
+      },
+      "verifies": true,
+      "reason": null
+    },
+    {
       "name": "assertion-proposed",
       "description": "§4.3: the owner proposes. One signature — socially nothing until confirmed.",
       "signer": {
