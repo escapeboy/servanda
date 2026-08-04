@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,7 +11,8 @@ import { makeFixture, nodeAs, syncEdge, type Fixture } from '../support/fixture.
  *  1. In-process: every §7 tool works against a bare vault with nobody else present.
  *  2. Out-of-process (`prove-no-network.mjs`): the shipped node answers all six tools inside a
  *     child process whose network primitives throw, with positive and negative controls that
- *     show the trap is armed, plus a static audit of the shipped module graph.
+ *     show the trap is armed, plus a static audit of the shipped module graph. That half runs in
+ *     gate GA rather than here — see the last test for why, and for what keeps it running.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -69,10 +70,30 @@ describe('M-10: L0–L1 functions with no network, server, or second participant
     expect(fx.node.brief({ persona: null }).slots.length).toBeGreaterThan(0);
   });
 
-  it('the shipped node answers all six tools with network primitives disabled', () => {
-    // The prover exits non-zero on any failed control; this is its verdict, not a re-assertion.
-    const out = execFileSync(process.execPath, [PROVER], { encoding: 'utf8' });
-    expect(out).toContain('GA/no-network: PASS');
-    expect(out).not.toContain('FAIL');
-  }, 120_000);
+  /**
+   * The no-network proof runs in gate GA, not here — and this test is what keeps that true.
+   *
+   * It used to `execFileSync` the prover from inside a vitest worker: ~30 s of synchronous
+   * blocking, 80 s under contention. That matters because vitest's `onTaskUpdate` timeout is
+   * enforced by a timer INSIDE the worker and accumulates over the FILE, so one test blocking
+   * past 60 s makes a run exit non-zero with every assertion green. `vitest.setup.ts` yields
+   * after each test and cures the cumulative case; it cannot cure a single test that blocks past
+   * the limit, because by then the timer has already fired. This was the last one in the tree.
+   *
+   * Deleting it outright would have been the wrong fix, so this replaces it: the prover is
+   * enforced by `gates/ga-node.sh` step GA/2, which runs it in a plain node process under
+   * `set -euo pipefail` — a 30 s call there blocks nobody. What could silently rot is the
+   * DELEGATION: someone removes the prover, or drops the line from the gate, and the property
+   * stops being checked anywhere while this file still carries M-10's name.
+   *
+   * So the assertion is on the wiring, and it costs milliseconds.
+   */
+  it('delegates the no-network proof to gate GA, and the gate still runs it', () => {
+    expect(existsSync(PROVER)).toBe(true);
+    const gate = readFileSync(join(HERE, '..', '..', '..', '..', 'gates', 'ga-node.sh'), 'utf8');
+    // The path as the gate spells it, relative to the repository root.
+    expect(gate).toContain('node packages/node/test/support/prove-no-network.mjs');
+    // `set -e`, or a failing prover would print and the gate would carry on to PASS.
+    expect(gate).toMatch(/^set -euo pipefail$/mu);
+  });
 });
