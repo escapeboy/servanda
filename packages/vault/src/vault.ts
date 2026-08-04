@@ -834,6 +834,18 @@ export class Vault {
     const queued = OutboxItem.parse(item);
     const dir = this.requirePersona(queued.persona);
     assertHexId(queued.id, 'outbox id');
+    // The same backstop `putEdge` has, for the same reason and one store later.
+    //
+    // `queuePropose` sets `id = hashCanonical(message)`, so the binding was already true — and
+    // true only because the one producer happened to do it. Two records carrying the same
+    // message under different ids are two entries in `listOutbox`, which `push` reads as two
+    // messages and hands to a courier twice. Nothing reachable produced that today; the point of
+    // a backstop is that it does not depend on which producers exist.
+    if (hashCanonical(queued.message as unknown as Record<string, unknown>) !== queued.id) {
+      throw new VaultError(
+        `§6.2: outbox id ${queued.id.slice(0, 12)} is not the digest of the message it carries`,
+      );
+    }
     writeSealed(this.dir, join(dir, 'outbox', `${queued.id}.json`), this.contentKey, 'outbox', queued);
     this.commit(`feat(outbox): queue ${queued.id.slice(0, 12)}`);
   }

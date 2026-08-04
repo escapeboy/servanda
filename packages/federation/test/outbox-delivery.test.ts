@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PROTOCOL_VERSION } from '@servanda/types';
+import { hashCanonical } from '@servanda/crypto';
 import type { WireMessage } from '@servanda/types';
 import { FederatedNode, OutboundDeliveryError } from '../src/federated-node.js';
 import { signMessage } from '../src/messages.js';
@@ -65,14 +66,19 @@ function sentSigs(courier: FakeCourier): string[] {
 }
 
 /**
- * Queue a message under a CHOSEN outbox id.
+ * Queue a message under the id §6.2 says it has: the digest of the message.
  *
- * `listOutbox` returns items in filename order, and the whole point of case 2 is what happens to
- * the items BEHIND a failure — so which one comes first cannot be left to a content hash. The id
- * is the local filename and nothing else; the message inside it is genuinely signed by the
- * persona, which is what `push` actually verifies.
+ * This used to take a CHOSEN id, because `listOutbox` returns items in filename order and the
+ * whole point of the starvation case is what happens to the items BEHIND a failure — so which one
+ * came first could not be left to a hash. That worked only because `putOutbox` did not enforce
+ * the binding `queuePropose` already maintained, and this test's own comment said so.
+ *
+ * The binding is enforced now, so the order is no longer chosen. It is DISCOVERED: queue both,
+ * read the order back, and make whichever sorts first the unreachable one. The property under
+ * test — a failure does not starve what is behind it — never depended on which recipient that
+ * was, only on there being one behind the other.
  */
-function queue(solo: Solo, id: string, recipient: string, edgeId: string): WireMessage {
+function build(solo: Solo, recipient: string, edgeId: string): { message: WireMessage; id: string } {
   const message = signMessage(
     'propose',
     { edge: { edge_id: edgeId }, assertion: null },
@@ -81,16 +87,42 @@ function queue(solo: Solo, id: string, recipient: string, edgeId: string): WireM
     NOW.toISOString(),
     solo.privateKey,
   );
+  return { message, id: hashCanonical(message as unknown as Record<string, unknown>) };
+}
+
+function store(solo: Solo, recipient: string, built: { message: WireMessage; id: string }): string {
   solo.vault.putOutbox({
     v: PROTOCOL_VERSION,
     type: 'outbox_item',
-    id,
+    id: built.id,
     persona: solo.personaId,
     recipient,
-    message: message as unknown as Record<string, unknown>,
+    message: built.message as unknown as Record<string, unknown>,
     queued_at: NOW.toISOString(),
   });
-  return message;
+  return built.id;
+}
+
+/**
+ * Queue two messages so that `first` is genuinely ahead of `second` in `listOutbox`.
+ *
+ * `listOutbox` is filename order and filenames are ids, so with §6.2's binding enforced the order
+ * follows the digest and cannot be dictated. It CAN be searched for: vary the edge id until the
+ * two digests fall the right way. Deterministic, no hand-picked hashes, and — the reason it is a
+ * named helper rather than a fixture — the requirement it encodes is stated out loud. "One bad
+ * recipient must not starve the rest" is a claim about what is BEHIND the failure, and a setup
+ * that quietly put the healthy one first would pass while proving nothing.
+ */
+function queueBehind(solo: Solo, first: string, second: string): { first: string; second: string } {
+  for (let i = 0; i < 64; i++) {
+    const a = build(solo, first, i.toString(16).padStart(64, 'a'));
+    const b = build(solo, second, i.toString(16).padStart(64, 'b'));
+    // Searched BEFORE anything is written. There is no `dropOutbox`, and adding one so a test
+    // could undo its own setup would be the tail wagging the dog — `build` is pure, so the search
+    // costs nothing but signatures.
+    if (a.id < b.id) return { first: store(solo, first, a), second: store(solo, second, b) };
+  }
+  throw new Error('could not order two outbox items; the digest is not behaving like a hash');
 }
 
 describe('§6.7 outbound — one bad recipient must not starve the rest', () => {
@@ -107,9 +139,8 @@ describe('§6.7 outbound — one bad recipient must not starve the rest', () => 
       transport: courier,
       now: () => NOW,
     });
-    // The unreachable one FIRST, by id. Before the fix this is the item that ended the loop.
-    queue(solo, '0'.repeat(64), unreachable, 'a'.repeat(64));
-    queue(solo, 'f'.repeat(64), reachable, 'b'.repeat(64));
+    // The unreachable one FIRST. Before the fix this is the item that ended the loop.
+    queueBehind(solo, unreachable, reachable);
   });
 
   afterAll(() => solo?.cleanup());
@@ -173,8 +204,7 @@ describe('§6.1 per-recipient routing — a counterparty with no courier is visi
       routeFor: (recipient) => (recipient === reachable ? courier : null),
       now: () => clock,
     });
-    queue(solo, '1'.repeat(64), unreachable, 'c'.repeat(64));
-    queue(solo, 'e'.repeat(64), reachable, 'd'.repeat(64));
+    queueBehind(solo, unreachable, reachable);
   });
 
   afterAll(() => solo?.cleanup());
