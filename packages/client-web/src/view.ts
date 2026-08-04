@@ -7,6 +7,7 @@ import type {
   VerificationLevel,
 } from '@servanda/types';
 import { COPY } from './copy.js';
+import type { WalkedView } from './paging.js';
 import type { SealView, TrustView } from './seal.js';
 import { sealFor, trustFor } from './seal.js';
 
@@ -477,4 +478,48 @@ export function buildInbox(pending: OpenLoopsOutput, now: string): InboxView {
       ],
     })),
   };
+}
+
+/**
+ * Whether the screen is the register, or the first part of it.
+ *
+ * Two different things, deliberately not collapsed into one flag:
+ *
+ *   - `skipped` — the walk finished, and while it was running somebody's promise ranked above
+ *     where the reader had already got to. Nothing is missing from the vault and nothing is
+ *     wrong; one item is not on this screen and will be on the next read. It is a NET number and
+ *     therefore a lower bound, so the sentence says "more arrived", never "exactly N are hidden".
+ *   - `truncated` — the walk hit its own page ceiling and stopped with a cursor still in hand.
+ *     This one IS a shortfall, and the number beside it is `total`, which the node reports and
+ *     no client read until now.
+ *
+ * `line` is null when there is nothing to say, so a renderer can place it without deciding
+ * whether it is worth placing. Both counts are carried as well as the sentence — `brief.unresolved`
+ * had only the count for a while, and it was rendered by nobody.
+ */
+export interface ReachView {
+  readonly complete: boolean;
+  readonly skipped: number;
+  readonly shown: number;
+  readonly total: number;
+  readonly line: string | null;
+}
+
+export function buildReach(walks: readonly WalkedView[]): ReachView {
+  const skipped = walks.reduce((n, w) => n + w.skipped, 0);
+  const truncated = walks.filter((w) => w.truncated);
+  const shown = truncated.reduce((n, w) => n + w.items.length, 0);
+  const total = truncated.reduce((n, w) => n + w.total, 0);
+
+  // Truncation first: it is the one that means something is not on the screen at all. Saying
+  // "more arrived" to somebody who is missing 10000 items would be true and useless.
+  if (truncated.length > 0) {
+    return { complete: false, skipped, shown, total, line: COPY.reach.truncated(shown, total) };
+  }
+  if (skipped > 0) {
+    const all = walks.reduce((n, w) => n + w.items.length, 0);
+    return { complete: true, skipped, shown: all, total: all, line: COPY.reach.skipped(skipped) };
+  }
+  const all = walks.reduce((n, w) => n + w.items.length, 0);
+  return { complete: true, skipped: 0, shown: all, total: all, line: null };
 }

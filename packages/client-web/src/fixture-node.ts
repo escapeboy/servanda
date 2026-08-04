@@ -78,11 +78,33 @@ export class FixtureNodeClient implements NodeClient {
     // `total` is the view's size, never the page's — a stand-in that returned the page size
     // would agree with a truncating node about everything and prove nothing about truncation.
     //
-    // `next_cursor` is null because this stand-in serves ONE page and models no cursor; the
-    // fixtures it feeds are all smaller than `limit`, so null is the true answer for them. It
-    // would stop being the true answer the moment a fixture exceeded a page, which is the point
-    // at which this needs a real keyset rather than a constant.
-    return { items: view.slice(0, input.limit), total: view.length, next_cursor: null, skipped: 0 };
+    // This PAGES, and it did not until a client learned to walk. `next_cursor` was the constant
+    // `null` with a comment saying it "would stop being the true answer the moment a fixture
+    // exceeded a page" — which is exactly the moment a paging test arrives. A stand-in that
+    // cannot page cannot fail a client that does not, and this file already carries the scar of
+    // that: `open_loops` was once `input.view === 'all' ? this.state.items : this.state.items`,
+    // and the ledger's role inversion stayed invisible for the whole of v0 because of it.
+    //
+    // The cursor is an OFFSET, not a keyset. That is a deliberate limit and worth naming: a real
+    // node freezes a ranking instant so removals do not shift the boundary, and an offset does
+    // not model that. What this proves is that the client keeps asking until told to stop, which
+    // is the client's half of the contract; §7's ordering guarantees are the node's, and
+    // `packages/node/test/open-loops-paging.test.ts` is where those are tested.
+    // `null` AND `undefined` both mean "start": §7 gives `cursor` a default of null, so a
+    // caller who omits it is asking for the first page. Treating only `null` as the start
+    // turned every existing call site into `unreadable cursor: undefined`.
+    const from = input.cursor === null || input.cursor === undefined ? 0 : Number.parseInt(input.cursor, 10);
+    if (!Number.isInteger(from) || from < 0) throw new Error(`unreadable cursor: ${input.cursor}`);
+    const items = view.slice(from, from + input.limit);
+    const next = from + items.length;
+    return {
+      items,
+      total: view.length,
+      // `null` MEANS "the view is finished" — it is a statement, not an absence, so it is emitted
+      // only when the walk really is over rather than whenever a page comes back short.
+      next_cursor: next >= view.length ? null : String(next),
+      skipped: 0,
+    };
   }
 
   async brief(_input: BriefInput): Promise<BriefOutput> {

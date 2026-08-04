@@ -6,7 +6,7 @@ import type { IntegrationsView, WorkClassView } from './integrations.js';
 import type { OnboardingView } from './onboarding.js';
 import type { ProofView } from './proof.js';
 import type { TeamEntryView, TeamView } from './team.js';
-import type { ActionView, BriefView, CardView, InboxView, LedgerView, PartyView } from './view.js';
+import type { ActionView, BriefView, CardView, InboxView, LedgerView, PartyView, ReachView } from './view.js';
 
 /**
  * View model → element tree.
@@ -398,6 +398,8 @@ function workClassEl(workClass: WorkClassView): El {
 
 export interface AppView {
   readonly surface: SurfaceId;
+  /** Whether the views behind this screen were read to the end. */
+  readonly reach: ReachView;
   readonly brief: BriefView;
   readonly ledger: LedgerView;
   readonly inbox: InboxView;
@@ -428,10 +430,28 @@ function bodyEl(app: AppView): El {
   }
 }
 
+/**
+ * Whether this screen is the register or part of it, said once, above the body.
+ *
+ * Placed here rather than inside each view because it is a property of the READ, not of any one
+ * section — and because a line that exists on the view model and is rendered nowhere is the
+ * defect it was written to fix. `brief.unresolved` sat unrendered long enough for a brief with
+ * two unreachable slots to print "Nothing is waiting on you today."
+ */
+function reachEl(reach: ReachView): El | null {
+  if (reach.line === null) return null;
+  return textEl('p', reach.line, {
+    class: reach.complete ? 'reach' : 'reach reach--short',
+    role: 'status',
+  });
+}
+
 /** The whole surface: navigation plus whichever view is showing. */
 export function appEl(app: AppView): El {
   const body = bodyEl(app);
-  const children = STANDALONE_SURFACES.includes(app.surface) ? [body] : [navEl(app.surface), body];
+  const reach = reachEl(app.reach);
+  const base = reach === null ? [body] : [reach, body];
+  const children = STANDALONE_SURFACES.includes(app.surface) ? base : [navEl(app.surface), ...base];
   return el('main', { id: 'servanda', class: 'servanda' }, children);
 }
 

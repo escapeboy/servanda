@@ -5,6 +5,7 @@ export * from './integrations.js';
 export * from './keyboard.js';
 export * from './node-client.js';
 export * from './onboarding.js';
+export * from './paging.js';
 export * from './proof.js';
 export * from './render.js';
 export * from './seal.js';
@@ -22,9 +23,10 @@ import { buildOnboarding } from './onboarding.js';
 import type { ProofRecord } from './proof.js';
 import { buildProof } from './proof.js';
 import type { AppView, SurfaceId } from './render.js';
+import { asOutput, walkView } from './paging.js';
 import type { TeamInput } from './team.js';
 import { NO_TEAM, buildTeam } from './team.js';
-import { buildBrief, buildInbox, buildLedger, waitingIdsOf } from './view.js';
+import { buildBrief, buildInbox, buildLedger, buildReach, waitingIdsOf } from './view.js';
 import type { OpenLoopsOutput } from '@servanda/types';
 
 export interface LoadAppOptions {
@@ -53,25 +55,37 @@ export interface LoadAppOptions {
  */
 export async function loadApp(client: NodeClient, options: LoadAppOptions): Promise<AppView> {
   const persona = options.persona ?? null;
-  // Four reads, not one. `view: 'all'` is the brief's index — it must reach every item a slot can
-  // name — but it flattens away WHICH SIDE of each promise the viewer is on, and the ledger is
-  // built on exactly that distinction. §7 already defines the three views; asking for them is how
-  // the role survives the trip. Re-deriving it from `kind` put a promise made TO you under
-  // "You owe" for the whole of v0.
-  const [brief, loops, owe, waiting, closed] = await Promise.all([
+  // Separate reads per view, not one. `view: 'all'` is the brief's index — it must reach every
+  // item a slot can name — but it flattens away WHICH SIDE of each promise the viewer is on, and
+  // the ledger is built on exactly that distinction. §7 already defines the views; asking for
+  // them is how the role survives the trip. Re-deriving it from `kind` put a promise made TO you
+  // under "You owe" for the whole of v0.
+  //
+  // Each view is WALKED, not sampled. `limit` is capped at 500, so a single read of a register
+  // holding more than that showed a prefix and called it the register — and `total`, added to the
+  // node to make that visible, had no reader in any client. See `walkView`.
+  const [brief, allWalk, oweWalk, waitingWalk, closedWalk, pendingWalk] = await Promise.all([
     client.brief({ persona }),
-    client.open_loops({ view: 'all', persona, limit: 500, cursor: null }),
-    client.open_loops({ view: 'owe', persona, limit: 500, cursor: null }),
-    client.open_loops({ view: 'waiting', persona, limit: 500, cursor: null }),
-    client.open_loops({ view: 'closed', persona, limit: 500, cursor: null }),
+    walkView(client, 'all', persona),
+    walkView(client, 'owe', persona),
+    walkView(client, 'waiting', persona),
+    walkView(client, 'closed', persona),
+    // Fetched rather than injected. `options.pending` stayed an input with an EMPTY default, so
+    // a caller who did not know to pass it got a silently empty inbox — and after §3 ingestion
+    // landed, that is where every extracted candidate and every inbound proposal now arrives.
+    // The parameter survives as an override for the email brief, which composes from a snapshot.
+    options.pending === undefined ? walkView(client, 'pending', persona) : null,
   ]);
-  const buckets = { owe, waiting, closed };
+  const loops = asOutput(allWalk);
+  const buckets = { owe: asOutput(oweWalk), waiting: asOutput(waitingWalk), closed: asOutput(closedWalk) };
+  const pending = options.pending ?? asOutput(pendingWalk!);
   const proof = options.proof ?? null;
   return {
     surface: options.surface,
+    reach: buildReach([allWalk, oweWalk, waitingWalk, closedWalk, ...(pendingWalk ? [pendingWalk] : [])]),
     brief: buildBrief(brief, loops, options.now, waitingIdsOf(buckets)),
     ledger: buildLedger(buckets, options.now),
-    inbox: buildInbox(options.pending ?? { items: [], total: 0, next_cursor: null, skipped: 0 }, options.now),
+    inbox: buildInbox(pending, options.now),
     team: buildTeam(options.team ?? NO_TEAM, options.now),
     integrations: buildIntegrations(options.integrations ?? {}),
     onboarding: buildOnboarding(options.onboarding ?? {}),

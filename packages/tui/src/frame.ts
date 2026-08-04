@@ -180,6 +180,15 @@ function composeLines(state: FrameState): string[] {
     ? [...head, COPY.appName, RULE]
     : [...head, COPY.appName, navLine(state.app.surface, focused), RULE];
 
+  // Whether this screen is the register or part of it, said once, before any body.
+  //
+  // Placed here rather than in each branch below for the reason the count itself exists: the
+  // browser has one call site and the terminal must not need seven, or six of them will be
+  // correct and the seventh will quietly print a prefix. `brief.unresolvedLine` on line ~208 is
+  // the precedent — a number that sat on the view model while nothing rendered it, long enough
+  // for a brief with two unreachable slots to print "Nothing is waiting on you today."
+  if (state.app.reach.line !== null) lines.push(state.app.reach.line, '');
+
   if (state.app.surface === 'team') {
     lines.push(...teamLines(state.app.team));
     return lines;

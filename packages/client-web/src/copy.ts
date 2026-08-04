@@ -74,6 +74,23 @@ export const COPY = {
     closed: 'Nothing closed yet.',
   },
 
+  /**
+   * Whether what is on screen IS the register, or a part of it.
+   *
+   * Follows `brief.unresolved` exactly, and for the same reason: a bare count sat on the view
+   * model there while no renderer read it, so a brief with two unreachable slots printed
+   * "Nothing is waiting on you today". A number nobody turns into a sentence is a number nobody
+   * sees. Both of these say what happened and what to do, and neither names a cursor.
+   */
+  reach: {
+    skipped: (n: number): string =>
+      n === 1
+        ? '1 more arrived above what you have already read. Reload to see it in place.'
+        : `${n} more arrived above what you have already read. Reload to see them in place.`,
+    truncated: (shown: number, total: number): string =>
+      `Showing ${shown} of ${total}. This register is larger than one read; narrow it or reload.`,
+  },
+
   inbox: {
     heading: 'To confirm',
     empty: 'Nothing to confirm.',
