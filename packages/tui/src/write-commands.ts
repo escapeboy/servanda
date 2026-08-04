@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { NodeClient } from '@servanda/client-web';
 
 /**
@@ -25,6 +26,8 @@ export interface ParsedCommand {
   readonly due: string | null;
   readonly id: string | null;
   readonly propose: boolean;
+  /** What you are saying you delivered. Hashed here; the words never leave this machine (M-7). */
+  readonly evidence: string | null;
 }
 
 export class UsageError extends Error {}
@@ -52,6 +55,7 @@ export function parseArgs(argv: readonly string[]): ParsedCommand | null {
   const words: string[] = [];
   let to: string | null = null;
   let due: string | null = null;
+  let evidence: string | null = null;
   let propose = false;
 
   for (let i = 0; i < rest.length; i++) {
@@ -63,6 +67,9 @@ export function parseArgs(argv: readonly string[]): ParsedCommand | null {
       const v = rest[++i];
       if (v === undefined) throw new UsageError('--due needs a date');
       due = parseDue(v);
+    } else if (a === '--evidence') {
+      evidence = rest[++i] ?? null;
+      if (evidence === null || evidence === '') throw new UsageError('--evidence needs something');
     } else if (a === '--propose') {
       propose = true;
     } else if (a.startsWith('--')) {
@@ -77,7 +84,19 @@ export function parseArgs(argv: readonly string[]): ParsedCommand | null {
     if (text.length !== 64 || !/^[0-9a-f]{64}$/u.test(text)) {
       throw new UsageError(`${verb} takes the id of one promise, as shown in the register`);
     }
-    return { verb, text: '', to: null, due: null, id: text, propose: false };
+    // §4.3: `done` is the owner saying they delivered, and it MUST carry evidence — that is
+    // what separates a closure from an assertion. `release` is the other party giving up a
+    // claim and MUST NOT carry any: forgiving a debt is not evidencing delivery.
+    if (verb === 'done' && evidence === null) {
+      throw new UsageError(
+        'done needs --evidence "<what you delivered>": §4.3 will refuse a closure without it.\n' +
+          'Only its hash is recorded — the words stay on this machine.',
+      );
+    }
+    if (verb === 'release' && evidence !== null) {
+      throw new UsageError('release takes no --evidence: letting a claim go is not evidencing delivery.');
+    }
+    return { verb, text: '', to: null, due: null, id: text, propose: false, evidence };
   }
   if (text.length === 0) throw new UsageError(`${verb} needs the words of the promise`);
   if (verb === 'expect' && to === null) {
@@ -85,7 +104,8 @@ export function parseArgs(argv: readonly string[]): ParsedCommand | null {
     // to yourself, which is what `commit` already is.
     throw new UsageError('expect needs --to: whose promise are you waiting on?');
   }
-  return { verb, text, to, due, id: null, propose };
+  if (evidence !== null) throw new UsageError(`${verb} takes no --evidence`);
+  return { verb, text, to, due, id: null, propose, evidence: null };
 }
 
 export const USAGE = `servanda — your register of promises
@@ -93,8 +113,9 @@ export const USAGE = `servanda — your register of promises
   servanda                                  open the register
   servanda commit "<what you promised>" [--to <who>] [--due <date>] [--propose]
   servanda expect "<what you are waiting for>" --to <who>
-  servanda done <id>                        you delivered it (needs evidence — see USAGE.md)
+  servanda done <id> --evidence "<what you delivered>"    you delivered it
   servanda release <id>                     you are letting theirs go
+  servanda sync                             send what you wrote, collect what arrived
 
   --propose sends it to them. Without it the promise stays on this machine, which is the
   whole of §0's base rule: this works with nobody else present.
@@ -109,6 +130,11 @@ Environment: SERVANDA_VAULT, SERVANDA_PASSPHRASE, optionally SERVANDA_PERSONA.`;
  * store is a module whose wording can start depending on what is in it.
  */
 export type LabelLookup = (label: string) => string | null;
+
+/** §4.4: closure carries the hash of the evidence, never the evidence itself (M-7). */
+function sha256Hex(text: string): string {
+  return createHash('sha256').update(text, 'utf8').digest('hex');
+}
 
 export async function runCommand(
   cmd: ParsedCommand,
@@ -153,7 +179,13 @@ export async function runCommand(
       return `Noted, for you only. It is not a promise they made.\n  ${out.expectation_id}`;
     }
     default: {
-      const out = await client.act!({ id: cmd.id!, act: cmd.verb, evidence_hash: null });
+      const out = await client.act!({
+        id: cmd.id!,
+        act: cmd.verb,
+        // M-7: the HASH crosses, never the bundle. A counterparty verifies that what you claimed
+        // is what you later show; they never receive it from here.
+        evidence_hash: cmd.evidence === null ? null : sha256Hex(cmd.evidence),
+      });
       if (!out.accepted) {
         throw new UsageError(`Refused: ${out.rejection_reason ?? 'the register would not take it'}`);
       }

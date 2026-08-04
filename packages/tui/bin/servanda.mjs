@@ -23,7 +23,7 @@
 // printed once outside the frame is a label the renderer is free to scroll or clear away.
 import { COPY, FixtureNodeClient, loadApp, makeFixture } from '@servanda/client-web';
 import { openRegister } from '@servanda/client-local';
-import { frame, handleKey, loadInk, parseArgs, runCommand, sourceFor, USAGE, UsageError } from '@servanda/tui';
+import { describeSync, frame, handleKey, loadInk, parseArgs, runCommand, runSync, sourceFor, SYNC_HELP, transportFromEnv, USAGE, UsageError } from '@servanda/tui';
 
 // The write half, before anything is rendered.
 //
@@ -35,6 +35,52 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
   process.stdout.write(`${USAGE}\n`);
   process.exit(0);
 }
+// `sync` is handled before the write verbs because it takes no promise text and drives the one
+// package the terminal otherwise never touches. `@servanda/federation` is imported HERE and
+// handed down, so the surface modules stay free of any transport — the same rule gate GL holds
+// the gesture surface to.
+if (process.argv[2] === 'sync') {
+  const src = sourceFor(process.env);
+  if (src.kind !== 'register') {
+    process.stderr.write('Syncing needs your own register. Set SERVANDA_VAULT and SERVANDA_PASSPHRASE.\n');
+    process.exit(2);
+  }
+  let config;
+  try {
+    config = transportFromEnv(process.env);
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(2);
+  }
+  if (config === null) {
+    process.stdout.write(`No courier is configured, so there is nowhere to send and nothing to collect.\n\n${SYNC_HELP}\n`);
+    process.exit(0);
+  }
+  const { openRegister: open } = await import('@servanda/client-local');
+  const opened = open({ dir: src.dir, passphrase: src.passphrase, persona: src.persona });
+  const { FederatedNode, GitTransport } = await import('@servanda/federation');
+  try {
+    const report = await runSync(
+      (vault, persona, cfg) =>
+        new FederatedNode({
+          vault,
+          persona,
+          transport: GitTransport.init({ dir: cfg.dir, persona, remote: cfg.remote }),
+        }),
+      opened.vault,
+      opened.personaId,
+      config,
+    );
+    process.stdout.write(`${describeSync(report)}\n`);
+    // Non-zero when something could not be delivered: a person scripting this is owed the
+    // difference between "everything went" and "one person is unreachable".
+    process.exit(report.failures.length === 0 ? 0 : 1);
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+  }
+}
+
 {
   let parsed = null;
   try {

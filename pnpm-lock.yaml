@@ -297,9 +297,15 @@ importers:
       '@servanda/client-web':
         specifier: workspace:*
         version: link:../client-web
+      '@servanda/federation':
+        specifier: workspace:*
+        version: link:../federation
       '@servanda/types':
         specifier: workspace:*
         version: link:../types
+      '@servanda/vault':
+        specifier: workspace:*
+        version: link:../vault
       ink:
         specifier: ^7.1.1
         version: 7.1.1(react@19.2.8)

@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 Version numbers below 1.0.0 carry no compatibility promise, and these releases have used it: every
 one so far changes derived keys. A vault does not migrate across any of them.
 
-## [0.5.0-pre] — 2026-08-04
+## [0.5.1-pre] — 2026-08-04
 
 ### Security
 

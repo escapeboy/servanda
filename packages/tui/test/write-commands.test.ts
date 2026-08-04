@@ -49,8 +49,15 @@ describe('what the words mean before anything is signed', () => {
 
   it('takes an id for the acts that sign, and only a well-formed one', () => {
     expect(() => parseArgs(['done', 'the quote thing'])).toThrow(/id of one promise/u);
-    const cmd = parseArgs(['done', 'a'.repeat(64)])!;
+    // §4.3: `done` is the owner saying they delivered and MUST carry evidence — that is what
+    // separates a closure from an assertion. Refusing here rather than at the node means the
+    // person is told what to add instead of being told the register would not take it.
+    expect(() => parseArgs(['done', 'a'.repeat(64)])).toThrow(/--evidence/u);
+    const cmd = parseArgs(['done', 'a'.repeat(64), '--evidence', 'plan.md, 14 pages'])!;
     expect(cmd.id).toBe('a'.repeat(64));
+    expect(cmd.evidence).toBe('plan.md, 14 pages');
+    // …and `release` MUST NOT: giving up a claim is not evidencing delivery.
+    expect(() => parseArgs(['release', 'a'.repeat(64), '--evidence', 'x'])).toThrow(/no --evidence/u);
   });
 
   it('the usage text names every verb it accepts', () => {
@@ -159,8 +166,8 @@ describe('what a person is told back', () => {
         return { accepted: false, rejection_reason: 'wrong-role-for-act', asserts: null };
       },
     } as Partial<NodeClient>);
-    await expect(runCommand(parseArgs(['done', 'a'.repeat(64)])!, c)).rejects.toThrow(
-      /wrong-role-for-act/u,
-    );
+    await expect(
+      runCommand(parseArgs(['done', 'a'.repeat(64), '--evidence', 'delivered'])!, c),
+    ).rejects.toThrow(/wrong-role-for-act/u);
   });
 });

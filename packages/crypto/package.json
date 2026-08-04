@@ -1,6 +1,6 @@
 {
   "name": "@servanda/crypto",
-  "version": "0.5.0-pre",
+  "version": "0.5.1-pre",
   "description": "Servanda cryptographic primitives: RFC 8785 JCS, SHA-256, Ed25519, SLIP-0010, BIP-39, vault content-key wrapping",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",
@@ -23,7 +23,9 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b"
   },

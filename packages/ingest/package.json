@@ -1,6 +1,6 @@
 {
   "name": "@servanda/ingest",
-  "version": "0.5.0-pre",
+  "version": "0.5.1-pre",
   "description": "The driver that carries the envelope log into the confirmation queue",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",
@@ -26,7 +26,9 @@
   "bin": {
     "servanda-ingest": "./dist/bin/servanda-ingest.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b"
   },

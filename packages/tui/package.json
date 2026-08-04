@@ -1,6 +1,6 @@
 {
   "name": "@servanda/tui",
-  "version": "0.5.0-pre",
+  "version": "0.5.1-pre",
   "description": "Servanda terminal surface: the same brief and register as text, over the same five tools",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",
@@ -26,14 +26,20 @@
   "bin": {
     "servanda": "./bin/servanda.mjs"
   },
-  "files": ["dist", "bin", "ink"],
+  "files": [
+    "dist",
+    "bin",
+    "ink"
+  ],
   "scripts": {
     "build": "tsc -b"
   },
   "dependencies": {
     "@servanda/client-local": "workspace:*",
     "@servanda/client-web": "workspace:*",
+    "@servanda/federation": "workspace:*",
     "@servanda/types": "workspace:*",
+    "@servanda/vault": "workspace:*",
     "ink": "^7.1.1",
     "react": "^19.2.0"
   }
