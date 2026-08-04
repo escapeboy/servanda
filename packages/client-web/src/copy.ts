@@ -91,6 +91,71 @@ export const COPY = {
       `Showing ${shown} of ${total}. This register is larger than one read; narrow it or reload.`,
   },
 
+  /**
+   * The vault is weaker than one made today, said without the vocabulary that causes panic.
+   *
+   * Constrained by test rather than by taste, for a reason that is not aesthetic: a person who
+   * reads "weak" and "key" in one paragraph deletes the vault to be safe, and there is nothing
+   * to be safe from — no key left, nothing was read, every promise is intact. So the
+   * reassurance comes FIRST, the word Argon2id never appears, and the only claim made is the
+   * true one: guessing the passphrase is cheaper here than it would be against a new vault.
+   */
+  /**
+   * This was made by an older build and is cheaper to attack than one made today.
+   *
+   * Constrained by test rather than by taste, for a reason that is not aesthetic: a person who
+   * reads "weak" and "key" in one paragraph deletes everything to be safe, and there is nothing
+   * to be safe from — no key left, nothing was read, every promise is intact. So the
+   * reassurance comes FIRST and the only claim made is the true one.
+   *
+   * The word for the store itself is absent because `FORBIDDEN_TERMS` forbids it, and that rule
+   * is right here of all places: somebody reading a security notice is the last person who
+   * should have to learn a new noun to understand it.
+   *
+   * Two variants, because a factor that rounds to 1 makes the numeric sentence nonsense —
+   * "about 1× less" — and `allCopyStrings` probes these functions at 0, 1, 2 and 7 precisely so
+   * that a line which only reads well at 7 cannot ship.
+   */
+  strength: {
+    heading: 'This was set up by an older version',
+    reassurance: 'Nothing has leaked and nothing is broken. Every promise here is intact.',
+    weak: (memoryFactor: number): string =>
+      memoryFactor >= 2
+        ? `Guessing your passphrase costs an attacker roughly ${memoryFactor} times less than ` +
+          `it would if you set this up today. Raising it takes one command and changes nothing ` +
+          `else — same passphrase, same recovery words, same promises.`
+        : `Guessing your passphrase is slightly cheaper here than it would be if you set this ` +
+          `up today. Raising it takes one command and changes nothing else — same passphrase, ` +
+          `same recovery words, same promises.`,
+  },
+
+  /**
+   * Whether a promise you made ever went anywhere.
+   *
+   * `sent` and `acknowledged` are worded apart on purpose. A git push that returned zero proves
+   * bytes are in a repository; a hub answering 200 proves a relay took a sealed blob it cannot
+   * read. Neither proves a person saw it, so nothing here says "delivered" for anything but a
+   * signature that came back.
+   */
+  delivery: {
+    heading: 'Messages out',
+    empty: 'Everything you have sent has arrived.',
+    stuck: (n: number): string =>
+      n === 1
+        ? '1 message has not left this machine.'
+        : `${n} messages have not left this machine.`,
+    acknowledged: (who: string): string => `${who} has it — they signed for it.`,
+    sent: (who: string): string =>
+      `Handed to a courier for ${who}. No word back yet, so nobody knows whether they read it.`,
+    unroutable: (who: string): string =>
+      `There is no way to reach ${who} from here. You and they are on different transports, ` +
+      `so this will not arrive until one of you can reach the other.`,
+    queued: (who: string, attempts: number): string =>
+      attempts === 0
+        ? `Waiting to go to ${who}. Nothing has been tried yet.`
+        : `Waiting to go to ${who}. ${attempts} attempts so far, none of them through.`,
+  },
+
   inbox: {
     heading: 'To confirm',
     empty: 'Nothing to confirm.',

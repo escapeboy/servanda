@@ -180,6 +180,30 @@ function composeLines(state: FrameState): string[] {
     ? [...head, COPY.appName, RULE]
     : [...head, COPY.appName, navLine(state.app.surface, focused), RULE];
 
+  // The two notices, before the reach line and before any body: they are about whether the
+  // register can be trusted at all, which is prior to what is in it.
+  //
+  // Written here as well as in `render.ts` because the terminal has its OWN renderer, and a call
+  // site in the browser proves nothing about this one. That is not hypothetical — `frame.ts`
+  // rendered `brief.unresolvedLine` while nothing rendered `reach.line` until a parity test
+  // asked. There is one per notice now.
+  if (state.app.vault.weak) {
+    lines.push(
+      state.app.vault.heading!,
+      state.app.vault.reassurance!,
+      state.app.vault.line!,
+      `  ${state.app.vault.command!}`,
+      '',
+    );
+  }
+  if (state.app.delivery.line !== null) {
+    lines.push(state.app.delivery.heading, state.app.delivery.line);
+    for (const entry of state.app.delivery.entries) {
+      if (entry.needsYou) lines.push(`  ${entry.line}`);
+    }
+    lines.push('');
+  }
+
   // Whether this screen is the register or part of it, said once, before any body.
   //
   // Placed here rather than in each branch below for the reason the count itself exists: the

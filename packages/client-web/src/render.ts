@@ -7,6 +7,7 @@ import type { OnboardingView } from './onboarding.js';
 import type { ProofView } from './proof.js';
 import type { TeamEntryView, TeamView } from './team.js';
 import type { ActionView, BriefView, CardView, InboxView, LedgerView, PartyView, ReachView } from './view.js';
+import type { DeliveryView, VaultStrengthView } from './warnings.js';
 
 /**
  * View model → element tree.
@@ -400,6 +401,10 @@ export interface AppView {
   readonly surface: SurfaceId;
   /** Whether the views behind this screen were read to the end. */
   readonly reach: ReachView;
+  /** Whether this vault is weaker than one made today, and what raises it. */
+  readonly vault: VaultStrengthView;
+  /** Whether the promises you made ever went anywhere. */
+  readonly delivery: DeliveryView;
   readonly brief: BriefView;
   readonly ledger: LedgerView;
   readonly inbox: InboxView;
@@ -446,11 +451,59 @@ function reachEl(reach: ReachView): El | null {
   });
 }
 
+/**
+ * The vault is weaker than one made today — reassurance first, then the cost, then the command.
+ *
+ * That order is the whole design. `Vault.kdfProfile()` returned `behindDefault: true` from the
+ * moment the default was raised and had exactly one caller: itself. When a warning like this
+ * finally does appear, the danger is not that it is ignored but that it is over-read — somebody
+ * deletes a vault to be safe from a breach that did not happen. So the first line says nothing
+ * has leaked, and the numbers come after it.
+ */
+function vaultEl(vault: VaultStrengthView): El | null {
+  if (!vault.weak) return null;
+  return el('aside', { class: 'notice notice--vault', role: 'status' }, [
+    textEl('h2', vault.heading!, { class: 'notice-heading' }),
+    textEl('p', vault.reassurance!, { class: 'notice-reassurance' }),
+    textEl('p', vault.line!, { class: 'notice-body' }),
+    // `code`, so it is copyable and unmistakably a thing to type rather than a thing to read.
+    textEl('code', vault.command!, { class: 'notice-command' }),
+  ]);
+}
+
+/**
+ * Whether the promises you made went anywhere.
+ *
+ * Only the entries a person can act on are listed. `sent` and `acknowledged` are reports; a
+ * screen that lists everything makes the two that need somebody indistinguishable from the ones
+ * that do not, which is the state this replaces — where a message to an unreachable
+ * counterparty rendered exactly like one being politely ignored.
+ */
+function deliveryEl(delivery: DeliveryView): El | null {
+  if (delivery.line === null) return null;
+  const needing = delivery.entries.filter((e) => e.needsYou);
+  return el('aside', { class: 'notice notice--delivery', role: 'status' }, [
+    textEl('h2', delivery.heading, { class: 'notice-heading' }),
+    textEl('p', delivery.line, { class: 'notice-body' }),
+    el(
+      'ul',
+      { class: 'notice-list' },
+      needing.map((entry) =>
+        textEl('li', entry.line, { class: `delivery delivery--${entry.state}`, 'data-out': entry.id }),
+      ),
+    ),
+  ]);
+}
+
 /** The whole surface: navigation plus whichever view is showing. */
 export function appEl(app: AppView): El {
   const body = bodyEl(app);
-  const reach = reachEl(app.reach);
-  const base = reach === null ? [body] : [reach, body];
+  // Notices before the body and before the reach line: they are about whether the register can
+  // be trusted at all, which is prior to what is in it.
+  const notices = [vaultEl(app.vault), deliveryEl(app.delivery), reachEl(app.reach)].filter(
+    (n): n is El => n !== null,
+  );
+  const base = [...notices, body];
   const children = STANDALONE_SURFACES.includes(app.surface) ? base : [navEl(app.surface), ...base];
   return el('main', { id: 'servanda', class: 'servanda' }, children);
 }

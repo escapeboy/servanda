@@ -6,6 +6,7 @@ export * from './keyboard.js';
 export * from './node-client.js';
 export * from './onboarding.js';
 export * from './paging.js';
+export * from './warnings.js';
 export * from './proof.js';
 export * from './render.js';
 export * from './seal.js';
@@ -24,6 +25,8 @@ import type { ProofRecord } from './proof.js';
 import { buildProof } from './proof.js';
 import type { AppView, SurfaceId } from './render.js';
 import { asOutput, walkView } from './paging.js';
+import type { DeliveryInput, VaultStrengthInput } from './warnings.js';
+import { buildDelivery, buildVaultStrength } from './warnings.js';
 import type { TeamInput } from './team.js';
 import { NO_TEAM, buildTeam } from './team.js';
 import { buildBrief, buildInbox, buildLedger, buildReach, waitingIdsOf } from './view.js';
@@ -44,6 +47,17 @@ export interface LoadAppOptions {
   readonly proof?: ProofRecord | null;
   readonly integrations?: IntegrationsInput;
   readonly onboarding?: OnboardingInput;
+  /**
+   * Two things the node knows that no client could reach.
+   *
+   * `@servanda/client-web` depends on `@servanda/types` and nothing else — a browser package
+   * cannot carry a KDF or a git transport — so an embedder maps `Vault.kdfProfile()` and
+   * `FederatedNode.outbound()` onto these. FACTS only: `OutboundStatus` composes an
+   * `explanation` sentence of its own, and rendering that would be node-authored copy crossing
+   * into a client, which M-21 forbids and gate GE scans for.
+   */
+  readonly vault?: VaultStrengthInput;
+  readonly delivery?: DeliveryInput;
 }
 
 /**
@@ -82,6 +96,8 @@ export async function loadApp(client: NodeClient, options: LoadAppOptions): Prom
   const proof = options.proof ?? null;
   return {
     surface: options.surface,
+    vault: buildVaultStrength(options.vault),
+    delivery: buildDelivery(options.delivery),
     reach: buildReach([allWalk, oweWalk, waitingWalk, closedWalk, ...(pendingWalk ? [pendingWalk] : [])]),
     brief: buildBrief(brief, loops, options.now, waitingIdsOf(buckets)),
     ledger: buildLedger(buckets, options.now),
