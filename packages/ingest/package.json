@@ -1,0 +1,39 @@
+{
+  "name": "@servanda/ingest",
+  "version": "0.5.0-pre",
+  "description": "The driver that carries the envelope log into the confirmation queue",
+  "license": "Apache-2.0",
+  "author": "Nikola Katsarov (https://github.com/escapeboy)",
+  "homepage": "https://github.com/escapeboy/servanda#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/escapeboy/servanda.git",
+    "directory": "packages/ingest"
+  },
+  "bugs": "https://github.com/escapeboy/servanda/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "servanda-ingest": "./dist/bin/servanda-ingest.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@servanda/extraction": "workspace:*",
+    "@servanda/node": "workspace:*",
+    "@servanda/types": "workspace:*",
+    "@servanda/vault": "workspace:*"
+  }
+}

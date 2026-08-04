@@ -37,6 +37,8 @@ const source = sourceFor(process.env);
 let client;
 let pending;
 let banner;
+let vaultStrength;
+let delivery;
 
 if (source.kind === 'refuse') {
   process.stderr.write(source.message);
@@ -53,10 +55,18 @@ if (source.kind === 'register') {
     process.exit(2);
   }
   client = opened.client;
-  // §7 has no read path for the extraction-confirmation queue: `confirm` takes an id and
-  // nothing hands one out (filed upstream). So the inbox is genuinely empty here rather than
-  // borrowed from the sample — an empty queue is true, and a borrowed one is not.
-  pending = { items: [] };
+  // `pending` is deliberately NOT set for a real register.
+  //
+  // It used to be `{ items: [] }`, with a comment explaining that §7 had no read path for the
+  // extraction-confirmation queue. That was true when it was written and stopped being true when
+  // `view: "pending"` learned to serve both halves of its sentence — and nothing noticed, because
+  // an explicit empty value overrides the fetch just as effectively as a missing feature. The
+  // inbox stayed empty for a reason that no longer existed.
+  //
+  // Leaving it undefined is what makes `loadApp` walk the view. That is the difference between
+  // "there is nothing to confirm" and "nothing was asked".
+  vaultStrength = opened.vaultStrength;
+  delivery = opened.delivery;
   banner = COPY.source.yours(dir, `${opened.personaId.slice(0, 8)}…`);
 } else {
   // Built for the instant the frame is rendered at, not for the fixture's own default. The
@@ -68,14 +78,28 @@ if (source.kind === 'register') {
   const fixture = makeFixture(24, now);
   client = new FixtureNodeClient(fixture);
   pending = { items: fixture.pending };
+  // No vault behind a demonstration, so no claim about one. An invented security
+  // notice is worse than an invented promise: the promise is labelled a sample and
+  // the notice would be read as a fact about the reader's own machine.
+  vaultStrength = undefined;
+  delivery = undefined;
   banner = source.banner;
 }
+
+// One place that says what `loadApp` is given, so the two call sites below cannot drift — the
+// first render and every keypress must show the same register, and they were separately
+// spelled-out argument lists.
+const opts = () => ({
+  ...(pending === undefined ? {} : { pending }),
+  ...(vaultStrength === undefined ? {} : { vault: vaultStrength }),
+  ...(delivery === undefined ? {} : { delivery }),
+});
 
 // The banner is part of the frame, not a line printed above it: Ink clears the whole terminal
 // as soon as the frame outgrows the window, and a label written once was then gone for the
 // rest of the session. Carried in the state, it is redrawn by whichever renderer is running.
 let state = {
-  app: await loadApp(client, { surface: 'brief', now, pending }),
+  app: await loadApp(client, { surface: 'brief', now, ...opts() }),
   cursor: 0,
   quit: false,
   banner,
@@ -88,7 +112,7 @@ const step = async (current, key) => {
   if (result.surface === null) return result.state;
   return {
     ...result.state,
-    app: await loadApp(client, { surface: result.surface, now, pending }),
+    app: await loadApp(client, { surface: result.surface, now, ...opts() }),
     cursor: 0,
   };
 };

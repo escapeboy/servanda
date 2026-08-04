@@ -1,3 +1,4 @@
+export * from './warnings.js';
 import type { NodeClient } from '@servanda/client-web';
 import { ServandaNode } from '@servanda/node';
 import type {
@@ -13,6 +14,8 @@ import type {
   OpenLoopsOutput,
 } from '@servanda/types';
 import { defaultStateDir, Vault } from '@servanda/vault';
+import type { DeliveryInput, VaultStrengthInput } from '@servanda/client-web';
+import { deliveryOf, vaultStrengthOf } from './warnings.js';
 
 /**
  * The register, read from the vault it actually lives in.
@@ -80,6 +83,18 @@ export interface OpenedRegister {
   node: ServandaNode;
   /** The persona whose register this is — resolved, so a caller can display it. */
   personaId: string;
+  /**
+   * The two facts a surface needs and cannot fetch for itself, computed here rather than left
+   * for the caller to remember.
+   *
+   * Returned rather than offered as helpers because the failure this closes is exactly a caller
+   * not knowing to ask: `loadApp` took `pending` as an optional input with an empty default for
+   * a whole release, and the terminal passed `{ items: [] }` explicitly with a comment saying
+   * there was no read path — which stopped being true and nothing noticed. An input nobody
+   * passes is a surface nobody sees.
+   */
+  vaultStrength: VaultStrengthInput;
+  delivery: DeliveryInput;
 }
 
 /**
@@ -132,5 +147,12 @@ export function openRegister(opts: OpenVaultOptions): OpenedRegister {
     activePersona: found.persona_id,
     ...(opts.now === undefined ? {} : { now: opts.now }),
   });
-  return { client: new LocalNodeClient(node), vault, node, personaId: found.persona_id };
+  return {
+    client: new LocalNodeClient(node),
+    vault,
+    node,
+    personaId: found.persona_id,
+    vaultStrength: vaultStrengthOf(vault),
+    delivery: deliveryOf(vault, found.persona_id),
+  };
 }

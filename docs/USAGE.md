@@ -153,12 +153,25 @@ You do not type promises into Servanda. It observes.
 The unique input nobody else watches: everyone watches your repository, nobody watches what you
 *told your agent*.
 
-**Be clear about what this does today.** The hook captures utterances into an NDJSON log, and
-`ingestEnvelopeLog` reads that log, extracts §3.1 candidates from it, and puts them in the
-confirmation queue — so `open_loops({view: "pending"})` shows them and `confirm` acts on them.
-The path is joined; what is not yet written is a command a person runs. Ingestion is a library
-call today, so registering the hook and waiting will still not fill a register on its own until
-a daemon or CLI drives it.
+**Be clear about what this does today.** The hook captures utterances into an NDJSON log.
+`servanda-ingest` reads that log, extracts §3.1 candidates from it, and puts them in the
+confirmation queue — so `open_loops({view: "pending"})` shows them, the register's **To confirm**
+screen lists them, and `confirm` acts on them.
+
+```bash
+SERVANDA_VAULT=~/servanda-vault SERVANDA_PASSPHRASE=… ANTHROPIC_API_KEY=… servanda-ingest
+```
+
+It runs once and exits: it reads the log to the end, queues what it found, records how far it
+got, and tells you which of those happened. Run it when you want to, or from `cron` or `launchd`
+if you decide you want that.
+
+**One shot rather than a daemon, deliberately.** A process that watches the log continuously is a
+standing capture posture — everything you type at an agent, read and sent to a model, without
+anyone being asked again. A command you invoke leaves that decision yours, and leaves it visible.
+
+Reading a promise out of what you wrote is a model call, so `ANTHROPIC_API_KEY` is required and
+the command refuses without it rather than silently doing nothing.
 
 This paragraph said the opposite until the queue and the reader were connected, and the reason
 it could say so honestly for months is worth keeping: the hook wrote, the harness read
