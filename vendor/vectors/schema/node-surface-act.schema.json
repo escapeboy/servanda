@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://servanda.dev/schema/node-surface-act.schema.json",
-  "title": "§7 act tool calls (M-14, M-20)",
+  "title": "\u00a77 act tool calls (M-14, M-20)",
   "type": "object",
   "allOf": [
     {
@@ -129,7 +129,9 @@
                       "acceptance-window-not-elapsed",
                       "terminal-state-reached",
                       "duplicate-assertion-by-same-party",
-                      "malformed-edge-acceptance-window"
+                      "malformed-edge-acceptance-window",
+                      "dispute-window-not-elapsed",
+                      "due-not-elapsed"
                     ]
                   }
                 ]
@@ -142,7 +144,8 @@
                   {
                     "enum": [
                       "closed",
-                      "released"
+                      "released",
+                      "expired"
                     ]
                   }
                 ]
@@ -194,6 +197,12 @@
                 }
               }
             ]
+          },
+          "dispute_window_elapsed": {
+            "type": "boolean"
+          },
+          "due_elapsed": {
+            "type": "boolean"
           }
         }
       }

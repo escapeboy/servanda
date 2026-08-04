@@ -13,8 +13,8 @@
     "description": { "type": "string" },
     "act_vocabulary": {
       "type": "array",
-      "minItems": 8,
-      "maxItems": 8,
+      "minItems": 9,
+      "maxItems": 9,
       "uniqueItems": true,
       "items": { "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/act" }
     },
@@ -51,6 +51,8 @@
             "$ref": "https://servanda.dev/schema/common.schema.json#/$defs/effectiveState"
           },
           "window_elapsed": { "type": "boolean" },
+          "dispute_window_elapsed": { "type": "boolean" },
+          "due_elapsed": { "type": "boolean" },
           "expected_actions": {
             "type": "array",
             "items": {

@@ -70,6 +70,7 @@
       "enum": [
         "done",
         "release",
+        "expire",
         "supersede",
         "delegate",
         "ping",
@@ -173,9 +174,9 @@
     },
     "actTooling": {
       "type": "array",
-      "description": "The act -> \u00a77 tool binding table, emitted with every node-surface file.",
-      "minItems": 8,
-      "maxItems": 8,
+      "description": "The act -> \u00a77 tool binding table, emitted with every node-surface file. The exact bound is the point: the vocabulary is CLOSED, so a table with fewer entries is incomplete and one with more has invented an act. It MUST move with the `act` enum above and did not when `expire` was added on 2026-08-03 \u2014 which left this validator failing for three days, unnoticed, because no gate in the reference implementation runs it.",
+      "minItems": 9,
+      "maxItems": 9,
       "items": {
         "type": "object",
         "required": [
