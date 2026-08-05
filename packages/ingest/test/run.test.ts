@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createStubModelClient } from '@servanda/extraction';
 import { makeFixture, type Fixture } from '../../node/test/support/fixture.js';
 import { runIngest } from '../src/run.js';
-import { logPathFrom } from '../src/bin/servanda-ingest.js';
+import { chooseModel, logPathFrom } from '../src/bin/servanda-ingest.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const HOOK = join(HERE, '..', '..', 'connectors-claude-code', 'bin', 'servanda-cc-hook.mjs');
@@ -126,5 +126,32 @@ describe('where the log is read from', () => {
 
   it('treats an empty variable as unset rather than as a path', () => {
     expect(logPathFrom({ SERVANDA_ENVELOPE_LOG: '' })).toMatch(/\.servanda-envelopes\.ndjson$/u);
+  });
+});
+
+describe('which model reads your words', () => {
+  it('uses the sign-in you already have when there is no key', () => {
+    const { model, posture } = chooseModel({});
+    expect(model.id).toMatch(/^claude-cli:/u);
+    // The posture is REPORTED, not chosen silently, and this is why: §3.4/M-6 wants extraction
+    // to run with no tool access, and the two backends satisfy it differently. `claude-cli.ts`
+    // measured rather than assumed — with MCP left alone the model was handed `serena.read_file`
+    // and ATTEMPTED it. So that path strips, disallows, and then checks. A person is owed which
+    // of the two just read their words.
+    expect(posture).toMatch(/no API key/u);
+    expect(posture).toMatch(/MCP stripped/u);
+  });
+
+  it('and the API when a key says the stronger posture was asked for', () => {
+    const { model, posture } = chooseModel({ ANTHROPIC_API_KEY: 'sk-test-not-a-real-key' });
+    expect(model.id).not.toMatch(/^claude-cli:/u);
+    // Structurally tool-less: `ModelRequest` has no field a tool could be named in, so there is
+    // nothing to disable and nothing to get wrong.
+    expect(posture).toMatch(/tool-less by construction/u);
+  });
+
+  it('an empty key is not a key', () => {
+    // An exported-but-empty variable is the commonest way to think you configured something.
+    expect(chooseModel({ ANTHROPIC_API_KEY: '' }).model.id).toMatch(/^claude-cli:/u);
   });
 });

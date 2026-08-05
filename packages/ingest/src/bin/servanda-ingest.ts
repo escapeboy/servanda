@@ -2,7 +2,7 @@
 import { pathToFileURL } from 'node:url';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { createAnthropicModelClient } from '@servanda/extraction';
+import { createAnthropicModelClient, createClaudeCliModelClient } from '@servanda/extraction';
 import { openNode, ServandaNode } from '@servanda/node';
 import { runIngest } from '../run.js';
 
@@ -44,22 +44,17 @@ export async function main(env: Env = process.env): Promise<number> {
   });
   const logPath = logPathFrom(env);
 
-  if (env['ANTHROPIC_API_KEY'] === undefined || env['ANTHROPIC_API_KEY'] === '') {
-    fail(
-      'ANTHROPIC_API_KEY is required: reading a promise out of what you wrote is a model call.\n' +
-        'Nothing was read and nothing was sent.',
-    );
-  }
 
+  const { model, posture } = chooseModel(env);
   const report = await runIngest({
     node,
     local: opened.localStore,
     persona: opened.activePersona,
     logPath,
-    model: createAnthropicModelClient(),
+    model,
   });
 
-  const out: string[] = [];
+  const out: string[] = [posture];
   if (report.logMissing) {
     // Not an error. A fresh install has no log until the hook fires for the first time, and
     // treating that as a failure would teach people to ignore the failure.
@@ -109,4 +104,45 @@ if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
       }
       throw err;
     });
+}
+
+/**
+ * Which model reads your words, and how tool-less that reading actually is.
+ *
+ * §3.4 / M-6 requires extraction to run with NO tool access, and the two backends satisfy it
+ * differently — which is why the choice is reported rather than made silently.
+ *
+ * The API client is tool-less **structurally**: `ModelRequest` has no field in which a tool could
+ * be named, so there is nothing to disable and nothing to get wrong.
+ *
+ * The CLI is an agent, and its default posture is the opposite — it inherits the environment,
+ * including every MCP server configured. `claude-cli.ts` measured that rather than assuming it:
+ * with built-in tools disallowed but MCP left alone, the model was handed `serena.read_file` and
+ * `context-mode.ctx_execute_file` and ATTEMPTED BOTH in response to an instruction embedded in
+ * its input. Only the permission layer stopped it. So that backend strips MCP, disallows every
+ * built-in, and then VERIFIES the outcome, failing loudly rather than trusting the flags.
+ *
+ * Configurationally tool-less plus verification is weaker than structurally tool-less, and the
+ * difference is exactly what an implementer would want to know. It is fine for reading your own
+ * register; `claude-cli.ts` says plainly it is not the path a conformance claim rests on.
+ *
+ * The CLI comes first because it costs nothing and uses the sign-in somebody already has. A key,
+ * when present, means they asked for the stronger posture and gets it.
+ */
+export function chooseModel(env: Env): { model: ReturnType<typeof createClaudeCliModelClient>; posture: string } {
+  const key = env['ANTHROPIC_API_KEY'];
+  if (key !== undefined && key !== '') {
+    return {
+      model: createAnthropicModelClient(),
+      posture: 'Reading with the API. It is tool-less by construction: the request has no field a tool could go in.',
+    };
+  }
+  return {
+    model: createClaudeCliModelClient(),
+    posture:
+      'Reading with the `claude` command you already sign in to — no API key, no cost.\n' +
+      'It runs with MCP stripped and every built-in tool disallowed, and the result is checked:\n' +
+      'a run that touched a tool is failed rather than returned. Set ANTHROPIC_API_KEY to use the\n' +
+      'API instead, which cannot be handed a tool at all.',
+  };
 }
