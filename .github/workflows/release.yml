@@ -132,10 +132,31 @@ jobs:
       # `-r` would also pack the workspace root, which is `private: true` and must never reach the
       # registry; filtering to ./packages/* keeps it out by construction rather than by a check
       # after the fact.
+      # The exclusions are DERIVED from `private` in each manifest rather than listed here.
+      # They were listed here, and that is what broke v0.5.1-pre: two packages were marked
+      # `private: true` to hold them back, the filter still named only `@servanda/e2e`, and both
+      # were packed anyway. Two places holding the same fact, and the one nobody edited won.
+      #
+      # `private` is the source of truth for "may this reach a registry"; the count below is NOT
+      # derived from it, deliberately, so it cross-checks this list instead of restating it.
       - name: Pack every publishable package
-        run: >
-          pnpm --filter './packages/*' --filter '!@servanda/e2e'
-          pack --pack-destination "$RUNNER_TEMP/tarballs"
+        run: |
+          # An ARRAY, and `--filter` `!name` as two arguments. `--filter=!name` inside an expanded
+          # variable is silently ignored by pnpm — verified locally, where it packed all 21 and
+          # reported no error. A filter that does nothing quietly is the worst of the three
+          # possible behaviours, so the form here is the one that was proven to exclude.
+          args=()
+          while IFS= read -r name; do
+            [ -n "$name" ] && args+=(--filter "!$name")
+          done < <(node -e '
+            const fs = require("fs");
+            fs.readdirSync("packages")
+              .map((d) => JSON.parse(fs.readFileSync(`packages/${d}/package.json`, "utf8")))
+              .filter((p) => p.private === true)
+              .forEach((p) => console.log(p.name));
+          ')
+          echo "holding back: ${args[*]:-<nothing>}"
+          pnpm --filter './packages/*' "${args[@]}" pack --pack-destination "$RUNNER_TEMP/tarballs"
 
       # Every package is proved able to publish over OIDC BEFORE any of them is published, and the
       # tarball count is asserted in the same step. See gates/oidc-probe.sh for why a dry run is a
