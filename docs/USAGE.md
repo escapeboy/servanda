@@ -1,13 +1,20 @@
 # Using Servanda
 
-Everything below was run against this repository. No invented commands.
+Everything below was run, not imagined. No invented commands.
 
-Requires Node 22+ and pnpm 10.
+**Two ways in, and they are not interchangeable.** `servanda` is on npm, so §2 works from an
+install. Everything else here — the node, capture, the harness, the gates — is run from a
+checkout, because those packages either are not published (`@servanda/ingest`) or are libraries
+rather than commands.
 
 ```bash
-pnpm install
-pnpm -r run build
+npm install -g @servanda/tui        # for §2
+
+git clone https://github.com/escapeboy/servanda && cd servanda
+pnpm install && pnpm -r run build   # for everything else
 ```
+
+Requires Node 22+ and pnpm 10.
 
 ---
 
@@ -108,7 +115,78 @@ is already current says so and does nothing.
 
 ---
 
-## 2. Run the node
+## 2. Record a promise
+
+```bash
+npm install -g @servanda/tui
+servanda commit "Send Maria the warehouse quote" --due 2026-08-11
+servanda
+```
+
+That is the whole of it. No assistant, no API key, no network — which is §0's base rule
+(**M-10**) made usable rather than merely true. Until v0.5.2-pre nothing shipped could put a
+promise into a register: `commit` was reachable through MCP or through §3 extraction and by no
+other door.
+
+```bash
+servanda commit "<what you promised>" [--to <who>] [--due <date>] [--propose]
+servanda expect "<what you are waiting for>" --to <who>
+servanda done <id> --evidence "<what you delivered>"
+servanda release <id>
+servanda sync
+servanda                                  # the register
+```
+
+**`--propose` is what sends it.** Without it the promise stays on this machine, and that is the
+default rather than the fallback.
+
+**`--to` takes a persona id, not a label.** A local label names *who you are acting as* (§1.2),
+never who a promise is owed to — `owed_to` on the wire is a persona id or a §3.1 `external_label`.
+If the two were merged, typing `--to Boyan` for an off-network Boyan, in a vault that happens to
+hold a persona labelled `Boyan`, would silently redirect the promise to yourself *and put it on
+the wire*. One typed word, two outcomes, and the dangerous one is the quiet one. When the name
+matches one of your own personas the command says so and hands you the id.
+
+**`done` requires `--evidence`; `release` refuses it.** §4.3: a closure by the owner carries the
+hash of what was delivered — that is what separates it from an assertion. Giving up a claim is not
+evidencing delivery. Only the hash is recorded; the words stay on this machine (**M-7**).
+
+### Sending and collecting
+
+```bash
+export SERVANDA_GIT_REMOTE=/path/to/shared.git    # or a URL
+export SERVANDA_GIT_CLONE=~/.servanda-courier     # NOT inside your vault
+servanda sync
+```
+
+Both people point at the same repository. Nothing in it is readable by anyone but the recipient —
+§6.3: a courier carries sealed envelopes and cannot open them.
+
+`sync` runs **once and exits**. §6.7 lets a courier lose, duplicate and reorder, and the answer to
+all three is to ask again — which is a thing a person does when they want to, not a process that
+reads their register on a timer. Put it in `cron` or `launchd` if you decide you want that.
+
+The clone must not be inside the vault: the vault commits everything in its tree, so a courier
+writing there would put wire traffic into the record it exists to carry. The command refuses
+rather than choosing a directory for you.
+
+**One transport at a time.** §6.1's per-recipient routing is what lets a node hold several
+couriers, and this does not expose it — so a person on a shared repository and a person on a hub
+cannot yet reach each other. Said here rather than left to be discovered as silence.
+
+### What the other person sees
+
+Their register shows the promise with **Confirm** and **Not a promise** — and *not* its words:
+
+    (the words stayed with the person who wrote them)
+
+That is **M-7**, not a defect. Plaintext never crosses the wire. The promise was made in a
+conversation you both remember; Servanda records *that* it was made and binds it to a hash, so
+neither of you can later say it was something else. It does not transmit it.
+
+---
+
+## 3. Run the node
 
 The node speaks MCP over stdio and exposes the six tools of §7 — `commit`, `expect`, `confirm`,
 `open_loops`, `brief`, `act`. Configuration comes from the environment because stdio is the
@@ -144,7 +222,7 @@ ships a chat UI, because assistants are clients permanently.
 
 ---
 
-## 3. Capture what you say
+## 4. Capture what you say
 
 You do not type promises into Servanda. It observes.
 
@@ -159,7 +237,7 @@ confirmation queue — so `open_loops({view: "pending"})` shows them, the regist
 screen lists them, and `confirm` acts on them.
 
 ```bash
-SERVANDA_VAULT=~/servanda-vault SERVANDA_PASSPHRASE=… ANTHROPIC_API_KEY=… servanda-ingest
+SERVANDA_VAULT=~/.servanda SERVANDA_PASSPHRASE=… servanda-ingest
 ```
 
 It runs once and exits: it reads the log to the end, queues what it found, records how far it
@@ -170,8 +248,30 @@ if you decide you want that.
 standing capture posture — everything you type at an agent, read and sent to a model, without
 anyone being asked again. A command you invoke leaves that decision yours, and leaves it visible.
 
-Reading a promise out of what you wrote is a model call, so `ANTHROPIC_API_KEY` is required and
-the command refuses without it rather than silently doing nothing.
+Reading a promise out of what you wrote is a model call, and by default it uses the `claude`
+command you are already signed in to — no API key, no cost. Set `ANTHROPIC_API_KEY` to use the
+API instead. **The command says which one read your words**, because the two are not equally
+tool-less and §3.4 / M-6 asks for the stronger property:
+
+- **the API** is tool-less *structurally* — the request has no field a tool could be named in, so
+  there is nothing to disable and nothing to get wrong. This is the path a conformance claim
+  rests on.
+- **the CLI** is tool-less *configurationally, then verified*. It is an agent and inherits your
+  environment. That was measured rather than assumed: with built-in tools disallowed but MCP left
+  alone, the model was handed `serena.read_file` and attempted it, responding to an instruction
+  embedded in its input. Only the permission layer stopped it. So the backend strips MCP,
+  disallows every built-in, and checks the outcome — a run that touched a tool is failed rather
+  than returned.
+
+"Tools that are blocked" is weaker than "no tools". Fine for reading your own register; not what
+a conformance claim rests on.
+
+**A session Servanda spawns is not captured.** The CLI backend starts `claude`, and a spawned
+session fires your own `UserPromptSubmit` hooks — so without a guard the connector writes the
+*extraction prompt* into the log as a new utterance, and the next run extracts from its own
+output. The spawned process carries `SERVANDA_CAPTURE=off` and the hook exits before reading
+stdin when it sees it. Found within a minute of the hook being switched on for the first time, on
+a log holding one real utterance.
 
 This paragraph said the opposite until the queue and the reader were connected, and the reason
 it could say so honestly for months is worth keeping: the hook wrote, the harness read
@@ -267,7 +367,7 @@ easily as at a server.
 
 ---
 
-## 4. Read your register
+## 5. Read your register
 
 ### Terminal
 
@@ -313,7 +413,7 @@ disagree about what you owe.
 
 ---
 
-## 5. Work with someone else
+## 6. Work with someone else
 
 Everything above is solo. A promise becomes *bilateral* when the other party signs it (**M-2**).
 
@@ -327,7 +427,7 @@ transition table as local ones, so an invalid one is discarded exactly as it wou
 
 ---
 
-## 6. Let it do the work
+## 7. Let it do the work
 
 Executors turn an aging promise into **finished work awaiting approval** rather than a reminder. A
 reminder costs attention; a ready draft PR costs one review.
@@ -350,7 +450,7 @@ ceilinged classes never reach silent no matter how good the record.
 
 ---
 
-## 7. Check what extraction actually finds
+## 8. Check what extraction actually finds
 
 ```bash
 pnpm --filter @servanda/extraction harness --dry-run   # stub, no API calls, no spend
@@ -370,7 +470,7 @@ promise language, and a full pass drops from 34 findings to 22. Cost is a choice
 
 ---
 
-## 8. Verify the whole thing
+## 9. Verify the whole thing
 
 ```bash
 pnpm test         # full suite

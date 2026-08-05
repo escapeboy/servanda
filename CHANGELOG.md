@@ -4,8 +4,39 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Version numbers below 1.0.0 carry no compatibility promise, and these releases have used it: every
-one so far changes derived keys. A vault does not migrate across any of them.
+Version numbers below 1.0.0 carry no compatibility promise, and these releases have used it.
+**Be precise about what each break reached, because "a vault does not migrate" was written as a
+blanket and is not one** — read that way it tells somebody to discard a vault that opens.
+
+- **0.2.0-pre, 0.3.0-pre, 0.4.0-pre changed derived keys or identifiers a stored vault holds.**
+  A vault does not survive those.
+- **0.5.x broke the WIRE and not the store.** It speaks `servanda/0.2`, so a 0.1 node refuses its
+  messages — but the §0 domain tags keep their `servanda/0.1:` spelling deliberately, so
+  `commitment_hash` and `edge_id` are byte-identical and every signature over a stored object
+  still verifies. **A 0.4.0-pre vault opens in 0.5.x.** It should be re-wrapped (see below),
+  which is a one-command change of the passphrase profile and not a migration.
+
+## [Unreleased]
+
+### Fixed
+
+- **Capture no longer captures its own reader.** `servanda-ingest` with the CLI backend spawns
+  `claude`, and a spawned session fires the user's own `UserPromptSubmit` hooks — so the §3
+  connector wrote the *extraction prompt* into the envelope log as a new utterance, a prompt whose
+  body quotes the utterances it had just been handed. The next run read that back and paid a model
+  to look for promises inside a JSON array of previous promises. It compounds every run.
+
+  Found within a minute of the hook being switched on for the first time, on a log holding exactly
+  one real utterance. No test and no gate could reach it: both halves are correct on their own —
+  the hook captures prompts, the extractor spawns a CLI — and the defect exists only in their
+  composition.
+
+  Closed on both sides: the spawn carries `SERVANDA_CAPTURE=off`, and the hook exits before
+  reading stdin when it sees it. Tested in both directions, because a guard that also silenced
+  ordinary use would be worse than the loop.
+
+  The general rule, since it will recur: **anything that writes to a stream and also runs
+  something that can write to the same stream needs a marker, not an assumption.**
 
 ## [0.5.2-pre] — 2026-08-05
 

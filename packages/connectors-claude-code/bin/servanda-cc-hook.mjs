@@ -63,6 +63,14 @@ function appendToRegularFile(path, data) {
 }
 
 try {
+  // Servanda's own extraction spawns `claude`, and a spawned session fires this hook. Without
+  // this line the extraction prompt — which quotes the utterances it was just given — is written
+  // back into the log as a new utterance, and the next run extracts from it. A capture surface
+  // that captures its own reader is a loop that grows and costs money on every turn.
+  //
+  // Checked before anything else, including before stdin is read: the cheapest possible no-op.
+  if (process.env.SERVANDA_CAPTURE === 'off') process.exit(0);
+
   const persona = process.env.SERVANDA_PERSONA;
   const log = process.env.SERVANDA_ENVELOPE_LOG;
   // Capture that silently does nothing is indistinguishable from having promised nothing, and

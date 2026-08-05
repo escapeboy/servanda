@@ -7,17 +7,29 @@ optional federation.
 
 *Servanda*, from **pacta sunt servanda** — agreements must be kept.
 
-> **Status: v0.5.0-pre (unreleased; v0.4.0-pre is the newest on npm)**, tracking **spec v0.1,
-> frozen 2026-08-01**, conformance suite `0.1.0`.
+> **Status: v0.5.2-pre, on npm**, tracking **spec v0.1, frozen 2026-08-01**, conformance suite
+> `0.1.0`.
+>
+> **The first release a person can use.** `npm install -g @servanda/tui`, then
+> `servanda commit "…"` — no assistant, no API key, no network. Every earlier release was a set
+> of libraries with no way in: `commit` was reachable through MCP or §3 extraction and by no
+> other door.
+>
+> Two packages are held back from this release — `@servanda/ingest` and
+> `@servanda/client-conformance` have no npm trusted publisher yet, so the §3 capture chain runs
+> from a checkout rather than from npm.
 > The protocol is the product; this is the implementation that proves it runs.
 >
 > The spec being frozen does not make this release stable: a normative change now needs
 > `servanda/0.2`, but nothing stops *this* package from breaking, and every 0.x so far has.
 >
-> **A vault does not migrate across any 0.x release so far.** 0.2.0-pre took the scheduled
+> **Vaults did not survive 0.2, 0.3 or 0.4 — they do survive 0.5.** 0.2.0-pre took the scheduled
 > domain-separation break; 0.3.0-pre gave personas their own X25519 key; 0.4.0-pre replaced the
-> transport with HPKE and put the recipient inside the signature. Each changes keys or
-> identifiers a previous vault holds — see [CHANGELOG.md](CHANGELOG.md).
+> transport with HPKE and put the recipient inside the signature. Each changed keys or identifiers
+> a previous vault holds. **0.5.x did not**: it broke the wire (`servanda/0.2`) while the §0 domain
+> tags kept their `servanda/0.1:` spelling, so stored identifiers are byte-identical and every
+> signature over a stored object still verifies. A 0.4.0-pre vault opens here — see
+> [CHANGELOG.md](CHANGELOG.md).
 >
 > **If you made a vault with a published build (0.4.0-pre or earlier), its key is at the §9.3
 > floor** — sixteen times less memory than this build uses, for the life of that vault, because a

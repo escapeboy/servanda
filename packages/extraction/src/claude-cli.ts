@@ -89,6 +89,15 @@ function spawnClaude(binary: string, timeoutMs: number) {
         // A fixed, empty-ish cwd: the CLI must not be able to resolve project files even if a
         // tool somehow survived the stripping above.
         cwd: process.cwd(),
+        // **The spawned session must not be captured.** A `claude` started here fires the user's
+        // own UserPromptSubmit hooks, so the §3 connector writes THIS extraction prompt into the
+        // envelope log — a prompt which contains the utterances just read. The next run then
+        // extracts from its own output: the log fills with machine text, the model is paid to
+        // look for promises inside a JSON array of previous promises, and it compounds every run.
+        //
+        // Observed within a minute of the hook being switched on for the first time, on a log of
+        // exactly one real utterance. Not a hypothetical.
+        env: { ...process.env, SERVANDA_CAPTURE: 'off' },
       });
       let out = '';
       let err = '';
