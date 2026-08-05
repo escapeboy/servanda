@@ -1,6 +1,6 @@
 {
   "name": "@servanda/federation",
-  "version": "0.5.1-pre",
+  "version": "0.5.2-pre",
   "description": "Servanda federation (L2): \u00a76 transports, blind courier, reconciliation, edge recovery",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

@@ -1,6 +1,6 @@
 {
   "name": "@servanda/client-web",
-  "version": "0.5.1-pre",
+  "version": "0.5.2-pre",
   "description": "Servanda client: the canonical surface \u2014 Brief, owe/waiting/closed, confirmation inbox \u2014 and the one renderer contract the terminal and email projections share",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",

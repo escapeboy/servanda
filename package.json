@@ -1,6 +1,6 @@
 {
   "name": "servanda",
-  "version": "0.5.1-pre",
+  "version": "0.5.2-pre",
   "private": true,
   "description": "Servanda \u2014 reference implementation of the Servanda protocol",
   "license": "Apache-2.0",

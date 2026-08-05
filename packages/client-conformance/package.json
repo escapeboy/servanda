@@ -1,6 +1,6 @@
 {
   "name": "@servanda/client-conformance",
-  "version": "0.5.1-pre",
+  "version": "0.5.2-pre",
   "description": "The client half of the Servanda conformance suite: judges what a client PAINTS against M-12 and M-21, which a vector cannot reach",
   "license": "Apache-2.0",
   "author": "Nikola Katsarov (https://github.com/escapeboy)",
