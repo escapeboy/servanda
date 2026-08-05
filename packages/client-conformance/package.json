@@ -31,5 +31,6 @@
   },
   "dependencies": {
     "@servanda/types": "workspace:*"
-  }
+  },
+  "private": true
 }

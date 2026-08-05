@@ -37,5 +37,6 @@
     "@servanda/node": "workspace:*",
     "@servanda/types": "workspace:*",
     "@servanda/vault": "workspace:*"
-  }
+  },
+  "private": true
 }

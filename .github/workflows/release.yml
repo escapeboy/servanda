@@ -142,14 +142,17 @@ jobs:
       # real proof and why no token may be present while it runs. On `workflow_dispatch` this is
       # the last step that runs, so the answer costs a workflow run rather than a version.
       - name: Every package can publish over OIDC (no token in this step)
-        # TWENTY, and the number moving is only half of what a new publishable package needs.
-        # The other half is an npm trusted-publisher entry for it, configured in the registry's
-        # own settings and not in this repository — `oidc()` takes a package NAME and the trust
-        # relationship is per package. `@servanda/ingest` and `@servanda/client-conformance` were
-        # added without either, which stopped v0.5.0-pre before a single tarball was uploaded.
-        # That is the check doing its job: nineteen published and one refused is a release nobody
-        # can install and nobody can take back.
-        run: bash gates/oidc-probe.sh "$RUNNER_TEMP/tarballs" 20
+        # EIGHTEEN, and the number is only half of what a new publishable package needs. The
+        # other half is an npm trusted-publisher entry, configured in the registry's own settings
+        # and not in this repository — `oidc()` takes a package NAME and the trust relationship is
+        # per package. `@servanda/ingest` and `@servanda/client-conformance` had neither, which
+        # stopped v0.5.0-pre before a single tarball was uploaded: nineteen published and one
+        # refused is a release nobody can install and nobody can take back.
+        #
+        # They are `private: true` for now rather than configured, so this is eighteen again. When
+        # a trusted publisher exists for each, drop the flag and raise this to twenty — both, in
+        # the same change, because either alone fails the release.
+        run: bash gates/oidc-probe.sh "$RUNNER_TEMP/tarballs" 18
 
       # `--tag latest`, explicitly, and it is not cosmetic. Every version here carries a `-pre`
       # prerelease identifier, and npm 11 REFUSES to publish a prerelease under the default tag:
